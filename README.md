@@ -42,3 +42,16 @@ npm run preview
 Para integrar más adelante habrá que acordar origen SPA, transporte de sesión y destinos de los enlaces de correo. No hay variables `VITE_*`, secretos ni configuración API ficticia en esta base. Las credenciales SMTP y del ADMIN inicial pertenecen al backend y nunca al navegador.
 
 Esta iteración excluye Académico, Tareas, Evolución y Seguimiento. No contempla login de estudiantes. Documentar una capacidad backend no aprueba su inclusión en el piloto ni implementa su interfaz.
+
+## Flujo SDD con Spec-Kit
+
+Spec-Kit 1.0.13 está inicializado para OpenCode con scripts Bash. La configuración y las plantillas están en `.specify/`; los diez comandos locales están en `.opencode/commands/`. No requiere dependencias npm adicionales. Si los comandos no aparecen, volver a abrir el proyecto en OpenCode desde el worktree correspondiente.
+
+Orden de trabajo:
+
+1. `/speckit.constitution`: definir y revisar los principios del frontend respetando `AGENTS.md` y las fuentes backend. **La constitución generada por la inicialización sigue siendo una plantilla sin completar**, no una política aprobada.
+2. `/speckit.specify <feature>`: especificar la experiencia de interfaz, citando contexto, spec/contrato y código backend comprobado. Los artefactos se crearán bajo `specs/`; esa carpeta todavía no contiene features.
+3. `/speckit.clarify` si quedan ambigüedades; después `/speckit.plan` y `/speckit.tasks`.
+4. `/speckit.analyze` para revisar consistencia antes de `/speckit.implement`, una vez aprobado el alcance correspondiente.
+
+`docs/agent-context/` conserva contexto y recorridos candidatos; `docs/specs/TEMPLATE.md` es una guía de trazabilidad frontend, no reemplaza las plantillas de Spec-Kit ni implica que ya existan specs ejecutadas. No iniciar una feature desde los ejemplos genéricos de las plantillas sin consultar primero `AGENTS.md`. La inicialización no define decisiones de producto, no crea pantallas ni implementa autenticación.
