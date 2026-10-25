@@ -1,6 +1,7 @@
 # Local agent skills
 .agents/skills/
-.opencode/skills/
+.opencode/skills/*
+!.opencode/skills/ponytail/
 skills-lock.json
 
 node_modules/

@@ -24,6 +24,12 @@ Si una tarea implica **diseñar, crear o modificar la interfaz gráfica**, consu
 
 Comprobar disponibilidad en cada sesión. Si una skill no está disponible, indicarlo y continuar sin fingir que se utilizó. Durante esta inicialización las tres no estaban disponibles y no se utilizaron; tampoco se diseñó interfaz.
 
+## Ponytail: cambios mínimos completos
+
+- Cargar la skill de proyecto `ponytail` antes de tareas de código, refactor, revisión o selección de dependencias y cuando el usuario la solicite. Usar su nivel predeterminado `full`, salvo indicación distinta del usuario. Ver [instalación, procedencia y límites](docs/agent-context/ponytail.md).
+- Simplificar la solución, no los requisitos: conservar validación, manejo de errores, seguridad, accesibilidad, pruebas necesarias y convenciones del producto. No reemplazar componentes del sistema de diseño por variantes inconsistentes ni eliminar trabajo ajeno para reducir el diff.
+- Está instalada como skill, sin plugin ni hooks; no asumir comandos slash o inyección automática en cada turno. Si no puede cargarse, informar la limitación sin fingir uso.
+
 ## Componentes aprobados y MCP de shadcn
 
 - La elección aprobada es **shadcn/ui con Base UI y Lucide**; no mezclar primitivas Radix/Base UI ni otras suites para resolver el mismo patrón. La elección no significa que los paquetes o componentes estén instalados: la base todavía no tiene catálogo ni `components.json`.
