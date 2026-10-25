@@ -32,6 +32,7 @@ npm run preview
 - `src/styles.css`: entrada Tailwind; `vite.config.ts` y `tsconfig.json`: configuración mínima.
 - [AGENTS.md](AGENTS.md): reglas obligatorias para agentes.
 - [Índice de contexto](docs/agent-context/INDEX.md): cómo consultar el backend canónico.
+- [Manual de diseño para agentes](docs/design/agent-design-manual.md): base visual aprobada, colores confirmados y decisiones pendientes.
 - [Usuarios](docs/agent-context/modules/usuarios/module-summary.md): recorridos documentados e inventario real de capacidades.
 - [Plantilla de spec frontend](docs/specs/TEMPLATE.md): experiencia de interfaz y trazabilidad, no lógica de negocio duplicada.
 
