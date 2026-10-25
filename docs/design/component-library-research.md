@@ -1,6 +1,6 @@
 # Bibliotecas de componentes para Kudlab
 
-**Estado: investigación y recomendación; ninguna biblioteca elegida o instalada.**
+**Estado: elección shadcn/ui + Base UI + Lucide aprobada por el responsable después de revisar esta comparación. No se han instalado componentes ni dependencias de UI.**
 
 ## Criterios
 
@@ -18,9 +18,9 @@ Se priorizan adaptación al [manual](agent-design-manual.md), soporte de teclado
 | **React Aria Components** | Buena candidata cuando se priorizan comportamiento accesible e internacionalización con control total del estilo | Sin apariencia de producto predeterminada: exige más trabajo visual/composición. No es mi primera opción para obtener rápidamente componentes ya diseñados |
 | **Base UI o Radix Primitives directamente** | Primitivas sin estilos para construir un sistema propio; foco, teclado y composición como base | No aportan por sí solas el acabado gráfico solicitado. Preferible usarlas mediante una capa coherente, en vez de diseñar cada componente desde cero |
 
-## Recomendación propuesta
+## Recomendación posteriormente aprobada
 
-**shadcn/ui con Base UI como base de interacción y Lucide para iconos**, sujeto a aprobación. shadcn documenta Base UI como predeterminada desde julio de 2026; no asumir que todos los ejemplos actuales usan Radix. Radix sigue soportado. No mezclar APIs o familias de componentes sin una razón documentada.
+**shadcn/ui con Base UI como base de interacción y Lucide para iconos**, aprobado por el responsable. shadcn documenta Base UI como predeterminada desde julio de 2026; no asumir que todos los ejemplos actuales usan Radix. Radix sigue soportado. No mezclar APIs o familias de componentes sin una razón documentada. Se configuró el [MCP de proyecto](shadcn-mcp.md) para ayudar a los agentes a consultar componentes oficiales sin inicializar la aplicación.
 
 Esto no significa adoptar un preset sin revisión. En una futura implementación autorizada:
 
@@ -45,4 +45,4 @@ Esto no significa adoptar un preset sin revisión. En una futura implementación
 - [Radix Primitives](https://www.radix-ui.com/primitives/docs/overview/introduction): primitivas accesibles sin estilos.
 - [Lucide](https://lucide.dev/guide/): iconos SVG, paquetes oficiales y guía de accesibilidad.
 
-No se compararon tiempos de carga, tamaños de bundle ni resultados de pruebas reales. La recomendación es un juicio de encaje, no un benchmark ni una aprobación de dependencia.
+No se compararon tiempos de carga, tamaños de bundle ni resultados de pruebas reales. La recomendación es un juicio de encaje, no un benchmark. El responsable aprobó la elección, no la incorporación de dependencias en esta tarea.

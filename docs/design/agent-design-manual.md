@@ -1,10 +1,10 @@
 # Manual de diseño de Kudlab para agentes
 
-**Estado: base visual aprobada por el responsable; colores semánticos y biblioteca de componentes pendientes.**
+**Estado: base visual y elección shadcn/ui + Base UI + Lucide aprobadas; colores semánticos pendientes.**
 
-La [comparación de bibliotecas](component-library-research.md) registra alternativas y una recomendación todavía no aprobada; no autoriza instalaciones.
+La [comparación de bibliotecas](component-library-research.md) registra el fundamento de la elección aprobada. El [MCP de shadcn](shadcn-mcp.md) está configurado para consultar componentes; no se han instalado componentes ni dependencias visuales de la aplicación. Una futura instalación requiere una tarea de implementación autorizada.
 
-La aprobación posterior a la revisión de tipografía y espaciado adopta las recomendaciones de las secciones 3–7 como base operativa, incluidos sus valores numéricos y mapeos. Las palabras «propuesta» y «propuesto» en esas secciones conservan la procedencia de las recomendaciones del agente, no una solicitud de aprobación adicional. Esta aprobación no resuelve los pendientes explícitos, no selecciona una biblioteca y no equivale a una validación de interfaces implementadas. Los cuatro colores semánticos siguen sin asignar: no se eligió expresamente una de las opciones ofrecidas.
+La aprobación posterior a la revisión de tipografía y espaciado adopta las recomendaciones de las secciones 3–7 como base operativa, incluidos sus valores numéricos y mapeos. Las palabras «propuesta» y «propuesto» en esas secciones conservan la procedencia de las recomendaciones del agente, no una solicitud de aprobación adicional. Esa aprobación no resuelve los pendientes explícitos ni equivale a una validación de interfaces implementadas. La elección de biblioteca se aprobó posteriormente en C-05. Los cuatro colores semánticos siguen sin asignar: no se eligió expresamente una de las opciones ofrecidas.
 
 ## 1. Cómo usar esta fuente de verdad
 
@@ -109,7 +109,7 @@ Las skills se usaron como referencias de principios, no como un generador ejecut
 
 Estas medidas necesitan revisión con contenido docente real en una futura implementación autorizada; no se han validado mediante prototipo, capturas ni pruebas con profesores. Los márgenes y anchos responsive también son propuestas del agente, no evidencia de dispositivos elegidos por el responsable.
 
-Iconografía: una sola familia coherente, trazo y proporciones constantes; reutilizar la instalada si aparece una en el futuro. **Pendiente la familia:** no agregar una dependencia por este manual. Los iconos decorativos se ocultan a tecnologías de asistencia; los controles de solo icono requieren nombre accesible. No usar emojis como controles ni inventar logos/mascota.
+Iconografía: **Lucide es la familia aprobada**, todavía no instalada. Mantener trazo y proporciones constantes; no agregar otra familia. Los iconos decorativos se ocultan a tecnologías de asistencia; los controles de solo icono requieren nombre accesible. No usar emojis como controles ni inventar logos/mascota.
 
 ## 6. Componentes e interacción — propuestas salvo regla de producto citada
 
@@ -144,7 +144,7 @@ Objetivo recomendado: **WCAG 2.2 nivel AA**; no equivale a certificación del pr
 ## 8. Protocolo para agentes
 
 1. Leer contexto, feature, contrato y pendientes; identificar actor, tarea y estados autorizados. Este manual no habilita funcionalidades futuras.
-2. Buscar tokens/componentes existentes antes de crear variantes. Hoy no hay catálogo; no afirmar que un botón o biblioteca ya existe.
+2. Buscar tokens/componentes existentes antes de crear variantes. Hoy no hay catálogo; no afirmar que un botón o biblioteca ya existe. Cuando se trabaje con componentes shadcn, consultar su MCP según [AGENTS.md](../../AGENTS.md); adoptar Base UI y Lucide, no los estilos predeterminados sin adaptar.
 3. Usar los valores confirmados exactamente. Para geometría y patrones comunes, aplicar la base operativa aprobada en C-03/C-04. Para propuestas nuevas o pendientes explícitos, solicitar aprobación antes de utilizarlos como decisiones definitivas.
 4. Para falta de marca, alcance o comportamiento: registrar el pendiente, explicar impacto y hacer una pregunta por turno con opciones y recomendación. Esperar respuesta; actualizar este documento tras cada decisión. No inferir colores desde imágenes ni elegir dependencias por gusto.
 5. No introducir valores visuales fuera del manual sin una propuesta explícita y trazable. Una excepción debe indicar motivo, alcance y aprobación; no sobrescribe reglas globales silenciosamente.
@@ -170,10 +170,12 @@ Objetivo recomendado: **WCAG 2.2 nivel AA**; no equivale a certificación del pr
 | P-01 | Pendiente de respuesta | Valores de Error, Warning, Info y Success; no confirmados por la imagen |
 | C-03 | Aprobado por responsable tras revisión | Voz visual clara, serena y cercana; sans-serif de sistema y superficies blancas. Recomendaciones originadas por el agente, adoptadas como base operativa |
 | C-04 | Aprobado por responsable tras revisión | Mapeos semánticos de colores resueltos, geometría, tipografía, patrones, responsive y objetivo WCAG 2.2 AA de las secciones 3–7. No incluye pendientes explícitos ni certifica cumplimiento |
-| P-04 | Pendiente | Prioridad de dispositivos del profesorado, activos gráficos de marca y familia de iconos; no bloquean documentar Usuarios sin inventarlos |
+| C-05 | Aprobado por responsable | shadcn/ui + Base UI + Lucide; MCP de shadcn de proyecto para consultar componentes. No autoriza implementar interfaces en esta tarea |
+| P-04 | Pendiente | Prioridad de dispositivos del profesorado y activos gráficos de marca; no bloquean documentar Usuarios sin inventarlos |
 
 ## 10. Fuentes y límites de evidencia
 
+- [Registro de validaciones](validation.md): documentación, contraste, configuración/conexión MCP, comprobación estática, compilación y límites.
 - Revisión documental sobre frontend base `f7a8d19` de `origin/main`: [README](../../README.md), [instrucciones](../../AGENTS.md), [índice](../agent-context/INDEX.md), alcance/inventario de Usuarios, `package.json`, `src/App.tsx` y `src/styles.css`. La constitución de Spec-Kit es una plantilla sin completar, no decisiones de diseño.
 - Backend consultado solo para contexto: `docs/agent-context/project-context.md` y `docs/agent-context/decisions.md`, en checkout `cd3c2b485d5b3649310ba1807aac90f0f818d174`. Resolver su ruta mediante el índice frontend. El checkout tiene cambios ajenos; no se modificaron ni se validaron capacidades en ejecución. Los documentos leídos no equivalen a aprobación de todos sus RF.
 - Skills cargadas en el entorno inicial: `ui-ux-pro-max` (jerarquía, estados y accesibilidad), `apple-design` (legibilidad, control, feedback y movimiento reducido), `design-taste-frontend` (contención visual y coherencia). Al mover la sesión dejaron de estar disponibles; no se ejecutaron sus scripts ni inspecciones. No se adoptan paletas automáticas, materiales Apple ni reglas de landing como marca Kudlab.

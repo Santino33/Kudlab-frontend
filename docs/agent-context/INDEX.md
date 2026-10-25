@@ -28,6 +28,7 @@ Las specs registran decisiones posteriores a los resúmenes originales, pero alg
 
 - [Instrucciones para agentes](../../AGENTS.md).
 - [Manual de diseño para agentes](../design/agent-design-manual.md): fuente visual con decisiones confirmadas, propuestas y pendientes; no amplía el alcance de producto.
+- [MCP de shadcn](../design/shadcn-mcp.md): configuración de proyecto, consultas para agentes y límites; sin componentes instalados.
 - [Usuarios: alcance UI](modules/usuarios/module-summary.md) e [inventario/pendientes](modules/usuarios/capabilities.md).
 - [Plantilla de futuras specs](../specs/TEMPLATE.md).
 
