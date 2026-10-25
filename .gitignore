@@ -1,0 +1,4 @@
+# Local agent skills
+.agents/skills/
+.opencode/skills/
+skills-lock.json
