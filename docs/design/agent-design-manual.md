@@ -2,6 +2,8 @@
 
 **Estado: base visual aprobada por el responsable; colores semánticos y biblioteca de componentes pendientes.**
 
+La [comparación de bibliotecas](component-library-research.md) registra alternativas y una recomendación todavía no aprobada; no autoriza instalaciones.
+
 La aprobación posterior a la revisión de tipografía y espaciado adopta las recomendaciones de las secciones 3–7 como base operativa, incluidos sus valores numéricos y mapeos. Las palabras «propuesta» y «propuesto» en esas secciones conservan la procedencia de las recomendaciones del agente, no una solicitud de aprobación adicional. Esta aprobación no resuelve los pendientes explícitos, no selecciona una biblioteca y no equivale a una validación de interfaces implementadas. Los cuatro colores semánticos siguen sin asignar: no se eligió expresamente una de las opciones ofrecidas.
 
 ## 1. Cómo usar esta fuente de verdad
