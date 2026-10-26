@@ -1,50 +1,136 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Kudlab Frontend Constitution
+
+**Estado:** ratificada por aprobación explícita del responsable el 2026-10-25.
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Experiencia del personal y alcance explícito
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+- La interfaz DEBE estar dirigida exclusivamente a profesores; ADMIN y TEACHER son
+  roles técnicos, no públicos adicionales. Los estudiantes pueden ser sujetos de
+  registros pedagógicos, nunca usuarios de la interfaz ni de autenticación.
+- Cada feature DEBE declarar objetivo, actores, precondiciones, exclusiones y criterios
+  de aceptación antes de planificar su implementación.
+- Las specs frontend DEBEN describir la experiencia y enlazar las reglas de negocio
+  canónicas, sin copiarlas ni redefinirlas.
+- Ninguna feature documentada DEBE presentarse como aprobada, implementada o lista
+  para el piloto sin evidencia correspondiente a ese estado.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+Esto evita ampliar el producto por inferencia o confundir documentación con disponibilidad.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. Contrato backend comprobado y trazabilidad
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+- Antes de especificar una integración, se DEBE consultar el índice frontend y resolver
+  la ruta local backend; después, seguir índice backend, módulo, feature y pendientes.
+- Cada capacidad utilizada DEBE contrastarse con su spec, contrato y código actual:
+  montaje HTTP, rutas, servicios y controles de autenticación/autorización pertinentes.
+  Un contrato planificado, una descripción o una prueba no ejecutada no prueba disponibilidad.
+- La spec frontend DEBE registrar archivos backend exactos, commit, fecha, cambios
+  locales relevantes y límites de la comprobación realizada.
+- Se DEBEN separar implementación observada, decisiones confirmadas, propuestas,
+  discrepancias y pendientes. Las referencias a requisitos DEBEN identificar fuente y versión.
+- Ante una discrepancia o contrato faltante, se DEBE consultar al responsable antes
+  de fijar el comportamiento afectado. No se DEBEN inventar rutas, campos, errores,
+  permisos ni modificar el backend para acomodar una suposición frontend.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+La trazabilidad permite revisar la experiencia sin convertir el frontend en otra fuente de negocio.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### III. Seguridad y autoridad del servidor
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+- El servidor DEBE ser la autoridad de sesión y permisos vigentes. Ocultar controles
+  no autoriza operaciones, y un JWT aislado no sustituye la sesión persistida requerida.
+- Las specs DEBEN contemplar acceso no comprobado, sesión inválida y denegaciones
+  vigentes, sin mostrar contenido protegido como autorizado antes de comprobar el acceso.
+- No se DEBEN registrar contraseñas, credenciales, tokens de un solo uso ni otros
+  secretos en logs, mensajes o telemetría, ni incorporarlos a URLs de navegación creadas
+  por la UI. No se DEBEN introducir secretos backend en variables `VITE_*`.
+- No se DEBEN usar datos reales de menores en pruebas, documentación o herramientas.
+- Transporte y persistencia de sesión DEBEN resolverse con el contrato y las decisiones
+  aprobadas; esta constitución no elige cookie, token opaco, almacenamiento ni JWT.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+La interfaz informa y limita la exposición; no reemplaza los controles de seguridad del servidor.
+
+### IV. Experiencia accesible y estados verificables
+
+- Las specs DEBEN definir los recorridos aplicables de entrada, carga, envío, éxito,
+  validación, error, denegación e indisponibilidad, con recuperación explícita.
+- Se DEBE distinguir un resultado confirmado de una operación pendiente o de resultado
+  desconocido por pérdida de conexión. Los envíos repetidos y respuestas tardías DEBEN
+  tener criterios de aceptación sin imponer prematuramente una solución técnica.
+- Los formularios DEBEN tener etiquetas asociadas, operación por teclado, foco coherente
+  y mensajes anunciables. La autenticación DEBE permitir autocompletado adecuado y
+  gestores de contraseñas, sin exponer credenciales.
+- El diseño gráfico DEBE consultar las skills pertinentes según `AGENTS.md`; si faltan,
+  se DEBE declarar la limitación. Una tarea puramente documental no exige cargarlas.
+- No se DEBEN inventar destinos de navegación, enlaces sin destino ni flujos disponibles.
+  Las decisiones de producto pendientes DEBEN consultarse antes de cerrar la spec afectada.
+
+La recuperación y la accesibilidad forman parte de la experiencia, no son mejoras opcionales.
+
+### V. Cambios mínimos y evidencia honesta
+
+- Cada cambio DEBE limitarse al objetivo aprobado, conservar las convenciones del
+  repositorio y preservar trabajo ajeno. No se DEBEN añadir dependencias sin necesidad aprobada.
+- Las verificaciones DEBEN informarse con comandos, resultados y límites reales.
+  `npm test` solo comprueba tipos en la base actual: no demuestra recorridos funcionales.
+- No se DEBEN inventar resultados de pruebas de usabilidad, rendimiento, integración
+  o disponibilidad. Los criterios de éxito DEBEN ser comprobables, no resultados supuestos.
+- Las entregas DEBEN distinguir lo documentado, implementado, ejecutado y pendiente;
+  simplificar el cambio no permite omitir seguridad, accesibilidad ni manejo de errores aplicable.
+
+Un cambio pequeño solo es completo si conserva los requisitos y declara qué se verificó.
+
+## Restricciones del proyecto
+
+- La base técnica es React, TypeScript y Tailwind CSS con npm; se DEBE conservar
+  `package-lock.json`. Router, cliente HTTP y bibliotecas visuales o de estado requieren
+  una necesidad aprobada antes de incorporarse.
+- El producto es un piloto de apoyo al seguimiento pedagógico: no produce diagnósticos
+  clínicos ni sustituye la evaluación curricular.
+- En la iteración de base no se implementan pantallas, autenticación ni llamadas API.
+  Académico, Tareas, Evolución y Seguimiento quedan fuera de esta iteración.
+  Una feature posterior requiere aprobación explícita de su alcance antes de implementar.
+- La existencia de documentación o contratos no habilita funcionalidades excluidas.
+  Esta constitución tampoco decide destinos tras login, recuperación de contraseña,
+  transporte de sesión ni otras cuestiones propias de una feature o su plan.
+- Se DEBE trabajar en un worktree verificado, nunca editar el repositorio original para
+  la tarea. Se DEBEN comprobar directorio, raíz Git, rama y estado, y preservar cambios ajenos.
+  Si no existe repositorio Git o el worktree no coincide con lo solicitado, se DEBE detener el trabajo.
+
+## Flujo de trabajo y verificación
+
+1. Leer `AGENTS.md`, el contexto aplicable y esta constitución. Resolver dudas de alcance
+   con el responsable; no convertir una propuesta en una decisión aprobada.
+2. Usar `/speckit.specify` para requisitos y escenarios; incorporar la trazabilidad de
+   `docs/specs/TEMPLATE.md` sin modificar las plantillas instaladas por este motivo.
+3. Resolver bloqueos mediante aclaraciones. Esperar revisión del responsable antes de
+   avanzar a `/speckit.plan`, `/speckit.tasks` o implementación cuando así se haya solicitado.
+4. Antes de implementar, revisar consistencia entre spec, plan y tareas mediante
+   `/speckit.analyze`; cualquier ampliación de alcance requiere aprobación.
+5. Para cambios de aplicación, verificar con `npm ci`, `npm test` y `npm run build`.
+   Para documentación exclusiva, validar contenido, referencias, marcadores y diff;
+   declarar que no se ejecutaron pruebas de aplicación cuando no se ejecuten.
+6. Entregar archivos cambiados, fuentes, comandos y resultados, decisiones pendientes
+   y límites de verificación. No continuar automáticamente a una fase no autorizada.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- Esta primera versión recoge restricciones existentes y fue aprobada explícitamente
+  por el responsable el 2026-10-25. La generación de futuras enmiendas no prueba su aprobación.
+- Tras la ratificación, toda spec, plan, tarea y revisión de cambios DEBE comprobar su
+  conformidad con estos principios y con `AGENTS.md`. Ante conflicto entre instrucciones
+  del proyecto, se DEBE detener el comportamiento afectado y pedir resolución al responsable.
+- Las enmiendas DEBEN describir motivo, principios afectados, impacto y transición
+  necesaria; requieren aprobación explícita del responsable antes de considerarse vigentes.
+  Las excepciones requieren el mismo registro y aprobación; no pueden quedar implícitas.
+- El versionado DEBE seguir SemVer: MAJOR para eliminar o redefinir principios de forma
+  incompatible; MINOR para añadir principios o ampliar materialmente sus obligaciones;
+  PATCH para aclaraciones sin cambio de obligaciones. `1.0.0` identifica la primera
+  versión sustantiva, no un incremento sobre la plantilla sin versión.
+- La fecha de ratificación DEBE registrar la primera adopción real y conservarse en
+  enmiendas posteriores. La fecha de última enmienda DEBE actualizarse al modificar el texto.
+- El Sync Impact Report es material temporal de revisión, no normativa; se DEBE retirar
+  antes de confirmar en Git la constitución ratificada. Plantillas y comandos dependientes
+  leen la constitución en ejecución y no se modifican dentro de este flujo.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-10-25 | **Last Amended**: 2026-10-25

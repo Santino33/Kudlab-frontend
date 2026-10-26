@@ -2,6 +2,46 @@
 
 ## Evidencia y significado de estado
 
+**Estado frontend posterior (2026-10-25):** `src/auth/` implementa ingreso,
+comprobación, cierre actual y notificación transversal tipada; tests Node y harness
+separado disponibles. Integración local autorizada backend 3001/SPA 5173, cookie
+HttpOnly, sin rememberMe, polling, JWT ni recuperación. Ver [validación actual](../../../../specs/001-autenticacion-personal/validation.md)
+para resultados y pendientes; no implica piloto listo, merge backend ni HTTPS validado.
+Los párrafos siguientes conservan historia y no describen todos el estado frontend vigente.
+
+**Cierre posterior de P-01/P-02:** el responsable autorizó corregir y revalidar en
+backend separado. [Informe de correcciones](../../../../specs/001-autenticacion-personal/backend-fixes.md):
+rama `fix/session-cookie-guarantees` sobre ff46f8a con cambios locales identificados;
+153 pruebas backend y siete focalizadas correctas. El plan frontend queda listo para
+desglose, condicionado a usar/integrar esa revisión backend. No se hizo merge ni se
+implementó frontend; los párrafos de bloqueo siguientes conservan la evidencia anterior.
+
+**Última validación de autenticación:** backend limpio en
+`ff46f8ab5d65b81ac4f01b865852ca63b1327ec3`; ver
+[informe ejecutado](../../../../specs/001-autenticacion-personal/backend-validation.md).
+Se ejecutaron 22 pruebas documentales, 27 de regresión y cuatro diagnósticas en base
+desechable. Las diagnósticas reprodujeron P-01/P-02, no certifican sus garantías.
+OpenAPI canónico actual: `docs/api/openapi.yaml`, con `rememberMe` opcional;
+Swagger/contrato sí están montados solo para development/test. Los estudiantes siguen
+sin acceso, aunque el backend ahora monta cinco operaciones docentes sobre sus registros.
+Estas observaciones sustituyen las afirmaciones históricas de ausencia de documentación,
+consumidores académicos y pruebas ejecutadas para lo específicamente contrastado aquí;
+no revalidan ni amplían el resto del inventario. Plan frontend aún bloqueado por corrección
+backend. La topología mismo origen HTTPS ya está aprobada.
+
+Actualización de autenticación del 2026-10-25: [spec frontend aclarada, pendiente de revisión final](../../../../specs/001-autenticacion-personal/spec.md)
+y [revisión actual por capacidad](../../../../specs/001-autenticacion-personal/sources.md).
+Revalidado estáticamente el mismo commit backend indicado abajo y sus cambios locales;
+no hay implementación frontend ni pruebas API ejecutadas. El responsable confirmó Q1: A,
+Q2: A y Q3: A: estado autenticado mínimo sin destino previo ni recuperación, reintento manual
+y reconciliación del cierre incierto; transporte para el plan, sin control ni parámetro `rememberMe`.
+El resto de este inventario conserva la revisión anterior; no se declara revalidado por esta actualización.
+
+Durante planificación se amplió la inspección a Better Auth 1.7.7 instalado:
+[P-01/P-02](../../../../specs/001-autenticacion-personal/research.md) bloquean finalizar
+el plan por garantías de cierre y continuidad de cookie. No se modificaron requisitos
+ni backend; las pruebas leídas no demuestran disponibilidad ni cubren automáticamente estos fallos.
+
 Revisión estática del backend en commit `cd3c2b485d5b3649310ba1807aac90f0f818d174`. El checkout consultado tenía cambios locales: `module-summary.md` modificado y descripciones `acceso-estudiante.md`, `correo-smtp.md` y `documentacion-api-swagger.md` sin seguimiento. Se leyeron esas versiones; no se editaron ni se atribuyen íntegramente al commit. Había además cambios locales de configuración OpenCode ajenos al alcance.
 
 **Implementado** significa código presente y rutas montadas en [src/app.ts](/home/santino/Universidad/TrabajoCampo/Kudlab-backend/src/app.ts), no API desplegada/probada en este trabajo. No se ejecutaron pruebas backend, base de datos ni SMTP. Antes de implementar frontend, revalidar el checkout y sus contratos. Las pruebas existentes bajo `tests/contract/` y `tests/integration/` son fuentes complementarias futuras, no resultados obtenidos aquí.

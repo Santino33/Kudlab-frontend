@@ -1,1 +1,19 @@
 @import 'tailwindcss';
+
+/* Minimal native, system-colour presentation. No component library or brand redesign. */
+body { margin: 0; font-family: system-ui, sans-serif; color: CanvasText; background: Canvas; }
+.auth-shell { padding: 2rem 1rem; }
+.auth-card { max-width: 28rem; margin-inline: auto; }
+h1 { font-size: 1.75rem; font-weight: 650; margin-block: 1rem; }
+h2 { font-size: 1.25rem; font-weight: 650; }
+p { margin-block: .75rem; }
+form { display: grid; gap: .75rem; }
+input, button { font: inherit; min-height: 2.75rem; padding: .5rem .75rem; border: 1px solid CanvasText; border-radius: .25rem; }
+input { width: 100%; }
+button { cursor: pointer; }
+button:disabled { cursor: wait; opacity: .6; }
+:focus-visible { outline: 3px solid Highlight; outline-offset: 3px; }
+[tabindex='-1']:focus { outline: 2px solid Highlight; outline-offset: 3px; }
+dt { font-weight: 650; margin-top: .75rem; }
+dd { overflow-wrap: anywhere; margin-bottom: .75rem; }
+[aria-invalid='true'] { border-width: 2px; }
