@@ -12,6 +12,8 @@ description: "Tareas frontend de autenticación del personal ADMIN/TEACHER"
 
 **Estado:** 35/38 completadas; T026, T033 y T034 parcialmente verificadas y pendientes
 de cierre de aceptación (dos perfiles, teclado/lector e integración completa).
+Ampliación visual T039–T046: 8/8 completadas, total 43/46. Los tres pendientes del
+núcleo no se cierran por el rediseño; resultados nuevos al final de este documento.
 Puerto local backend 3001 autorizado posteriormente por el responsable (proxy ajustado).
 Evidencia y límites en [validation.md](validation.md).
 Las pruebas concretan los escenarios/criterios verificables de spec y la estrategia
@@ -24,7 +26,7 @@ transporte sintéticos. La integración de la raíz completa requiere las cuatro
 
 ## Format: `[ID] [P?] [Story] Description`
 
-Cada línea ejecutable usa checkbox, T001–T038, `[P]` solo para archivos distintos y
+Cada línea ejecutable usa checkbox, T001–T046 (38 originales + 8 visuales), `[P]` solo para archivos distintos y
 `[USn]` solo en fases de historia. `[P]` permite ejecución paralela **después** de
 cumplir sus prerrequisitos, no ignorarlos. No ejecutar dos tareas sobre el mismo archivo.
 
@@ -274,3 +276,111 @@ backend, skill, lector de pantalla o entorno, declarar el límite y no falsear e
 - I1 del análisis (redacción de US1.7 sobre correo corregible tras cualquier resultado)
   sigue como observación MEDIUM no aprobada para edición; no declarar que desapareció
   ni habilitar edición de cuenta autenticada por inferencia. No es un bloqueo crítico.
+
+## Phase 8: Presentación gráfica autorizada sobre la misma feature
+
+Autorización posterior: implementar shadcn y modificar solo plan/tasks como artefactos
+SDD, sin repetir specify/plan/tasks ni crear otra feature. Manual externo y decisiones
+exactas en «Ampliación visual» de plan.md. Feedback neutral aprobado en esta sesión;
+no asignar colores semánticos. Las restricciones históricas de no dependencias/suites
+se amplían únicamente para el catálogo y paquetes aprobados aquí.
+
+- [x] T039 Verificar worktree basado en edcf759, leer manual/investigación/MCP/validación externos, comprobar skills/herramientas y revisión backend; registrar procedencia, autorización neutral y consistencia acotada en plan.md, conservando T026/T033/T034 e I1 pendientes.
+- [x] T040 Incorporar solo Button, Input, Label, Card y Alert de shadcn adaptados, Base UI y Lucide; revisar licencias/peers, mantener atribución y registrar versiones, cn, components.json, alias y lock, sin ejecutar init destructivo ni instalar otra suite.
+- [x] T041 Aplicar tokens, tipografía, geometría y estados aprobados en src/styles.css; sin colores semánticos inferidos, opacidad de texto, sombras, fuentes remotas o dark mode nuevo.
+- [x] T042 Sustituir presentación de AuthRoot por catálogo compartido para acceso/identidad/comprobación/cierre/fallos; mantener refs, limpieza de contraseña, foco, mensajes, flushSync, listeners y controlador sin cambios de API ni rutas.
+- [x] T043 Ejercitar AuthRoot real en harness: validación, credenciales incorrectas, diez envíos, incertidumbre/reintento, sesión vigente, cierre, denegaciones y suspensión DOM; registrar casos y fallos reales en esta sección, sin datos sensibles ni afirmar pruebas no ejecutadas.
+- [x] T044 Revisar composición/contraste/foco a 320/390/768/1024/1440px, texto ampliado, reflujo y movimiento reducido; registrar evidencia/limitaciones, sin cerrar T033 por inferencia ni certificar lector o bfcache real.
+- [x] T045 Ejecutar npm ci, npm test, npm run test:auth, npm run build, git diff --check y exclusión del harness de producción; revisar diff de dependencias y comprobar cliente/controlador/estado sin cambios.
+- [x] T046 Actualizar únicamente plan.md/tasks.md en SDD con resultados y límites de esta ampliación; entregar URL de preview del worktree visual sin reemplazar ni detener servicios ajenos, sin commit/merge automático y sin declarar piloto listo.
+
+Orden: T039 → T040 → T041 → T042 → T043 → T044 → T045 → T046.
+Las tareas originales se conservan con sus 38 IDs/estado y evidencia histórica;
+estas ocho tareas no convierten la aceptación pendiente en completada.
+
+### Resultados reales T039–T046 — 2026-10-25
+
+- Rama `feat/authentication-interface`, worktree `frontend-authentication-ui`, base
+  edcf759. No se crea nueva feature ni se regenera spec/research/modelo/contratos.
+  Solo plan/tasks modificados en SDD por autorización explícita. Sin hooks configurados.
+- Manual externo de docs/design leído completo; hashes y procedencia en plan.
+  Neutral Dark 1/blanco aprobado en pregunta explícita de esta sesión; no colores
+  Error/Warning/Info/Success ni variante destructive de preset. Skills y MCP ausentes;
+  se usó HTTP al registro oficial shadcn, no herramientas MCP inexistentes.
+- Componentes shadcn adaptados manualmente desde registro base-nova, sin init/add.
+  Button usa Base UI; Input conserva elemento nativo para no añadir almacén de valor
+  que compita con refs, gestores y limpieza de contraseña. No se introduce Radix.
+  Licencia MIT de shadcn en src/components/ui/LICENSE; versiones/peers en plan.
+- npm añadió 13 paquetes (6 dependencias directas aprobadas y transitivas); no SDK,
+  router, animación, formularios, calendario ni suite adicional. Lock actualizado con npm.
+- Tokens centrales, fuente de sistema, blancos opacos, bordes/foco Dark 1, tamaños
+  16/20/28, radios 8/12, control mínimo 44px, hover de marca e inactivo #F2F2F2.
+  Iconos Lucide decorativos aria-hidden; nombres accesibles siguen siendo texto.
+
+**Regresión DOM con fetch manual sin red (harness existente, AuthRoot real):**
+
+| Caso | Resultado observado |
+| --- | --- |
+| Submit vacío | Errores por campo; foco en Correo |
+| Diez submit durante pendiente | Una petición; botón disabled, texto de progreso |
+| Rechazo 401 de login | Mensaje uniforme, foco en resumen, correo conservado y contraseña vacía |
+| Login de respuesta perdida | Consulta de sesión antes de nuevo intento; no replay de contraseña |
+| Consulta 503 | Sin formulario operativo ni identidad; reintento explícito |
+| Consulta válida | Identidad sintética propia y cierre, sin destinos nuevos |
+| 403 actual | Retira identidad durante consulta; aviso persiste tras sesión válida |
+| 401 anterior | DOM y foco del título permanecen sin cambios |
+| Pagehide | Identidad retirada del DOM en el mismo evento |
+| Pageshow + visibilidad | Una comprobación; sin identidad antes de responder |
+| Cierre de respuesta perdida | Sin identidad, incertidumbre y reintento que consulta primero |
+| Sesión válida al reintentar cierre | Solo repite cierre solicitado; éxito vuelve a formulario |
+
+En esa entrada se observaron cero recursos /api. El fondo de botón disabled se
+comprobó asentado en RGB(242,242,242); durante la transición de 150ms puede verse el
+color anterior. Texto y borde nunca dependen de opacidad ni del cambio de color solo.
+
+**Responsive y accesibilidad (alcance preciso):**
+
+- Ensayo con iframes de navegador del mismo origen a 320/390/768/1024/1440 CSS px,
+  con texto 100% y 200%. Se midieron scrollWidth, límites del panel y controles.
+  Primera revisión detectó controles fuera del panel a 320px/200%; se corrigieron
+  tracks minmax(0,1fr), mínimos de grid y wrapping de etiquetas/texto de botones.
+  Segunda revisión: diez combinaciones sin desbordamiento general o de controles,
+  controles dentro del panel y alturas mínimas 44px (88px al 200%).
+- Errores de campo, credenciales y sesión confirmada revisados también a 320/390/1440
+  con texto 200%, sin desbordamiento; alertas adaptan icono y texto en una columna
+  en estrecho. No se confunde tamaño de captura con viewport responsive real.
+- Contraste sRGB recalculado: Dark 1 sobre Primary 6.47:1, Secondary 5.15:1,
+  Disabled 11.89:1, blanco 13.31:1. No es certificación WCAG completa.
+- En raíz real, click inicial para enfocar contenido y luego Tab recorrió correo →
+  contraseña → submit; Enter vacío enfocó correo y mostró errores asociados.
+  Controles por teclado mostraron outline sólido 2px/offset 2px Dark 1. Ingreso
+  TEACHER sintético mediante controles/Enter terminó con foco en título y sin input
+  de contraseña. Tab a Cerrar sesión + Enter volvió al formulario/título.
+- Capturas de login e identidad inspeccionadas: composición de un panel, sin sombra,
+  jerarquía del manual, sin destinos/acciones extra; exclusivamente datos sintéticos.
+- Reglas prefers-reduced-motion y forced-colors revisadas en CSS; preferencia real
+  reducida no estaba activa. No se ejecutó emulación de alto contraste, zoom de
+  navegador 400%, lector de pantalla ni gestor real/portapapeles. Esos límites no se
+  presentan como casos aprobados. bfcache real y T026/T033/T034 siguen pendientes.
+
+**Integración y comandos finales:**
+
+- Puerto 5173 estaba libre; Vite se inició desde este worktree visual sin detener
+  servidores ajenos. Backend propio de prueba 3001 no estaba activo y se reanudó
+  contra la BD exclusiva ya creada `kudlab_frontend_auth_implementation`, puerto
+  34159. Sin reset, nuevas fixtures, bases compartidas ni cambios de archivos backend.
+- Integración real en raíz: ingreso y cierre de TEACHER sintético correctos mediante
+  el proxy existente. No se reejecutó suite backend ni se certificó HTTPS/producción.
+- `npm ci --no-audit --no-fund`: correcto, 54 paquetes desde lock.
+- `npm test`: correcto, tipos incluido harness. `npm run test:auth`: 63/63 correctas.
+- `npm run build`: correcto, CSS 15.20 kB / gzip 4.01 kB; JS 274.87 kB / gzip 86.59 kB.
+  Son tamaños observados, no benchmark ni cumplimiento de SLA.
+- Inspección ejecutada de dist/imports: sin páginas, identidad o controles sintéticos
+  del harness en producción. git diff --check correcto.
+- git diff comprobó sin cambios cliente, controlador, estado, tests/auth, spec,
+  research, modelo, contratos, validation.md, README y contexto frontend.
+- Sin commit, merge, cambio de reglas backend o cierre ficticio de pendientes.
+
+Preview: http://localhost:5173/; fixture: /tests/browser/auth-harness.html.
+Estado de ampliación: 8/8 tareas visuales ejecutadas con los límites anteriores;
+estado total 43/46, no aceptación completa ni piloto listo. I1 permanece sin editar.

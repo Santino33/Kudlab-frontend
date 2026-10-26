@@ -1,19 +1,78 @@
 @import 'tailwindcss';
 
-/* Minimal native, system-colour presentation. No component library or brand redesign. */
-body { margin: 0; font-family: system-ui, sans-serif; color: CanvasText; background: Canvas; }
-.auth-shell { padding: 2rem 1rem; }
-.auth-card { max-width: 28rem; margin-inline: auto; }
-h1 { font-size: 1.75rem; font-weight: 650; margin-block: 1rem; }
-h2 { font-size: 1.25rem; font-weight: 650; }
-p { margin-block: .75rem; }
-form { display: grid; gap: .75rem; }
-input, button { font: inherit; min-height: 2.75rem; padding: .5rem .75rem; border: 1px solid CanvasText; border-radius: .25rem; }
-input { width: 100%; }
-button { cursor: pointer; }
-button:disabled { cursor: wait; opacity: .6; }
-:focus-visible { outline: 3px solid Highlight; outline-offset: 3px; }
-[tabindex='-1']:focus { outline: 2px solid Highlight; outline-offset: 3px; }
-dt { font-weight: 650; margin-top: .75rem; }
-dd { overflow-wrap: anywhere; margin-bottom: .75rem; }
-[aria-invalid='true'] { border-width: 2px; }
+/* Kudlab manual C-01/C-03/C-04. Status colours remain unassigned. */
+:root {
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #1c2e57;
+  background: #fff;
+  color-scheme: light;
+  --background: #fff;
+  --foreground: #1c2e57;
+  --card: #fff;
+  --card-foreground: #1c2e57;
+  --primary: #53c0f3;
+  --primary-foreground: #1c2e57;
+  --brand-hover: #4dabd7;
+  --disabled: #f2f2f2;
+  --border: #1c2e57;
+  --input: #1c2e57;
+  --ring: #1c2e57;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-brand-hover: var(--brand-hover);
+  --color-disabled: var(--disabled);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-lg: .5rem;
+  --radius-xl: .75rem;
+}
+
+@layer base {
+  body { margin: 0; font-size: 1rem; }
+  button, input { font: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  [tabindex='-1']:focus { outline: 2px solid var(--ring); outline-offset: 2px; }
+  a { color: var(--foreground); text-decoration: underline; text-underline-offset: .25rem; }
+}
+
+.auth-page { display: flex; min-height: 100svh; flex-direction: column; }
+.auth-header { border-bottom: 1px solid var(--border); }
+.auth-header-inner { display: flex; max-width: 75rem; align-items: center; justify-content: space-between; gap: 1rem; margin-inline: auto; padding: 1.5rem 2rem; }
+.auth-brand { font-size: 1.25rem; font-weight: 600; line-height: 1.3; }
+.auth-eyebrow { font-size: .875rem; line-height: 1.5; }
+.auth-main { display: grid; flex: 1; align-content: center; padding: 3rem 2rem; }
+.auth-content { width: 100%; max-width: 32rem; min-width: 0; margin-inline: auto; }
+.auth-heading { font-size: 1.75rem; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
+.auth-form { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 1.5rem; }
+.auth-field { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: .5rem; }
+.auth-field label, .auth-field-error { overflow-wrap: anywhere; }
+.auth-required { font-size: 1rem; font-weight: 400; }
+.auth-field-error { display: flex; align-items: flex-start; gap: .5rem; }
+.auth-field-error svg { flex: 0 0 1.25rem; margin-top: .25rem; }
+.auth-identity { display: grid; gap: 1rem; }
+.auth-identity dt { font-size: .875rem; line-height: 1.5; }
+.auth-identity dd { margin-top: .25rem; font-weight: 500; overflow-wrap: anywhere; }
+.auth-footer { width: 100%; max-width: 75rem; margin-inline: auto; padding: 0 2rem 1.5rem; text-align: left; font-size: .875rem; line-height: 1.5; }
+
+@media (max-width: 639px) {
+  .auth-header-inner { align-items: flex-start; flex-direction: column; gap: .25rem; padding: 1rem; }
+  .auth-main { align-content: start; padding: 2rem 1rem; }
+  .auth-footer { padding-inline: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+@media (forced-colors: active) {
+  :focus-visible, [tabindex='-1']:focus { outline-color: Highlight; }
+}
