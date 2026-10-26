@@ -1,5 +1,7 @@
 # Revalidación para planificación — 2026-10-25
 
+**Estado vigente de la base frontend:** rama `feat/gestionar-usuarios`, documentos guardados en `72bd7ca` y main `664cc5c` integrado por `e45b05d`. La sección final [Preparación del worktree para desarrollo](#preparación-del-worktree-para-desarrollo) registra evidencia actual. Las referencias iniciales a SPA vacía/constitución sin ratificar describen la revisión histórica, no la base integrada.
+
 ## Revisión y límites
 
 Frontend: worktree `spec-usuarios`, base `f0612594ea6f4dff7824cf8a42642947aef7c054`, con los documentos de esta feature e inventario modificados por el mismo trabajo. No se descartan ni sobrescriben cambios de terceros.
@@ -77,3 +79,47 @@ Resto de routers/servicios de Usuarios y specs 001/002/004: lectura anterior reg
 - Validación documental detectó dos enlaces históricos de propuestas backend ya ausentes; se conservaron como rutas citadas sin enlace y se documentó su condición. Los enlaces actuales y los artefactos de fases 0/1 se verifican al cerrar.
 - Post-hooks: `.specify/extensions.yml` no existe al revisar al finalizar; sin hooks `after_plan` que despachar. Sin comandos de extensión omitidos.
 - Recorridos futuros, cookies reales, SMTP, interacción con profesores y accesibilidad no se consideran ejecutados por escribir estos artefactos. El script futuro `test:usuarios` y sus pruebas no se han implementado/ejecutado; no se crearon tareas, componentes, dependencias ni código de aplicación.
+
+## Preparación del worktree para desarrollo
+
+Autorización del responsable: crear rama, guardar documentación e integrar main, sin comenzar implementación de Usuarios.
+
+### Git y conservación
+
+- Worktree verificado: `/home/santino/.local/share/opencode/worktree/c4fd7d/spec-usuarios`; rama `feat/gestionar-usuarios` creada desde `f061259`.
+- Commit `72bd7ca`: specs y cambios documentales revisados del trabajo de Usuarios; `.specify/feature.json` local/ignorado conservado con `specs/001-gestionar-usuarios`.
+- Merge `e45b05d`: incorpora main `664cc5c`. Único conflicto en `docs/agent-context/modules/usuarios/capabilities.md`, resuelto preservando evidencia de autenticación y planificación de Usuarios, claramente separadas; no se eligió un lado descartando el otro.
+- `git merge-base --is-ancestor main HEAD`: correcto después del merge. Sin reset, stash, descartes, cambios al checkout original, publicación remota o modificaciones backend.
+- Autenticación, catálogo/CSS, tests/harness, paquete/lock/configuración y constitución heredados de main sin cambios de implementación propios. Los deltas de Usuarios (`rememberMe: false`, origen, recuperación, gestión) siguen futuros: no se aplicaron al copiar la base.
+
+### Backend corregido identificado, no ejecutado
+
+Backend principal sigue en `ff46f8ab5d65b81ac4f01b865852ca63b1327ec3`, limpio al comprobar. No contiene automáticamente P-01/P-02 por integrar el frontend.
+
+Se leyó [backend-fixes.md](../001-autenticacion-personal/backend-fixes.md) y se comprobó `/tmp/opencode/kudlab-auth-backend-validation`, rama `fix/session-cookie-guarantees`, misma base `ff46f8a`, con los cuatro cambios locales y prueba nueva documentados. Los cinco SHA-256 de ese informe coinciden exactamente con:
+
+- `src/app.ts`
+- `src/auth/session-guard.ts`
+- `docs/api/openapi.yaml`
+- `docs/agent-context/modules/usuarios/features/autenticacion.md`
+- `tests/integration/frontend-auth-validation.test.ts`
+
+Se leyó además el diff de `src/app.ts`/`src/auth/session-guard.ts`: confirmación persistida de cierre y propagación de cabeceras de renovación, sin cambiar esta revisión. No se leyeron secretos ni se arrancó backend, creó BD o reejecutaron sus pruebas. Las cifras históricas 153/153 y 7/7 siguen atribuidas al informe anterior, no a esta preparación. Para integración real usar esta revisión corregida o equivalente comprobada y entorno aislado autorizado.
+
+### Comandos ejecutados en este worktree tras el merge
+
+| Comando | Resultado y límite |
+| --- | --- |
+| `npm ci` | Correcto, 54 paquetes instalados, cero vulnerabilidades reportadas |
+| `npm test` | Correcto; solo tipos, incluye harness TSX heredado |
+| `npm run test:auth` | **63/63 correctas**, lógica/HTTP simulado; no prueba API, cookies o accesibilidad reales |
+| `npm run build` | Correcto; Vite compila la autenticación gráfica existente |
+| `git diff --check` | Correcto tras merge; se repite al cerrar alineación documental |
+
+### Alcance y punto de partida
+
+T001 de Usuarios completada como preparación; T002–T056 pendientes. Se alinearon spec, investigación, modelo, contratos, quickstart, plan/tareas y registro de fuentes con auth/UI existentes y constitución ratificada. No se generó código de Usuarios, nuevos componentes, script `test:usuarios` o fixtures de negocio.
+
+Puede iniciarse el desarrollo incremental frontend reutilizando la base real, con las adaptaciones de esta feature probadas explícitamente y sin reconstruir autenticación. Mantener Q1–Q3, aprobación gráfica final y gates de entorno/SMTP/HTTPS. La verificación de esta preparación no es una nueva ejecución completa de `/speckit.analyze` ni certifica integración/piloto; revisar consistencia antes de implementar y detener el comportamiento afectado ante discrepancias.
+
+Verificación final de artefactos: 56 IDs consecutivos, solo T001 marcada; 25 FR/seis SC conservados, enlaces actuales existentes y sin marcadores de conflicto/aclaración nuevos. `check-prerequisites.sh --json --require-spec --require-tasks --include-tasks` resuelve correctamente esta feature en la rama nueva mediante el estado local conservado. Comparación `git diff --exit-code main -- src tests components.json package.json package-lock.json tsconfig.json vite.config.ts .specify/memory/constitution.md` sin diferencias: aplicación, configuración y constitución coinciden con la base integrada, sin desarrollo de Usuarios iniciado durante la preparación.

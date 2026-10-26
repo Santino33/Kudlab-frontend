@@ -2,10 +2,12 @@
 
 **Fecha:** 2026-10-25. **Estado:** completa para el perfil local aprobado. Fuentes/versiones en [revalidacion-plan.md](revalidacion-plan.md). Decisiones de producto Q1–Q3 permanecen en [spec.md](spec.md).
 
+**Base actualizada:** main `664cc5c` ya integrado en `feat/gestionar-usuarios` por `e45b05d`. Reutilizar `src/auth/`, catálogo/CSS, pruebas `tests/auth/` y harness existentes; las hipótesis iniciales de app vacía quedaron superadas. El [plan](plan.md) define los deltas pendientes y la entrega gráfica integrada, no una segunda autenticación.
+
 ## R1 — Base existente y cambio mínimo
 
 - **Decision:** React/TypeScript/Tailwind/Vite existentes, estado React, Fetch y AbortController. Un módulo Usuarios; no router, Axios, SDK Better Auth frontend, librería de formularios/validación/estado/caché.
-- **Rationale:** App vacía, sin piezas que migrar. El alcance es finito y no necesita duplicar lógica backend. Reducir dependencias no elimina estados, privacidad o aceptación.
+- **Rationale:** La base inicial era vacía, pero ahora se incorporó auth/UI de main: extenderla es menor que recrearla. El alcance finito no necesita duplicar lógica backend. Reducir dependencias no elimina estados, privacidad o aceptación.
 - **Alternatives considered:** React Router para navegación cliente, React Query para caché y SDK de autenticación: no necesidad aprobada; aumentarían superficie y persistencia sin resolver los bloqueos del contrato.
 
 ## R2 — Cookies y persistencia confirmadas
@@ -38,21 +40,21 @@
 
 ## R6 — Pruebas sin librerías nuevas
 
-- **Decision:** Mantener tipos/build y proponer runner nativo Node 24 para módulos puros `.ts`, con pruebas `.test.mjs` y `node:assert`. Imports de valor explícitos `.ts` sin alias, `import type` separado, `allowImportingTsExtensions` junto a `noEmit` al implementar. Probar capacidades nativas del runner antes de integrar script, sin instalación. Dejar TSX/DOM y E2E como validación manual guiada de esta iteración; no ocultar esa limitación.
-- **Rationale:** No hay harness funcional ni paquetes de test. Node 24 puede ejecutar TypeScript con tipos borrables; helpers no necesitan TSX ni alias. Tests separados de React evitan dependencias por anticipación.
+- **Decision:** Conservar tipos/build, `test:auth` y tests/harness de main; agregar `test:usuarios` con runner nativo Node 24 para módulos puros `.ts`, pruebas `.test.mjs` y `node:assert`. Imports `.ts` sin alias, `import type` separado y configuración `allowImportingTsExtensions`/`noEmit` ya presentes. TSX/DOM/E2E y revisión gráfica se validan en navegador con las vistas reales; no atribuirlos al runner Node.
+- **Rationale:** Main ya aporta pruebas de lógica/HTTP y un harness sintético con AuthRoot real, sin dependencias de runner. Node 24 ejecuta tipos borrables; conservar esa infraestructura y extender los casos evita duplicarla. El harness no sustituye integración backend ni accesibilidad real.
 - **Alternatives considered:** Vitest/Testing Library/Playwright aportarían cobertura DOM/browser pero requieren necesidad/aprobación e instalación posteriores. Typecheck solo no prueba estados, errores o seguridad funcional.
 
 ## R7 — Sistema visual aprobado, no ejemplos de demo
 
 - **Decision:** shadcn/ui exclusivamente Base UI y Lucide al implementar, adaptado al manual. El responsable aprobó durante planificación el fallback neutral Dark 1 sobre blanco, texto explícito e icono etiquetado cuando aporte información; sin asignar Error/Warning/Info/Success ni rojo destructivo.
-- **Rationale:** No hay catálogo local. `opencode mcp list` confirmó shadcn conectado; búsquedas y detalles reales `@shadcn/button` y `@shadcn/alert-dialog` reportaron dependencias Radix y el ejemplo usó `asChild`: se rechazaron como base de incorporación. Documentación oficial `/docs/components/base/button` y `/base/alert-dialog` muestra alternativas Base UI (`render`), sin autorizar copiar sus estilos o textos de borrado.
+- **Rationale:** Ahora hay catálogo local heredado de main (Button/Input/Label/Card/Alert), configuración base-nova y dependencias Base UI/Lucide: reutilizar sus adaptaciones. La investigación inicial del MCP encontró ejemplos Radix y `asChild`, rechazados como incorporación automática. Consultar variantes oficiales Base UI para los componentes nuevos mínimos, sin reinicializar catálogo ni copiar estilos/textos de demo.
 - **Alternatives considered:** Radix por default del registro, controles ad hoc para evitar instalación, paleta automática o rojo inventado: contradicen decisiones aprobadas. La selección concreta de componentes/paquetes debe revalidarse al incorporar, no ejecutar `init`/`add` durante planificación.
 - **Limit:** Skills gráficas no disponibles; solo manual/MCP/docs, sin composición visual, prototipo o accesibilidad verificada.
 
 ## R8 — Constitución y backend nuevo
 
-- **Decision:** No ratificar placeholders de constitución; aplicar AGENTS.md/manual/decisiones existentes y repetir gates después del diseño. Actualizar evidencia a backend `ff46f8a`, sin borrar la revisión histórica `cd3c2b4`.
-- **Rationale:** La constitución sin completar no demuestra principios adoptados. Backend ahora publica catálogo `docs/api/openapi.yaml` y monta rutas académicas/documentación; eso corrige inventario de disponibilidad, no amplía scope frontend.
+- **Decision:** Aplicar constitución 1.0.0 ya ratificada e integrada desde main, junto a AGENTS.md/manual/decisiones existentes; no ratificar ni enmendar una nueva. Conservar evidencia backend `ff46f8a` y la revisión histórica `cd3c2b4`, añadiendo comprobación de la revisión corregida externa en el registro de preparación.
+- **Rationale:** La plantilla del checkout inicial fue sustituida por la constitución real al integrar main. El catálogo y rutas nuevas backend corrigen inventario de disponibilidad, no amplían scope frontend ni autorizan editar aquel repositorio.
 - **Alternatives considered:** Copiar reglas de ejemplos constitucionales, bloquear por un principio inexistente o incorporar nuevas features backend automáticamente: no tiene fundamento. Las diferencias que afectan Usuarios se documentan y las decisiones se confirman, no se parchea backend para hacerlas coincidir.
 
 ## Cierre de investigación

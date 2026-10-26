@@ -1,6 +1,6 @@
 # Feature Specification: Gestionar usuarios del personal
 
-**Feature Branch**: sin rama creada por hook; worktree `spec-usuarios` sobre `f061259` (HEAD separado).
+**Feature Branch**: `feat/gestionar-usuarios`, worktree `spec-usuarios`; documentos guardados en `72bd7ca` e integración de `main@664cc5c` mediante merge `e45b05d`, autorizados por el responsable. No fue una rama creada por hook.
 
 **Created**: 2026-10-25
 
@@ -210,9 +210,9 @@ Metas propuestas, no resultados obtenidos ni compromisos heredados del análisis
 - **Unidad**: El directorio contiene ocho descripciones; se produce una feature agregada, no ocho specs ni una selección arbitraria de una descripción.
 - **Actores confirmados**: Solo profesores; ADMIN/TEACHER son roles técnicos. Referencias antiguas a interacción estudiantil no amplían alcance.
 - **Reglas reutilizadas**: Políticas de identidad, invitación, correo, contraseña, roles, conservación, recuperación e inactividad permanecen en specs backend 001–003, no se sustituyen por reglas nuevas aquí.
-- **Evidencia**: Backend leído estáticamente; sin prueba de despliegue, base, correo ni integración. Frontend sigue sin pantallas, autenticación o llamadas de servicio en esta entrega.
+- **Evidencia**: Se heredó de main autenticación, componentes gráficos y pruebas; no se han implementado aún gestión de Usuarios/recuperación ni sus adaptaciones de transporte. Backend revisado estáticamente y revisión corregida disponible identificada en [registro de preparación](revalidacion-plan.md#preparación-del-worktree-para-desarrollo); sin nueva prueba de integración, despliegue, base o correo en esta preparación.
 - **Prioridades y metas**: P1/P2 ordenan alcance habilitado y dependencias bloqueadas, no certifican piloto. US7/US8 están diferidas. SC-002–004 y FR-022 son propuestas frontend, no requisitos atribuidos a originales. No se define composición gráfica ni componentes.
-- **Gobernanza**: La constitución local sigue como plantilla sin completar; no se presume ratificada ni se modifica. Rigen AGENTS.md y decisiones confirmadas.
+- **Gobernanza**: La constitución local 1.0.0 ratificada se incorporó sin cambios desde main. Rigen sus principios, AGENTS.md, el manual y las decisiones confirmadas; la preparación no enmienda la constitución ni amplía Q1–Q3.
 
 ## Feature frontend
 

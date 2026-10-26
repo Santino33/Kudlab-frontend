@@ -2,9 +2,13 @@
 
 Contrato de comportamiento futuro, no implementación ni maqueta gráfica. Deriva de [spec.md](../spec.md), [modelo](../data-model.md) y [consumo permitido](api-consumption.md). Español para profesores, roles ADMIN/TEACHER sin nuevos públicos.
 
+**Base integrada:** reutilizar `src/auth/AuthRoot.tsx`, controlador/estado de `src/auth/`, componentes locales y CSS de main `664cc5c`, ya presentes en esta rama. La [matriz gráfica del plan](../plan.md#diseño-gráfico-integrado--referencia-obligatoria-de-implementación) concreta composición, anchos, estados por pantalla y capturas de aceptación: no basta implementar solo comportamiento ni hacer un diseño separado de las vistas conectadas. No crear Access/session ni sistema visual paralelos.
+
 ## Navegación de alcance finito
 
 Rutas frontend de diseño, no rutas backend. Links nativos producen carga de página; App resuelve pathname y consulta sesión antes de mostrar destinos protegidos. No instalar router ni implementar uno genérico. Ruta desconocida presenta destino no disponible y acceso/inicio autorizado, sin abrir módulos de relleno.
+
+No depender solo del arranque/remontaje: conservar el manejo existente pageshow/pagehide/visibilitychange de AuthRoot/controlador, deduplicar revalidación y retirar DOM/snapshot/datos protegidos antes de suspender o restaurar desde BFCache. Ninguna respuesta de generación antigua repone datos o roba foco; no desactivar BFCache ni mantener sesión por polling. La integración futura de negocio/recuperación debe ampliar esta garantía existente.
 
 | Ruta frontend | Acceso | Contenido/efecto |
 | --- | --- | --- |
@@ -44,7 +48,7 @@ No construir gestor genérico de acciones/roles. Reutilizar patrón de confirmac
 
 ## Sistema visual y accesibilidad
 
-Aplicar `docs/design/agent-design-manual.md`; componentes shadcn/ui Base UI con Lucide, no primitivas Radix de los ejemplos MCP. No hay catálogo local instalado. Incorporación de los mínimos necesarios se hará en tarea autorizada después de consultas oficiales y revisión de diff/paquetes.
+Aplicar `docs/design/agent-design-manual.md`; reutilizar componentes shadcn/ui Base UI con Lucide ya instalados/adaptados desde main, no primitivas Radix de ejemplos MCP. Incorporar solo los componentes adicionales mínimos en tarea autorizada, después de consultas oficiales y revisión de diff/paquetes, sin regenerar catálogo/configuración.
 
 - Primary `#53C0F3`, hover Secondary `#4DABD7`, texto/borde/foco Dark 1 `#1C2E57`, fondo disabled `#F2F2F2`. Texto de acción sobre Primary/Secondary siempre Dark 1, no blanco.
 - Fallback neutral aprobado en planificación: Dark 1/blanco con título/texto explícitos e icono con etiqueta cuando aporte información. Error/Warning/Info/Success siguen sin colores asignados; no crear rojo destructivo, badge de color ni alias semántico a Primary.

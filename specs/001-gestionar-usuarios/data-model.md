@@ -35,13 +35,15 @@ Nombre máximo 200 y nueva contraseña entre 8 y 128, con mayúscula ASCII, min�
 
 ### Acceso
 
-`checking → authenticated(identity) | anonymous | unavailable`.
+Reutilizar el AccessState real de `src/auth/state.ts`: `checking`, `signedOut`, `signingIn`, `authenticated`, `checkUnavailable`, `signingOut`, `signOutUnconfirmed`, con generación/contexto y datos filtrados según tipo. El esquema conceptual inicial `checking → authenticated(identity) | anonymous | unavailable` no es otra máquina de estados a implementar ni reemplaza los estados más ricos de main.
+
+Identity también se importa de `src/auth/state.ts`; no duplicarla en Usuarios. AuthRoot/controller siguen como dueño único de ciclo de página: suspend/resume limpia snapshot y DOM al ocultar/pagehide, revalida al restaurar sin remontaje obligatorio y descarta generaciones antiguas. Extender ese retiro a datos de cuentas, borradores y token de recuperación, no solo a identidad.
 
 - Inicio/recarga de destino protegido: `checking`, sin datos anteriores visibles; consulta de sesión determina salida.
 - Login confirmado: identidad válida, comprobar sesión y pasar a destino autorizado; no sintetizar accountId.
 - 401 protegido: retirar identidad/datos y pasar a acceso requerido. No confundir con 401 de login, que son credenciales inválidas.
 - 403 de gestión: retirar datos de esa operación y consultar una vez sesión. Si ahora TEACHER, estado mínimo; si falla verificación, no mostrar gestión anterior.
-- Logout confirmado o sesión ya inválida: `anonymous`. Error/red: retirar vista protegida y presentar cierre no confirmado; no borrar HttpOnly manualmente ni asegurar revocación remota.
+- Logout confirmado o sesión ya inválida: `signedOut`. Error/red: retirar vista protegida y presentar `signOutUnconfirmed`; no borrar HttpOnly manualmente ni asegurar revocación remota.
 - No polling, actividad de ratón ni emisión de JWT como mantenimiento.
 
 ### Consulta de cuentas/detalle

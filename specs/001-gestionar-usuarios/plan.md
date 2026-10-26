@@ -2,7 +2,7 @@
 
 **Feature**: `001-gestionar-usuarios` | **Date**: 2026-10-25 | **Spec**: [spec.md](spec.md)
 
-**Worktree de documentación**: `spec-usuarios`, HEAD separado `f061259`; conserva los artefactos locales de esta feature. **Nueva referencia de implementación/diseño**: `main` en `664cc5c` (merge de `807c3ff`, interfaz de autenticación). No se ha hecho merge/rebase, copiado código de aplicación ni cambiado dependencias en este worktree al actualizar este plan.
+**Worktree**: `spec-usuarios`, rama `feat/gestionar-usuarios`. Documentos guardados en `72bd7ca`; **main `664cc5c` integrado mediante merge `e45b05d`**, autorizado por el responsable, con único conflicto documental resuelto conservando ambas fuentes. La autenticación, catálogo, estilos y constitución son ahora base real de esta rama. No se ha implementado código nuevo de Usuarios ni aplicado los deltas de transporte previstos.
 
 **Estado**: plan revisado por petición expresa del responsable: la entrega futura debe incluir **interfaz gráfica terminada e integrada con los recorridos reales**, siguiendo `docs/design/` y la autenticación de `main`. No basta un API client, lógica, estilos sueltos, galería de componentes o demo con datos falsos. Los bloqueos Q1–Q3 se mantienen.
 
@@ -26,7 +26,7 @@ La nueva instrucción aprueba seguir **el diseño gráfico de main**. No modific
 
 **Target Platform**: Web con rutas finitas y enlaces nativos; sin hash/router genérico. Perfil de esta feature confirmado: SPA `http://localhost:5173`, API `http://localhost:3000`, recuperación `/recuperar-acceso/confirmar`. Producción requiere HTTPS y cookies/topología same-site compatibles, origen autorizado y fallback a index.html, con configuración operativa comprobada, no dominios inventados.
 
-**Project Type**: Extensión de una única aplicación existente. El checkout documental sigue antiguo; integrar main de forma revisada y preservando artefactos es prerrequisito de implementación, no efecto automático de este plan.
+**Project Type**: Extensión de una única aplicación existente. Main ya integrado de forma revisada, sin descartar artefactos; queda revalidar la base si vuelve a cambiar antes de implementar, no repetir la integración ya completada.
 
 **Performance Goals**: Metas de la spec SC-002/003 (<3 min invitar/corregir, <2 min acceso/cierre, nueve de diez sin ayuda) y SC-004 de comprensión. No añadir métricas o dashboards académicos. Interfaz sin saltos innecesarios de layout durante envío; no introducir esperas artificiales o animación ornamental.
 
@@ -36,7 +36,7 @@ La nueva instrucción aprueba seguir **el diseño gráfico de main**. No modific
 
 ## Constitution Check
 
-La referencia `main:.specify/memory/constitution.md` **ya es constitución 1.0.0 ratificada** el 2026-10-25. La afirmación anterior de «solo plantilla» describía el checkout viejo: no sirve como gate vigente sobre main. No se modifica ni ratifica otra constitución en esta tarea. T001 debe incorporar/verificar la versión ratificada junto a main sin borrar los artefactos de Usuarios; actualizar referencias históricas que sigan afirmando que no hay constitución/código.
+La constitución local **1.0.0 ratificada** el 2026-10-25 se incorporó idéntica desde main. La afirmación anterior de «solo plantilla» describía el checkout viejo; no se aplica a esta rama. No se modifica ni ratifica otra constitución. La preparación T001 incorpora/verifica la base y alinea referencias sin borrar artefactos de Usuarios.
 
 | Principio/gate | Aplicación al diseño y comprobación posterior |
 | --- | --- |
@@ -46,10 +46,10 @@ La referencia `main:.specify/memory/constitution.md` **ya es constitución 1.0.0
 | IV. Experiencia accesible/verificable | Vistas completas y estados reales, foco/lector/teclado, respuestas tardías, envíos y resultados inciertos, comparación gráfica por historia |
 | V. Cambio mínimo/evidencia | Reutilizar diseño/código/pruebas de main; no regenerar componentes ni fabricar resultados de integración o usabilidad |
 | Base visual aprobada | Manual + componentes/tokens de main; nuevos componentes solo Base UI; fallback neutral confirmado, colores semánticos siguen pendientes |
-| Preparación de integración | Gate **pendiente de ejecución**: main declara dependencia de correcciones backend P-01/P-02 todavía externas; confirmar revisión disponible y garantías antes de dar integración por válida |
-| Alcance del comando actual | Solo plan/tasks; sin merge, componentes, dependencias ni implementación. Verificar docs y declarar límites |
+| Preparación de integración | Revisión corregida externa identificada: cinco hashes coinciden con backend-fixes y diff app/guardias leído. **Pruebas integradas pendientes**: backend main sigue sin esos cambios; no equiparar identificación estática a API en ejecución |
+| Alcance de preparación autorizado | Rama, commit documental, merge main, resolución documental, alineación de artefactos y verificaciones. Sin implementación nueva, cambios backend, publicación o despliegue |
 
-El diseño es compatible con los principios revisados; los gates de incorporar main, verificar backend, ejecutar casos gráficos/funcionales y aceptación del responsable no se marcan superados por escribir documentos. Las skills gráficas no están disponibles en esta sesión: se declara la limitación y se usa manual, código y navegador, sin fingir haberlas aplicado.
+El diseño es compatible con los principios revisados. La incorporación real de main y la identificación estática del backend corregido están verificadas; pruebas integradas/gráficas/funcionales de la extensión y aceptación del responsable siguen pendientes. Las skills gráficas no estaban disponibles al revisar el diseño: se usaron manual, código y navegador sin fingir haberlas aplicado; comprobar disponibilidad de nuevo al implementar.
 
 ## Fuentes y revisión de la referencia gráfica
 
@@ -140,7 +140,7 @@ specs/001-gestionar-usuarios/
 └── evidence/                   # Futura evidencia saneada, no resultados fabricados
 ```
 
-La spec/modelo/contratos previos siguen definiendo alcance, campos y allowlist. Sus afirmaciones históricas de base vacía/constitución sin ratificar, y los nombres propuestos Access/session, deben alinearse con main al preparar implementación (T001), sin reabrir Q1–Q3 ni autorizar nuevas funciones. Este turno solo modifica plan/tasks.
+La spec/modelo/contratos conservan alcance, campos y allowlist; se alinearon las afirmaciones de estado actual con la base integrada, constitución y reutilización de auth. Los registros de revisión inicial permanecen como historia explícita. No se reabren Q1–Q3 ni se crean Access/session paralelos.
 
 ### Source Code (repository root)
 
@@ -195,7 +195,7 @@ Antes de implementar revisar nuevamente consistencia de artefactos y corregir re
 
 ## Implementation Strategy y verificación
 
-1. Preparar base main sin descartar docs; conservar constitución, catálogo, tests/auth y harness; revalidar dependencia backend antes de integrar.
+1. Base main preparada sin descartar docs, con constitución, catálogo, tests/auth y harness conservados; revisión backend corregida identificada por hashes. Revalidar antes de integración real si cambia y preparar entorno aislado solo con autorización.
 2. Baseline gráfico de auth + catálogo compartido; extender layout sin cambiar lenguaje visual. Adaptar solo deltas de transporte aprobados con pruebas explícitas.
 3. US1: reutilizar acceso/cierre, verificar integración/lifecycle y preservar gráfico; incorporar recuperación como enlace real cuando esté implementada, nunca placeholder.
 4. US2/US3: lista/detalle/alta gráficas con entrega visible desde US2; luego reemisión. US4 puede adelantarse tras US1 como incremento con mismo diseño.
@@ -207,4 +207,6 @@ Antes de implementar revisar nuevamente consistencia de artefactos y corregir re
 
 No nueva autenticación, suite visual, router, design system paralelo, dashboard genérico ni tablas avanzadas. La extracción opcional StaffLayout evita duplicar cabecera/footer sin convertir la app en framework. El harness visual es exclusivo de pruebas y usa componentes reales; no justifica endpoints debug, lógica alternativa de producto o nuevos paquetes. Funcionalidad, gráficos, privacidad, responsive y accesibilidad son una entrega conjunta, no fases opcionales posteriores.
 
-**Verificación de esta actualización documental:** 56 tareas pendientes consecutivas con formato/labels/rutas y enlaces comprobados, sin marcadores de aclaración nuevos; `git diff --check` correcto. Las pruebas de aplicación indicadas arriba se ejecutaron únicamente en el snapshot exacto de main, no sobre una implementación de Usuarios inexistente en este worktree. Se cerró la pestaña de inspección y se detuvo solo el servidor de revisión 5187 tras verificar su cwd/argumentos; no se tocaron servicios ajenos. Sin nueva certificación de integración, accesibilidad, bfcache real o preparación piloto.
+**Registro histórico de la actualización gráfica:** antes de integrar main había 56 tareas pendientes con formato/labels/rutas y enlaces comprobados; las pruebas se habían ejecutado solo en snapshot temporal. Se cerraron su pestaña y servidor propio 5187, sin tocar servicios ajenos.
+
+**Estado tras preparación autorizada:** main ya integrado por `e45b05d`, T001 completada y 55 tareas pendientes. En este worktree real pasaron `npm ci`, tipos, **test:auth 63/63** y build; se verificaron revisión corregida backend por cinco hashes y diff estático, sin ejecutarla ni modificarla. Evidencia y límites en [revalidacion-plan.md](revalidacion-plan.md#preparación-del-worktree-para-desarrollo). Código/configuración de aplicación conserva main; no se implementó Usuarios ni se certificó integración, accesibilidad, bfcache real o piloto. Próxima tarea de implementación: T002.

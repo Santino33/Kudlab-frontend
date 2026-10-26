@@ -1,6 +1,6 @@
 # Phase 1 — Guía de validación
 
-**Estado:** plan, no implementación. Hoy la raíz React sigue vacía. Los comandos de base son ejecutables; los recorridos de Usuarios y `test:usuarios` solo existirán tras una tarea de implementación autorizada. No describir esta guía como E2E ya superado.
+**Estado:** base de autenticación/UI de main ya integrada en `feat/gestionar-usuarios`; no se han implementado todavía gestión/recuperación de esta feature ni `test:usuarios`. `npm test`, `test:auth` y build son ejecutables hoy. No describir esta guía como E2E de Usuarios ya superado. Preparación y verificaciones en [revalidacion-plan.md](revalidacion-plan.md#preparación-del-worktree-para-desarrollo).
 
 Referencias: [spec y resultados](spec.md), [contrato UI](contracts/ui.md), [consumo](contracts/api-consumption.md), [modelo](data-model.md), [evidencia](revalidacion-plan.md).
 
@@ -9,7 +9,7 @@ Referencias: [spec y resultados](spec.md), [contrato UI](contracts/ui.md), [cons
 - Node 24 y npm; usar el lockfile del proyecto.
 - Backend aislado preparado por su responsable, con datos totalmente ficticios, al menos dos ADMIN activos y un TEACHER activo con credenciales conocidas de prueba. Preparar también cuentas pendiente/inactiva. No activar usuarios por UI de invitación: ese canje está bloqueado. No compartir credenciales reales en documentación ni herramientas.
 - PostgreSQL migrado y proveedor de correo de pruebas autorizados son prerrequisitos del backend, no acciones de este comando. Captura de correo backend está restringida a entorno de pruebas; no apuntar a buzones reales de los ejemplos.
-- Perfil confirmado: SPA `http://localhost:5173`, API `http://localhost:3000`; `SPA_ORIGIN`/`trustedOrigins` deben coincidir. `RESET_BASE_URL` configurado por el responsable backend como `http://localhost:5173/recuperar-acceso/confirmar`, sin query/fragmento inicial. No editar backend/configuración efectiva desde frontend para acomodar una suposición.
+- Perfil confirmado **para la futura extensión**: SPA `http://localhost:5173`, API `http://localhost:3000`; `SPA_ORIGIN`/`trustedOrigins` deben coincidir. `RESET_BASE_URL` será configurado por el responsable backend como `http://localhost:5173/recuperar-acceso/confirmar`, sin query/fragmento inicial. La base heredada todavía usa rutas relativas/proxy local 3001: no cambiarlo al preparar la rama ni enviar credenciales a un proceso de 3000/3001 sin comprobar su procedencia. No editar backend/configuración efectiva desde frontend para acomodar una suposición.
 - La aplicación futura leerá `VITE_API_ORIGIN=http://localhost:3000`; es un origen público, no secreto. No colocar credenciales SMTP, contraseñas de prueba, conexión de BD ni secretos Better Auth en variables `VITE_*`.
 
 ## 2. Comandos disponibles hoy
@@ -19,11 +19,12 @@ Desde raíz del worktree:
 ```sh
 npm ci
 npm test
+npm run test:auth
 npm run build
 npm run dev -- --host localhost --port 5173 --strictPort
 ```
 
-Resultados esperados actuales: instalación y tipos/build correctos; Vite sirve aplicación base sin recorridos Usuarios. `npm test` solo es TypeScript. `--strictPort` evita cambiar silenciosamente el origen permitido. No arrancar un backend ni enviar correos como efecto de esta guía documental.
+Resultados esperados actuales: instalación, tipos, test:auth y build correctos; Vite sirve AuthRoot gráfico de main, sin recorridos de gestión/recuperación. Sin API comprobada puede mostrar acceso no disponible, no un login operativo por defecto. `npm test` solo es TypeScript y test:auth es lógica/HTTP simulado. `--strictPort` evita cambiar silenciosamente el origen permitido. No arrancar backend ni enviar correos como efecto de preparar esta rama.
 
 ## 3. Comandos y preparación después de implementar
 
@@ -31,6 +32,7 @@ El plan prevé añadir `test:usuarios` con runner nativo Node, sin nuevas depend
 
 ```sh
 npm test
+npm run test:auth
 npm run test:usuarios
 npm run build
 npm run dev -- --host localhost --port 5173 --strictPort
@@ -38,7 +40,7 @@ npm run dev -- --host localhost --port 5173 --strictPort
 
 `test:usuarios` ejecutará `node --test tests/usuarios/*.test.mjs`: módulos puros y adaptación HTTP con Fetch simulado, sin TSX/DOM ni API real. Validar compatibilidad con imports `.ts` y borrado nativo de tipos antes de incorporarlo; no usa alias de bundler en los módulos probados. No atribuirle pruebas de cookies, navegación, diálogos o accesibilidad.
 
-No instalar paquetes o ejecutar `shadcn init/add` para validar esta planificación. La incorporación futura necesita Base UI, Lucide, consultas oficiales y revisión del diff; los comandos `@latest` que devuelve un registro no se ejecutan sin esa revisión.
+No ejecutar `shadcn init` ni regenerar componentes al preparar la rama: Base UI/Lucide, tokens y Button/Input/Label/Card/Alert ya están instalados/adaptados desde main. Solo componentes adicionales necesarios requieren consulta oficial y revisión del diff/paquetes durante implementación; no ejecutar comandos `@latest` sin esa revisión. Seguir la matriz gráfica del plan y preservar harness/tests existentes; fixtures de navegador quedan fuera de producción.
 
 ## 4. Validación funcional futura en navegador y backend aislado
 

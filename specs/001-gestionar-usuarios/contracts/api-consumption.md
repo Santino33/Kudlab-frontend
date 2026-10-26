@@ -2,6 +2,8 @@
 
 Contrato del **cliente frontend**, no especificación de nueva API. Fuente de verdad técnica: catálogo backend actual `docs/api/openapi.yaml` y rutas/servicios observados; reglas de negocio en specs backend 001–003. Referencias exactas, commit y diferencias en [revalidacion-plan.md](../revalidacion-plan.md). No copiar un OpenAPI histórico propuesto como disponibilidad actual.
 
+**Distinción de base frente a extensión:** ya existe `src/auth/client.ts` de main con cookie same-origin, rutas relativas, login sin rememberMe y cierre sin cuerpo; proxy local 3001. La tabla siguiente describe los deltas **futuros aprobados para esta feature**, no cambios aplicados al hacer merge. Adaptar ese cliente con pruebas, sin duplicarlo en API Usuarios ni modificar el transporte existente durante la preparación. La revisión corregida backend exigida por autenticación está identificada en el [registro de preparación](../revalidacion-plan.md#preparación-del-worktree-para-desarrollo); verificar esa revisión antes de integración real.
+
 ## Transporte acordado
 
 - Único transporte de sesión: cookies HttpOnly gestionadas por Better Auth/backend; Fetch `credentials: 'include'`. No leer `set-auth-token`, no pedir JWT/JWKS ni construir `Authorization`.
@@ -51,7 +53,7 @@ DTO y límites por fuente en [data-model.md](../data-model.md). Reemisión advie
 | Cierre 403 proveedor, 429 u otro error delegado | Mensaje seguro de cierre no confirmado; retirar datos visibles. No suponer esquema normalizado ni que el acceso remoto acabó. 429 permite explicar espera indicada, no repetir automáticamente |
 | Red, aborto o JSON/forma inválida | Consulta: resultado no disponible. Mutación: posible resultado incierto; cancelación de Fetch no revierte escritura |
 
-El catálogo actual advierte que el proveedor de cierre captura ciertos fallos internos y puede responder éxito. El frontend comunica cierre procesado según respuesta, no garantiza invalidación técnica ante toda falla interna. Comprobar reutilización en validación integrada, sin corregir backend como parte de esta feature.
+El catálogo de backend main `ff46f8a` advierte que el proveedor de cierre captura ciertos fallos internos y puede responder éxito. La base de autenticación requiere P-01/P-02 de su revisión corregida externa para confirmar revocación/propagar renovación; esa revisión se identificó por hashes, pero no se ejecutó en esta preparación ni se incorporó al backend main. No integrar contra main sin revisar esa diferencia ni dar por válidas garantías de cierre/continuidad por los tests frontend. Mantener tratamiento de resultado incierto y comprobar las garantías con el backend aislado correcto, sin corregirlo como parte de esta feature.
 
 ## Reconciliación limitada
 

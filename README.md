@@ -82,3 +82,16 @@ La integración requiere las [correcciones backend P-01/P-02](specs/001-autentic
 todavía locales y sin merge a main. No apuntar a main sin revisar esos cambios.
 Implementación y casillas reales en [tasks](specs/001-autenticacion-personal/tasks.md);
 faltan validaciones detalladas en el informe, no se declara piloto listo.
+
+## Preparación de gestión de Usuarios
+
+En `feat/gestionar-usuarios` se incorporó `main@664cc5c` mediante merge `e45b05d`,
+conservando autenticación, componentes gráficos, pruebas y constitución. Ver
+[plan](specs/001-gestionar-usuarios/plan.md), [tareas](specs/001-gestionar-usuarios/tasks.md)
+y [preparación verificada](specs/001-gestionar-usuarios/revalidacion-plan.md#preparación-del-worktree-para-desarrollo).
+T001 es preparación completada; la gestión/recuperación de esta feature aún no está implementada.
+
+El transporte actual de autenticación descrito arriba no se cambia al preparar la rama.
+Los deltas aprobados de Usuarios y su interfaz gráfica integrada se implementarán y probarán
+explícitamente, manteniendo los canjes de invitación/correo bloqueados y ascensos,
+auditoría visible y reactivación diferidos. No ejecutar aún `test:usuarios`: todavía no existe.
