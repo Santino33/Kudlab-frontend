@@ -80,13 +80,16 @@
 .accounts-list-view { display: none; }
 .staff-link { display: inline-flex; min-height: 44px; align-items: center; overflow-wrap: anywhere; }
 .task-context, .task-detail { max-width: 65ch; }
-.task-detail p { overflow-wrap: anywhere; }
-.task-state { display: inline-block; width: fit-content; padding: .25rem .5rem; border: 1px solid var(--border); border-radius: .5rem; font-size: .875rem; }
+.task-detail { overflow-wrap: anywhere; }
+.task-detail > * { min-width: 0; }
+.task-state { display: inline-block; width: fit-content; max-width: 100%; padding: .25rem .5rem; border: 1px solid var(--border); border-radius: .5rem; font-size: .875rem; }
 .task-reasons { display: grid; gap: .5rem; padding-left: 1.25rem; list-style: disc; }
 
 .workspace-brand { display: inline-flex; min-height: 44px; align-items: center; text-decoration: none; }
 .workspace-person { display: grid; gap: .25rem; }
-.workspace-toolbar { display: flex; align-items: center; gap: 1rem; padding: 1rem 2rem; border-bottom: 1px solid var(--border); }
+.workspace-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 1rem 2rem; border-bottom: 1px solid var(--border); }
+/* Keep room for content when text grows without changing the viewport breakpoint. */
+[data-slot='sidebar-gap'], [data-slot='sidebar-container'] { max-width: 33vw; }
 .workspace-content { width: 100%; max-width: 75rem; min-width: 0; margin-inline: auto; padding: 2rem; flex: 1; }
 .workspace-footer { padding: 1rem 2rem; font-size: .875rem; line-height: 1.5; }
 .workspace-content > div > .staff-stack { gap: 2rem; }

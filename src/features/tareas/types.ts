@@ -13,9 +13,10 @@ export type TaskDetail = TaskSummary & { purpose: string; pedagogicalNotice: str
 const object = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const text = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0;
 const positive = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
+export const isTaskId = (value: unknown): value is string => typeof value === 'string' && /^TG-[0-9]{2}$/.test(value);
 
 export function parseTask(value: unknown): TaskSummary | undefined {
-  if (!object(value) || typeof value.id !== 'string' || !/^TG-[0-9]{2}$/.test(value.id) ||
+  if (!object(value) || !isTaskId(value.id) ||
     !text(value.title) || !text(value.description) || typeof value.isEnabled !== 'boolean' ||
     typeof value.integrationReady !== 'boolean' || typeof value.assignable !== 'boolean' || !positive(value.revision) ||
     !Array.isArray(value.unavailableReasons) || !value.unavailableReasons.every((reason) => typeof reason === 'string' && Object.hasOwn(reasonLabels, reason))) return;
@@ -29,11 +30,15 @@ export function parseTask(value: unknown): TaskSummary | undefined {
 }
 export function parseTaskPage(value: unknown): { items: TaskSummary[] } | undefined {
   if (!object(value) || !Array.isArray(value.items)) return;
-  const items = value.items.map(parseTask);
-  if (items.some((item) => item === undefined)) return;
-  const parsed = items as TaskSummary[];
-  if (new Set(parsed.map((item) => item.id)).size !== parsed.length) return;
-  return { items: parsed };
+  const items: TaskSummary[] = [];
+  const ids = new Set<string>();
+  for (const entry of value.items) {
+    const task = parseTask(entry);
+    if (!task || ids.has(task.id)) return;
+    ids.add(task.id);
+    items.push(task);
+  }
+  return { items };
 }
 export function parseTaskDetail(value: unknown): TaskDetail | undefined {
   const task = parseTask(value);

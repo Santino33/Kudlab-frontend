@@ -36,7 +36,7 @@ export function Catalog({ api }: { api: TasksApi }) {
           <TableCell><p className="font-semibold">{task.title}</p><p className="text-sm mt-1">{task.id}</p></TableCell>
           <TableCell><span className="task-state">{task.isEnabled ? 'Habilitada' : 'Deshabilitada'}</span><p className="text-sm mt-3">Estado administrativo</p></TableCell>
           <TableCell><Preparation task={task} /></TableCell>
-          <TableCell><a className="staff-link" onClick={navigateTasks} href={`/tareas/${encodeURIComponent(task.id)}`} aria-label={`Ver ficha de ${task.title} (${task.id})`}>Ver ficha<ArrowRight className="ml-2 size-5 shrink-0" aria-hidden="true" /></a></TableCell>
+          <TableCell><a className="staff-link whitespace-nowrap" onClick={navigateTasks} href={`/tareas/${encodeURIComponent(task.id)}`} aria-label={`Ver ficha de ${task.title} (${task.id})`}>Ver ficha<ArrowRight className="ml-2 size-5 shrink-0" aria-hidden="true" /></a></TableCell>
         </TableRow>)}</TableBody></Table>
       </div>)}
   </div>;
@@ -55,7 +55,7 @@ export function TaskDetail({ api, taskId }: { api: TasksApi; taskId: string }) {
     {task && <>
       <section className="grid gap-3" aria-labelledby="task-purpose"><h2 id="task-purpose" className="staff-section-title">Finalidad pedagógica</h2><p>{task.purpose}</p></section>
       <section className="grid gap-4" aria-labelledby="task-status"><h2 id="task-status" className="staff-section-title">Estado actual</h2>
-        <dl className="account-facts"><div><dt>Disponibilidad administrativa</dt><dd>{task.isEnabled ? 'Habilitada' : 'Deshabilitada'}</dd></div>
+        <dl className="grid gap-4"><div><dt>Disponibilidad administrativa</dt><dd>{task.isEnabled ? 'Habilitada' : 'Deshabilitada'}</dd></div>
           <div><dt>Integración comprobada</dt><dd>{task.integrationReady ? 'Comprobada' : 'Pendiente de integración'}</dd></div></dl>
         <Preparation task={task} />
       </section>

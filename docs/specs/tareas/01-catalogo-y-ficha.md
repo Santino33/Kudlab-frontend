@@ -81,3 +81,55 @@ no generan una solicitud que pudiera confundirse con la lista.
   de destino/sesión. No es prueba de API/BD real.
 - Integración real/navegador y refactor final pendientes en este hito; sus resultados
   se añaden aquí, sin certificar piloto, lector de pantalla, TLS o BFCache real.
+
+## Recorrido real y refactor final
+
+Revisiones de implementación: frontend `e3a6f90`, backend `36d760d` (incluye
+auth `518e88b`), más correcciones/refactor posteriores de esta misma rama.
+API exclusiva `http://localhost:3011`, SPA `http://localhost:5191`, origen exacto
+CORS/trustedOrigins, sin proxy ni cambiar el perfil 5173/3000 aprobado. Puertos
+ocupados ajenos preservados. PostgreSQL exclusivo indicado en spec backend,
+NODE_ENV=test/MAIL_MODE=capture, solo cuentas sintéticas; ningún correo real.
+
+| Comprobación ejecutada en Chrome con SPA/API/BD reales | Resultado |
+| --- | --- |
+| TEACHER y ADMIN: login comprobado → catálogo → ficha | Correcto, solo TG-01 y estados/razones reales |
+| URL directa/recarga de ficha; volver mediante enlace/Enter | Correcto; navegación interna conserva AuthRoot |
+| isEnabled=true en fixture DB | Habilitada pero no lista para asignar; sin versión y con integración pendiente en ambas pantallas |
+| Catálogo sin TG-01, por cambio temporal de código en DB exclusiva | Vacío real, sin filas ficticias; ficha TG-01 devuelve 404 y enlace al catálogo |
+| Fallo real de consulta por renombrado temporal de tabla exclusiva | 503, contenido retirado, mensaje persistente; tras restaurar tabla, Reintentar comprueba acceso y restaura catálogo |
+| Cierre de sesión desde UI | Retira vista y vuelve al acceso |
+| Pagehide + expiración de sesiones sintéticas en DB + pageshow | Retirada síncrona, acceso perdido tras revalidar; API catálogo 401 |
+| Privacidad | Sin claves en localStorage/sessionStorage; no se copiaron cookies/tokens ni datos reales |
+
+La primera preparación de API usó otro secreto sintético que el de la fixture
+con JWKS ya persistido: consulta de sesión produjo 503. Se corrigió el entorno
+para usar el mismo secreto de pruebas, sin cambiar código ni tolerar acceso
+incierto. No es evidencia de interoperabilidad entre bases/secretos diferentes.
+
+Correcciones observadas: cierre de Sheet móvil al navegar por popstate; enlace
+Ver ficha sin partirlo; desbordamientos con texto 200% resueltos con envoltura,
+ficha de estado en una columna, toolbar flexible y límite del sidebar a un tercio
+del viewport cuando crece el texto (sin cambiar su ancho normal ni controles).
+
+Revisión independiente con dos subagentes en worktrees propios, sin mutar estos
+repositorios: backend no encontró defectos bloqueantes; recomendó ampliar
+aserciones 401/403/503. Frontend recomendó compartir isTaskId y eliminar aserción
+de tipo del parser de listas. Refactor aplicado: validación compartida y recorrido
+tipado con rechazo inmediato de filas inválidas/duplicadas; backend concentra
+no-store + requireActive en el router montado, quitando repetición root/wildcard,
+y amplía pruebas de headers/cuerpos y fallo DB de ficha. Sin alterar contrato.
+
+Verificación posterior del frontend: npm test (solo tipos), test:auth 66/66,
+test:usuarios 70/70, test:tareas 11/11 y build correctos. Harness DOM 11/11 repetido
+tras refactor, más runMobileTaskChecks() correcto en iframe de 390px.
+
+Navegador: catálogo y ficha en 320/390/768/1024/1440 CSS px, texto 100%/200%
+(20 combinaciones, sin scroll horizontal de página; la tabla tiene su región).
+Anchos revisados con iframe same-origin, no emulación de dispositivos. Tab →
+región desplazable con foco 2px Dark 1 → ArrowRight desplazó tabla → Tab al enlace
+nombrado (44px alto) → Enter abre ficha y lleva foco al H1. Contraste de tokens
+Dark 1/blanco 13.31:1, borde/foco con mismos colores; sin colores diagnósticos.
+Reflujo 320px comprobado, **no zoom nativo 400%** (atajo del navegador embebido no
+modificó viewport). No lector de pantalla, dispositivos físicos, BFCache real,
+TLS/despliegue ni aceptación con profesores. No se declara piloto listo.

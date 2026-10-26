@@ -29,6 +29,11 @@ function SidebarProvider({ children, className, ...props }: ComponentProps<'div'
   const [openMobile, setOpenMobile] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   useEffect(() => { if (!isMobile) setOpenMobile(false); }, [isMobile]);
+  useEffect(() => {
+    const navigated = () => setOpenMobile(false);
+    window.addEventListener('popstate', navigated);
+    return () => window.removeEventListener('popstate', navigated);
+  }, []);
   const toggleSidebar = () => isMobile ? setOpenMobile(value => !value) : setOpen(value => !value);
   return <SidebarContext.Provider value={{ open, openMobile, isMobile, setOpenMobile, toggleSidebar, trigger }}>
     <div data-slot="sidebar-wrapper" className={cn('group/sidebar-wrapper flex min-h-svh w-full', className)} {...props}>{children}</div>

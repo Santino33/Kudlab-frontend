@@ -113,5 +113,14 @@ export async function runTaskChecks() {
   document.getElementById('test-results')!.textContent = `${passed.length} pruebas DOM correctas\n${passed.join('\n')}`;
   return passed;
 }
-Object.assign(window, { runTaskChecks });
+export async function runMobileTaskChecks() {
+  assert(innerWidth < 768, 'Run this check in a viewport narrower than 768px');
+  fixture(); await until(() => text().includes('Ver ficha'));
+  clickText('Menú'); await until(() => Boolean(document.querySelector('[role="dialog"]')));
+  document.querySelector<HTMLAnchorElement>('[role="dialog"] a[href="/tareas"]')!.click();
+  await until(() => !document.querySelector('[role="dialog"]'));
+  assert(document.querySelector('[data-slot="sidebar-trigger"]')?.getAttribute('aria-expanded') === 'false', 'Mobile navigation closes');
+  return 'navegación móvil cierra Sheet tras cambio de ruta sin desmontar acceso';
+}
+Object.assign(window, { runTaskChecks, runMobileTaskChecks });
 fixture();
