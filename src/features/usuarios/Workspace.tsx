@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { ArrowRight, Home, LogOut, Users, UserPlus } from 'lucide-react';
+import { ArrowRight, Home, LogOut, Users, UserPlus, BookOpen } from 'lucide-react';
+import { navigateTasks } from '../tareas/navigation.ts';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sidebar, SidebarProvider, SidebarTrigger, SidebarInset, SidebarHeader, SidebarFooter, SidebarContent, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
@@ -8,7 +9,7 @@ import { dashboardFeatures } from './dashboard.ts';
 import { ActionLink, roleLabel } from './shared';
 
 export function Workspace({ user, section, signOut, children }: {
-  user: Identity; section: 'home' | 'accounts' | 'invite'; signOut(): void; children: ReactNode;
+  user: Identity; section: 'home' | 'accounts' | 'invite' | 'tasks'; signOut(): void; children: ReactNode;
 }) {
   return <SidebarProvider>
     <a className="workspace-skip" href="#workspace-content">Saltar al contenido</a>
@@ -23,6 +24,7 @@ export function Workspace({ user, section, signOut, children }: {
               <SidebarMenuItem><SidebarMenuButton isActive={section === 'accounts'} render={<a href="/usuarios" aria-current={section === 'accounts' ? 'page' : undefined} />}><Users aria-hidden="true" />Usuarios</SidebarMenuButton></SidebarMenuItem>
               <SidebarMenuItem><SidebarMenuButton isActive={section === 'invite'} render={<a href="/usuarios/nueva" aria-current={section === 'invite' ? 'page' : undefined} />}><UserPlus aria-hidden="true" />Invitar profesor</SidebarMenuButton></SidebarMenuItem>
             </>}
+            <SidebarMenuItem><SidebarMenuButton isActive={section === 'tasks'} render={<a href="/tareas" onClick={navigateTasks} aria-current={section === 'tasks' ? 'page' : undefined} />}><BookOpen aria-hidden="true" />Tareas</SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu></nav>
         </SidebarGroup></SidebarContent>
           <SidebarFooter>
@@ -31,7 +33,7 @@ export function Workspace({ user, section, signOut, children }: {
           </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="workspace-toolbar"><SidebarTrigger id="workspace-menu-toggle" /><span className="text-sm">{section === 'home' ? 'Inicio' : section === 'invite' ? 'Invitar profesor' : 'Usuarios'}</span></header>
+        <header className="workspace-toolbar"><SidebarTrigger id="workspace-menu-toggle" /><span className="text-sm">{section === 'home' ? 'Inicio' : section === 'invite' ? 'Invitar profesor' : section === 'tasks' ? 'Tareas' : 'Usuarios'}</span></header>
       <div id="workspace-content" className="workspace-content" tabIndex={-1}>{children}</div>
         <footer className="workspace-footer">Kudlab · Apoyo al seguimiento pedagógico</footer>
       </SidebarInset>

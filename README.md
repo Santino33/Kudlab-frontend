@@ -10,6 +10,13 @@ La validación todavía no está cerrada ni habilita despliegue/piloto: ver
 
 ## Requisitos e instalación
 
+**Vertical 01 en esta rama:** catálogo `/tareas` y ficha `/tareas/:taskId`
+conectados a API/persistencia reales para ADMIN y TEACHER activos. TG-01 no se
+presenta como integrada ni asignable; no hay ejecución ni segundo juego ficticio.
+Requiere el PR backend de la misma feature, que incluye P-01/P-02 en `518e88b`.
+Las menciones históricas inferiores de Tareas excluida/arreglos sin commit no
+describen esta rama. Ver [spec, pruebas y límites](docs/specs/tareas/01-catalogo-y-ficha.md).
+
 - Node.js 24 (`>=24 <25`) y npm.
 - Tipos, pruebas Node y build no requieren backend. Para integrar se necesita el
   backend corregido descrito abajo y una base exclusiva; no usar bases compartidas.
@@ -32,6 +39,7 @@ contra una base compartida ni asumir que el puerto identifica la revisión corre
 npm test
 npm run test:auth
 npm run test:usuarios
+npm run test:tareas
 npm run build
 npm run preview
 ```

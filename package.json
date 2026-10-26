@@ -12,6 +12,7 @@
     "test": "npm run typecheck",
     "test:auth": "node --test tests/auth/*.test.mjs",
     "test:usuarios": "node --test tests/usuarios/*.test.mjs",
+    "test:tareas": "node --test tests/tareas/*.test.mjs",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview"
   },

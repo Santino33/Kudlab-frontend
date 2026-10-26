@@ -1,5 +1,12 @@
 # Inventario de capacidades reales y pendientes
 
+**Vertical Tareas 01, 2026-10-26:** esta rama añade consulta de catálogo/ficha
+para ADMIN/TEACHER activos, sin ampliar gestión de Usuarios ni permisos académicos.
+Conserva AuthRoot, suspensión y notificaciones transversales; 403 no repone Tareas
+tras reconciliar acceso. P-01/P-02 incorporados al PR backend de esta feature en
+`518e88b`, aún sin afirmar merge/despliegue. Ver
+[fuentes, pruebas y límites](../../../../docs/specs/tareas/01-catalogo-y-ficha.md).
+
 **Recuperación, revisión posterior 2026-10-26:** pantallas refinadas y prueba real
 SMTP autorizada sobre cuenta TEACHER en base desechable separada. Un único correo
 aceptado por el proveedor; recepción/cambio elegido por el titular aún pendientes.
