@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createTasksApi } from './features/tareas/api.ts';
+import { Catalog, TaskDetail } from './features/tareas/Catalog';
 import { AuthRoot } from './auth/AuthRoot.tsx';
 import type { AuthController } from './auth/controller.ts';
 import { createAuthController } from './auth/controller.ts';
 import { createAuthClient } from './auth/client.ts';
 import { Alert, AlertDescription } from './components/ui/alert';
 import { Card, CardContent, CardHeader } from './components/ui/card';
-import { canManageAccounts, resolveRoute } from './features/usuarios/navigation.ts';
+import { canConsultTasks, canManageAccounts, resolveRoute } from './features/usuarios/navigation.ts';
 import type { captureEntry } from './features/usuarios/navigation.ts';
 import { StaffLayout } from './components/StaffLayout';
 import { createHttpClient } from './lib/http.ts';
@@ -38,7 +40,13 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
   initialEntry?: ReturnType<typeof captureEntry>; fetcher?: typeof fetch;
 }) {
   const [entry] = useState(() => initialEntry ?? { route: resolveRoute(pathname, search), recovery: { read: () => undefined, clear() {} } });
-  const route = entry.route;
+  const [route, setRoute] = useState(entry.route);
+  useEffect(() => {
+    const changed = () => setRoute(resolveRoute(window.location.pathname, window.location.search));
+    window.addEventListener('popstate', changed);
+    return () => window.removeEventListener('popstate', changed);
+  }, []);
+  useEffect(() => { document.getElementById('auth-title')?.focus(); }, [route]);
   const [uncertain, setUncertain] = useState(false);
   const [controller] = useState(() => {
     if (injected) return injected;
@@ -49,6 +57,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
     if (!controller || !apiOrigin) return;
     try { return {
       accounts: createUsuariosApi(createHttpClient(apiOrigin, controller, fetcher, () => setUncertain(true))),
+      tasks: createTasksApi(createHttpClient(apiOrigin, controller, fetcher)),
       recovery: createUsuariosApi(createHttpClient(apiOrigin, { getGeneration: controller.getGeneration, notify() {} }, fetcher)),
     }; } catch { return; }
   }, [controller, apiOrigin, fetcher]);
@@ -68,12 +77,15 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
       <Recovery api={apis.recovery} confirm={route.kind === 'recoveryConfirm'} ticket={entry.recovery} />} />;
   }
   const management = ['accounts', 'invite', 'detail', 'edit'].includes(route.kind);
+  const tasks = route.kind === 'tasks' || route.kind === 'taskDetail';
   return <AuthRoot controller={controller} notice={uncertain ? <Notice title="Hay una operación sin confirmar">
     <p>No la repitas sin revisar el estado actual de la cuenta. El fallo no demuestra que se haya deshecho.</p>
     <Button variant="outline" className="mt-4" onClick={() => setUncertain(false)}>Ya revisé el estado actual</Button>
   </Notice> : undefined} renderAuthenticated={
-    (user, access, generation) => <Workspace user={user} section={route.kind === 'invite' ? 'invite' : management ? 'accounts' : 'home'} signOut={access.signOut}>
-      <div key={`${generation}:${route.kind}`}>{management && !canManageAccounts(access.getSnapshot()) ? <DestinationNotice denied /> :
+    (user, access, generation) => <Workspace user={user} section={tasks ? 'tasks' : route.kind === 'invite' ? 'invite' : management ? 'accounts' : 'home'} signOut={access.signOut}>
+      <div key={`${generation}:${route.kind}:${route.kind === 'taskDetail' ? route.taskId : ''}`}>{(management && !canManageAccounts(access.getSnapshot())) || (tasks && !canConsultTasks(access.getSnapshot())) ? <DestinationNotice denied /> :
+        route.kind === 'tasks' ? <Catalog api={apis.tasks} /> :
+        route.kind === 'taskDetail' ? <TaskDetail api={apis.tasks} taskId={route.taskId} /> :
         route.kind === 'accounts' ? <Accounts api={apis.accounts} /> :
         route.kind === 'invite' ? <AccountForm api={apis.accounts} locked={uncertain} /> :
         route.kind === 'detail' ? <AccountDetail api={apis.accounts} accountId={route.accountId} revalidate={access.revalidate} locked={uncertain} /> :

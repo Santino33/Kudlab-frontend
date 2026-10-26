@@ -1,10 +1,12 @@
 import type { AccessState } from '../../auth/state.ts';
 
 export const canManageAccounts = (state: AccessState) => state.kind === 'authenticated' && state.user.role === 'ADMIN' && !state.denied;
+export const canConsultTasks = (state: AccessState) => state.kind === 'authenticated' && !state.denied;
 
 export type Route =
   | { kind: 'entry' | 'access' | 'accounts' | 'invite' | 'recoveryRequest' |
-      'recoveryConfirm' | 'unavailable' | 'blockedLink' }
+      'recoveryConfirm' | 'unavailable' | 'blockedLink' | 'tasks' }
+  | { kind: 'taskDetail'; taskId: string }
   | { kind: 'detail' | 'edit'; accountId: string };
 
 export function resolveRoute(pathname: string, search: string): Route {
@@ -15,9 +17,14 @@ export function resolveRoute(pathname: string, search: string): Route {
     case '/': return { kind: 'entry' };
     case '/acceso': return { kind: 'access' };
     case '/usuarios': return { kind: 'accounts' };
+    case '/tareas': return { kind: 'tasks' };
     case '/usuarios/nueva': return { kind: 'invite' };
     case '/recuperar-acceso': return { kind: 'recoveryRequest' };
     case '/recuperar-acceso/confirmar': return { kind: 'recoveryConfirm' };
+  }
+  if (pathname.startsWith('/tareas/')) {
+    try { return { kind: 'taskDetail', taskId: decodeURIComponent(pathname.slice('/tareas/'.length)) }; }
+    catch { return { kind: 'taskDetail', taskId: '' }; }
   }
   const match = /^\/usuarios\/([^/]+)(\/editar)?$/.exec(pathname);
   if (match) {
