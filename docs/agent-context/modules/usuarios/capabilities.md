@@ -1,6 +1,40 @@
 # Inventario de capacidades reales y pendientes
 
+**Recuperación, revisión posterior 2026-10-26:** pantallas refinadas y prueba real
+SMTP autorizada sobre cuenta TEACHER en base desechable separada. Un único correo
+aceptado por el proveedor; recepción/cambio elegido por el titular aún pendientes.
+66 pruebas auth + 70 Usuarios, tipos/build y 15 combinaciones de estado/ancho en
+Chrome correctas. [Fuentes, evidencia y límites](../../../../specs/001-gestionar-usuarios/evidence/recovery-review.md).
+
+**Actualización posterior 2026-10-26:** [backend P-01/P-02 reconstruido y validado](../../../../specs/001-gestionar-usuarios/evidence/backend-restored.md)
+con autorización, en worktree separado sin merge a main. Suite backend 154/154,
+documentación 22/22 y conexión real de auth SPA/API parcial; el bloqueo por revisión
+ausente del registro anterior se resolvió. T018 sigue pendiente por matriz incompleta,
+sin certificación de TLS, BFCache real, usabilidad o piloto.
+
+**Estado frontend vigente 2026-10-26:** dashboard por rol, listado/filtro/paginación,
+invitación, detalle/entrega, edición, recuperación y confirmaciones de reemisión,
+inactivación y reducción implementados y conectados al backend corregido aislado.
+ADMIN accede a gestión; TEACHER solo identidad/sesión/cierre. La ampliación aprobada
+del dashboard no añade permisos. 44/57 tareas completadas; 66 pruebas auth + 67
+Usuarios, tipos/build correctos. Ver [evidencia y fuentes](../../../../specs/001-gestionar-usuarios/evidence/screens-implementation.md).
+Canjes bloqueados; ascensos, auditoría visible y reactivación diferidos.
+T018 y aceptación gráfica integral siguen pendientes, ya no por revisión ausente.
+Los registros siguientes conservan historia de preparación y no describen el estado vigente.
+
+**Diseño posterior:** `/sesion` eliminada por petición expresa; `/` presenta
+directamente el espacio ADMIN/TEACHER tras verificar la sesión. Navegación móvil
+plegable y listado adaptado sin ocultar campos. [Evidencia visual y de teclado](../../../../specs/001-gestionar-usuarios/evidence/design-review.md).
+
 ## Evidencia y significado de estado
+
+**Base de trabajo integrada:** la rama `feat/gestionar-usuarios` incorpora `main@664cc5c` con autenticación, catálogo visual, pruebas y constitución ratificada. La planificación de Usuarios conserva sus decisiones futuras; no se aplicaron aún sus cambios de transporte, rutas o gestión a la autenticación existente.
+
+**Especificación frontend aclarada (2026-10-25):** [Gestionar usuarios](../../../../specs/001-gestionar-usuarios/spec.md) y [fuentes/revalidación estática](../../../../specs/001-gestionar-usuarios/fuentes-backend.md). El responsable confirmó Q1-A/Q2-A/Q3-A: ascensos, auditoría visible y reactivación diferidos; entrada/canjes de invitación y cambio de correo bloqueados hasta acordar enlaces distinguibles; TEACHER solo ve estado de acceso y cierre, con recuperación desde entrada sin sesión. Checklist documental 16/16, sin agregar implementación ni certificar piloto: activación y cambio de correo extremo a extremo siguen bloqueados. La revisión histórica que sigue conserva su alcance original; la nueva evidencia registra además resultados inciertos por pérdida de sesión al finalizar una mutación.
+
+**Planificación de la extensión Usuarios:** [plan](../../../../specs/001-gestionar-usuarios/plan.md) y [revalidación](../../../../specs/001-gestionar-usuarios/revalidacion-plan.md), backend `ff46f8a` limpio al consultar el 2026-10-25. Usuarios conserva sus servicios; el catálogo vigente es `docs/api/openapi.yaml` backend y ya documenta persistencia/límites de campos. `src/app.ts` ahora monta estudiantes y documentación: las filas históricas de ausencia siguientes no describen esa disponibilidad actual, que sigue fuera del frontend de Usuarios. Para esta extensión se confirmaron cookies HttpOnly, `rememberMe: false` sin selector, perfil local y recuperación sin hash, y fallback neutral del manual. Esas adaptaciones y pantallas de gestión/recuperación siguen pendientes; la autenticación heredada no se reescribe por integrar main.
+
+## Base de autenticación heredada
 
 **Estado frontend posterior (2026-10-25):** `src/auth/` implementa ingreso,
 comprobación, cierre actual y notificación transversal tipada; tests Node y harness
@@ -8,6 +42,8 @@ separado disponibles. Integración local autorizada backend 3001/SPA 5173, cooki
 HttpOnly, sin rememberMe, polling, JWT ni recuperación. Ver [validación actual](../../../../specs/001-autenticacion-personal/validation.md)
 para resultados y pendientes; no implica piloto listo, merge backend ni HTTPS validado.
 Los párrafos siguientes conservan historia y no describen todos el estado frontend vigente.
+
+### Registros históricos de validación de autenticación
 
 **Cierre posterior de P-01/P-02:** el responsable autorizó corregir y revalidar en
 backend separado. [Informe de correcciones](../../../../specs/001-autenticacion-personal/backend-fixes.md):
@@ -46,7 +82,7 @@ Revisión estática del backend en commit `cd3c2b485d5b3649310ba1807aac90f0f818d
 
 **Implementado** significa código presente y rutas montadas en [src/app.ts](/home/santino/Universidad/TrabajoCampo/Kudlab-backend/src/app.ts), no API desplegada/probada en este trabajo. No se ejecutaron pruebas backend, base de datos ni SMTP. Antes de implementar frontend, revalidar el checkout y sus contratos. Las pruebas existentes bajo `tests/contract/` y `tests/integration/` son fuentes complementarias futuras, no resultados obtenidos aquí.
 
-## Inventario HTTP y necesidad de interfaz
+## Inventario HTTP histórico y necesidad de interfaz (cd3c2b4)
 
 | Capacidad | Implementación observada | Decisión frontend |
 | --- | --- | --- |

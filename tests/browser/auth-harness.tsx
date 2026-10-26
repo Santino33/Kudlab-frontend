@@ -11,7 +11,7 @@ type Pending = { id: number; operation: string; settled: boolean;
 const pending: Pending[] = [];
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((listener) => listener());
-const controller = createAuthController(createAuthClient((url, init) => new Promise((resolve, reject) => {
+const controller = createAuthController(createAuthClient('http://localhost:3000', (url, init) => new Promise((resolve, reject) => {
   const entry: Pending = { id: pending.length + 1, operation: url.split('/').at(-1)!, settled: false,
     resolve(body, status = 200) { if (entry.settled) return; entry.settled = true; resolve(Response.json(body, { status })); notify(); },
     reject() { if (entry.settled) return; entry.settled = true; reject(new TypeError('Synthetic network failure')); notify(); },

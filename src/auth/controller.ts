@@ -84,10 +84,10 @@ export function createAuthController(client: AuthClient, timer: Clock = clock) {
     }, () => publish({ kind: 'signOutUnconfirmed', generation }));
   }
 
-  async function check(context: CheckContext) {
+  async function check(context: CheckContext, loginUnconfirmed = false) {
     const gen = ++generation;
     publish({ kind: 'checking', generation, context,
-      ...(context === 'signIn' ? { notice: 'loginUnconfirmed' as const } : {}) });
+      ...(loginUnconfirmed ? { notice: 'loginUnconfirmed' as const } : {}) });
     const pending = flight;
     pending?.cancelTimer();
     pending?.abort.abort();
@@ -131,14 +131,15 @@ export function createAuthController(client: AuthClient, timer: Clock = clock) {
       publish({ kind: 'signingIn', generation });
       void run((signal) => client.signIn(email, password, signal), (result) => {
         if (result?.kind === 'success') {
-          hadAccess = true;
-          publish({ kind: 'authenticated', generation, user: result.user, denied: false });
+          // A login response alone does not prove that the browser accepted the session cookie.
+          void check('signIn');
         } else if (result?.kind === 'input' || result?.kind === 'credentials') {
           publish({ kind: 'signedOut', generation, reason: 'absent', error: result.kind });
-        } else void check('signIn');
+        } else void check('signIn', true);
       }, () => publish({ kind: 'checking', generation, context: 'signIn', notice: 'loginUnconfirmed' }));
     },
     signOut() { if (state.kind === 'authenticated') close(); },
+    revalidate() { if (active && !suspended) void check('session'); },
     suspend() {
       if (!active || suspended) return;
       suspended = true;

@@ -38,3 +38,8 @@ test('state reconstructs fields, discarding raw credentials in runtime events', 
     if (event.kind !== 'authenticated') assert.equal('user' in next, false);
   }
 });
+test('a prior ADMIN generation cannot restore management after TEACHER revalidation', () => {
+  const current = { kind: 'authenticated', generation: 3, user, denied: true };
+  assert.equal(transition(current, { kind: 'authenticated', generation: 2,
+    user: { ...user, role: 'ADMIN' }, denied: false }), current);
+});

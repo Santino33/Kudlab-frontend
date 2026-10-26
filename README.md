@@ -2,8 +2,9 @@
 
 Base de la SPA de Kudlab con React, TypeScript, Tailwind CSS y Vite, gestionada con npm. Kudlab es un piloto de apoyo al seguimiento pedagógico; no produce diagnósticos clínicos ni sustituye la evaluación curricular. El producto y las reglas de negocio se consultan en el backend, no se redefinen aquí.
 
-**Estado:** autenticación del personal implementada localmente: ingreso, comprobación,
-cierre actual y denegaciones transversales. Sin módulos académicos, dashboard o recuperación.
+**Estado:** dashboard por rol y pantallas de Usuarios implementados: listado,
+invitación, detalle, edición, recuperación y confirmaciones de acceso, además de
+la autenticación heredada. ADMIN gestiona profesores; TEACHER no tiene gestión.
 La validación todavía no está cerrada ni habilita despliegue/piloto: ver
 [evidencia y pendientes](specs/001-autenticacion-personal/validation.md).
 
@@ -18,17 +19,19 @@ npm ci
 npm run dev
 ```
 
-Abrir `http://localhost:5173`. El proxy local `/api` apunta a `http://localhost:3001`
-(puerto alternativo autorizado porque 3000 estaba ocupado), conservando Origin.
-Arrancar el backend con PORT=3001, BETTER_AUTH_URL=http://localhost:3001 y
-SPA_ORIGIN=http://localhost:5173; resto de configuración solo en backend.
-Sin API se muestra acceso no comprobado/indisponible, no un login operativo.
+Configurar localmente `VITE_API_ORIGIN` siguiendo [.env.example](.env.example)
+y abrir `http://localhost:5173`. El perfil aprobado usa API `http://localhost:3000`,
+Fetch con cookies y CORS/trustedOrigins para la SPA exacta; no hay proxy a 3001.
+Sin origen válido no se hacen solicitudes y se muestra un error de configuración.
+Sin API se muestra acceso no comprobado, no un login operativo. No arrancar backend
+contra una base compartida ni asumir que el puerto identifica la revisión correcta.
 
 ## Verificación y compilación
 
 ```bash
 npm test
 npm run test:auth
+npm run test:usuarios
 npm run build
 npm run preview
 ```
@@ -40,11 +43,12 @@ Recetas de navegador, integración y límites en [quickstart](specs/001-autentic
 
 ## Estructura
 
-- `src/main.tsx`: entrada StrictMode; `src/App.tsx`: monta únicamente AuthRoot.
+- `src/main.tsx`: frontera Vite/StrictMode; `src/App.tsx`: destinos finitos y AuthRoot único.
 - `src/auth/`: estado, transporte fetch, controlador por raíz y presentación nativa.
 - `tests/auth/`: pruebas Node; `tests/browser/auth-harness.html`: fixture manual con
   AuthRoot real y fetch sin red, solo Vite desarrollo y fuera del build productivo.
 - `src/styles.css`: entrada Tailwind; `vite.config.ts` y `tsconfig.json`: configuración mínima.
+- `src/features/usuarios/`: dashboard, pantallas, operaciones, tipos y rutas; `src/lib/http.ts`: transporte de negocio generacional.
 - [AGENTS.md](AGENTS.md): reglas obligatorias para agentes.
 - [Índice de contexto](docs/agent-context/INDEX.md): cómo consultar el backend canónico.
 - [Manual de diseño para agentes](docs/design/agent-design-manual.md): base visual aprobada, colores confirmados y decisiones pendientes.
@@ -55,10 +59,12 @@ Recetas de navegador, integración y límites en [quickstart](specs/001-autentic
 
 `[RUTA_LOCAL_DEL_BACKEND]` representa `/home/santino/Universidad/TrabajoCampo/Kudlab-backend`. El índice explica los enlaces locales y cómo adaptarlos en otra máquina. No se copian las fuentes del producto a este repositorio.
 
-Autenticación usa cookie HttpOnly y rutas relativas, mismo origen HTTPS mediante proxy
-en producción (gate operativo pendiente). Sin tokens/identidad en almacenamiento web,
-JWT, rememberMe, polling ni variables `VITE_*` de secretos. SMTP y bootstrap son backend.
-Enlaces de correo/recuperación quedan fuera del alcance de esta feature.
+Autenticación usa cookie HttpOnly, origen público explícito y `credentials: include`.
+Envía `rememberMe: false` sin selector y cierre JSON `{}`; después de login comprueba
+la sesión antes de mostrar datos. Sin tokens/identidad en almacenamiento web,
+JWT, polling ni secretos `VITE_*`. HTTPS/topología/cookies siguen como gate operativo.
+SMTP y bootstrap son backend. Invitación/cambio de correo no se canjean;
+recuperación implementada con envío explícito y token efímero.
 
 Esta iteración excluye Académico, Tareas, Evolución y Seguimiento. No contempla login de estudiantes. Documentar una capacidad backend no aprueba su inclusión en el piloto ni implementa su interfaz.
 
@@ -82,3 +88,39 @@ La integración requiere las [correcciones backend P-01/P-02](specs/001-autentic
 todavía locales y sin merge a main. No apuntar a main sin revisar esos cambios.
 Implementación y casillas reales en [tasks](specs/001-autenticacion-personal/tasks.md);
 faltan validaciones detalladas en el informe, no se declara piloto listo.
+
+## Implementación incremental de Usuarios
+
+En `feat/gestionar-usuarios` se incorporó `main@664cc5c` mediante merge `e45b05d`,
+conservando autenticación, componentes gráficos, pruebas y constitución. Ver
+[plan](specs/001-gestionar-usuarios/plan.md), [tareas](specs/001-gestionar-usuarios/tasks.md)
+y [preparación verificada](specs/001-gestionar-usuarios/revalidacion-plan.md#preparación-del-worktree-para-desarrollo).
+Dashboard extensible mediante descriptores tipados en `src/features/usuarios/dashboard.ts`,
+sin agregar router ni dependencias. 44/57 tareas completadas; validación manual integral pendiente.
+Ver [pantallas y evidencia](specs/001-gestionar-usuarios/evidence/screens-implementation.md).
+Verificación actual: 66 pruebas auth + 70 Usuarios, tipos y build correctos.
+Revisión local en ejecución: SPA `http://localhost:5187/`, API `http://localhost:3002`,
+base desechable y correo capturado; no reemplaza el perfil aprobado 5173/3000.
+
+Revisión visual posterior en `feat/design-usuarios`: navegación móvil plegable,
+dashboard sin tarjetas decorativas repetidas y listado móvil legible. `/sesion`
+retirada por decisión del responsable; el inicio resuelve ADMIN/TEACHER desde la
+sesión confirmada. Skills instaladas localmente en el worktree, no globalmente.
+Ver [comparación y comprobaciones](specs/001-gestionar-usuarios/evidence/design-review.md).
+
+Corrección posterior: el sidebar artesanal fue sustituido por la composición
+oficial shadcn/Base UI, adaptada al manual, con borde izquierdo en `0px` y Sheet
+móvil. Ver [fuentes y comprobaciones](specs/001-gestionar-usuarios/evidence/sidebar-review.md).
+
+Recuperación refinada: solicitud, confirmación neutra, nueva contraseña con
+mostrar/ocultar, validación, enlace no utilizable, errores e incertidumbre y retorno
+al acceso. [Prueba SMTP real autorizada y límites](specs/001-gestionar-usuarios/evidence/recovery-review.md).
+Vista de este ensayo: `http://localhost:5188/recuperar-acceso`, API SMTP 3004 y
+base desechable **separada**; no reemplaza los servicios previos 5187/3002 ni el
+perfil aprobado 5173/3000. Un envío aceptado no confirma recepción en el buzón.
+Ver [reconstrucción autorizada y conexión real](specs/001-gestionar-usuarios/evidence/backend-restored.md):
+P-01/P-02 disponibles en worktree backend separado, 154/154 pruebas y validación
+SPA/API parcial; T018 aún pendiente de completar. No usar backend main como sustituto:
+los arreglos siguen locales y sin merge.
+Se mantienen canjes de invitación/correo bloqueados y ascensos, auditoría visible y
+reactivación diferidos. No se declara esta entrega completa ni lista para piloto.

@@ -24,6 +24,8 @@ Los enlaces backend de esta documentación apuntan a esa ruta absoluta, no a un 
 
 Las specs registran decisiones posteriores a los resúmenes originales, pero algunas siguen marcadas como borrador/propuesta. Los contratos 001–003 también conservan etiquetas de propuesto/planificado: no se usan como prueba de existencia de rutas. La evidencia de implementación aquí es la lectura del código, no una validación en ejecución.
 
+**Actualización de planificación (2026-10-25):** backend `ff46f8a` dispone de [catálogo OpenAPI actual](/home/santino/Universidad/TrabajoCampo/Kudlab-backend/docs/api/openapi.yaml), identificado por su README como inventario de implementación; 001–003 conservan reglas e historia. Ver [revalidación Usuarios](../../specs/001-gestionar-usuarios/revalidacion-plan.md) y [plan frontend](../../specs/001-gestionar-usuarios/plan.md). Montaje de documentación y estudiantes observado en esa revisión no incorpora esos módulos al alcance frontend. No se probó API desplegada.
+
 ## Documentación de este repositorio
 
 - [Instrucciones para agentes](../../AGENTS.md).
