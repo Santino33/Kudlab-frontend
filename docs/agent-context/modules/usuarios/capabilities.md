@@ -2,11 +2,15 @@
 
 ## Evidencia y significado de estado
 
+**Especificación frontend aclarada (2026-10-25):** [Gestionar usuarios](../../../../specs/001-gestionar-usuarios/spec.md) y [fuentes/revalidación estática](../../../../specs/001-gestionar-usuarios/fuentes-backend.md). El responsable confirmó Q1-A/Q2-A/Q3-A: ascensos, auditoría visible y reactivación diferidos; entrada/canjes de invitación y cambio de correo bloqueados hasta acordar enlaces distinguibles; TEACHER solo ve estado de acceso y cierre, con recuperación desde entrada sin sesión. Checklist documental 16/16, sin agregar implementación ni certificar piloto: activación y cambio de correo extremo a extremo siguen bloqueados. La revisión histórica que sigue conserva su alcance original; la nueva evidencia registra además resultados inciertos por pérdida de sesión al finalizar una mutación.
+
+**Planificación y evidencia vigente:** [plan](../../../../specs/001-gestionar-usuarios/plan.md) y [revalidación](../../../../specs/001-gestionar-usuarios/revalidacion-plan.md), backend `ff46f8a` limpio al consultar el 2026-10-25. Usuarios conserva sus servicios; el catálogo vigente es `docs/api/openapi.yaml` backend y ya documenta persistencia/límites de campos. `src/app.ts` ahora monta estudiantes y documentación: las filas históricas de ausencia siguientes no describen esa disponibilidad actual, que sigue fuera del frontend de Usuarios. Confirmados cookies HttpOnly, `rememberMe: false` sin selector, perfil local y recuperación sin hash, y fallback neutral del manual. Sin llamadas API, paquetes o pantallas implementadas en esta entrega.
+
 Revisión estática del backend en commit `cd3c2b485d5b3649310ba1807aac90f0f818d174`. El checkout consultado tenía cambios locales: `module-summary.md` modificado y descripciones `acceso-estudiante.md`, `correo-smtp.md` y `documentacion-api-swagger.md` sin seguimiento. Se leyeron esas versiones; no se editaron ni se atribuyen íntegramente al commit. Había además cambios locales de configuración OpenCode ajenos al alcance.
 
 **Implementado** significa código presente y rutas montadas en [src/app.ts](/home/santino/Universidad/TrabajoCampo/Kudlab-backend/src/app.ts), no API desplegada/probada en este trabajo. No se ejecutaron pruebas backend, base de datos ni SMTP. Antes de implementar frontend, revalidar el checkout y sus contratos. Las pruebas existentes bajo `tests/contract/` y `tests/integration/` son fuentes complementarias futuras, no resultados obtenidos aquí.
 
-## Inventario HTTP y necesidad de interfaz
+## Inventario HTTP histórico y necesidad de interfaz (cd3c2b4)
 
 | Capacidad | Implementación observada | Decisión frontend |
 | --- | --- | --- |
