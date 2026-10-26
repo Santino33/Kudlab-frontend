@@ -1,8 +1,8 @@
-import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { ArrowRight, Home, LogOut, Menu, X, Users, UserPlus } from 'lucide-react';
+import { ArrowRight, Home, LogOut, Users, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Sidebar, SidebarProvider, SidebarTrigger, SidebarInset, SidebarHeader, SidebarFooter, SidebarContent, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import type { Identity } from '../../auth/state.ts';
 import { dashboardFeatures } from './dashboard.ts';
 import { ActionLink, roleLabel } from './shared';
@@ -10,36 +10,32 @@ import { ActionLink, roleLabel } from './shared';
 export function Workspace({ user, section, signOut, children }: {
   user: Identity; section: 'home' | 'accounts' | 'invite'; signOut(): void; children: ReactNode;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  return <>
+  return <SidebarProvider>
     <a className="workspace-skip" href="#workspace-content">Saltar al contenido</a>
-    <div className="workspace-grid">
-      <aside className="workspace-sidebar" aria-label="Espacio de trabajo" onKeyDown={(event) => {
-        if (event.key === 'Escape' && menuOpen) { setMenuOpen(false); document.getElementById('workspace-menu-toggle')?.focus(); }
-      }}>
-        <div className="workspace-brand-row">
+      <Sidebar aria-label="Espacio de trabajo">
+        <SidebarHeader>
           <div><a href="/" className="auth-brand workspace-brand">Kudlab</a><p className="text-sm">Espacio de profesores</p></div>
-          <Button id="workspace-menu-toggle" className="workspace-menu-toggle" variant="outline" aria-expanded={menuOpen} aria-controls="workspace-navigation" onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}Menú
-          </Button>
-        </div>
-        <div id="workspace-navigation" className="workspace-navigation" data-open={menuOpen}>
-          <nav aria-label="Navegación principal" className="workspace-nav">
-            <a href="/" aria-current={section === 'home' ? 'page' : undefined}><Home aria-hidden="true" />Inicio</a>
+        </SidebarHeader>
+        <SidebarContent><SidebarGroup>
+          <nav aria-label="Navegación principal"><SidebarMenu>
+            <SidebarMenuItem><SidebarMenuButton isActive={section === 'home'} render={<a href="/" aria-current={section === 'home' ? 'page' : undefined} />}><Home aria-hidden="true" />Inicio</SidebarMenuButton></SidebarMenuItem>
             {user.role === 'ADMIN' && <>
-              <a href="/usuarios" aria-current={section === 'accounts' ? 'page' : undefined}><Users aria-hidden="true" />Usuarios</a>
-              <a href="/usuarios/nueva" aria-current={section === 'invite' ? 'page' : undefined}><UserPlus aria-hidden="true" />Invitar profesor</a>
+              <SidebarMenuItem><SidebarMenuButton isActive={section === 'accounts'} render={<a href="/usuarios" aria-current={section === 'accounts' ? 'page' : undefined} />}><Users aria-hidden="true" />Usuarios</SidebarMenuButton></SidebarMenuItem>
+              <SidebarMenuItem><SidebarMenuButton isActive={section === 'invite'} render={<a href="/usuarios/nueva" aria-current={section === 'invite' ? 'page' : undefined} />}><UserPlus aria-hidden="true" />Invitar profesor</SidebarMenuButton></SidebarMenuItem>
             </>}
-          </nav>
-          <div className="workspace-sidebar-footer">
+          </SidebarMenu></nav>
+        </SidebarGroup></SidebarContent>
+          <SidebarFooter>
             <div className="workspace-person"><p className="font-semibold [overflow-wrap:anywhere]">{user.name}</p><p className="text-sm">{roleLabel[user.role]}</p></div>
             <Button variant="outline" onClick={signOut}><LogOut aria-hidden="true" />Cerrar sesión</Button>
-          </div>
-        </div>
-      </aside>
+          </SidebarFooter>
+      </Sidebar>
+      <SidebarInset>
+        <header className="workspace-toolbar"><SidebarTrigger id="workspace-menu-toggle" /><span className="text-sm">{section === 'home' ? 'Inicio' : section === 'invite' ? 'Invitar profesor' : 'Usuarios'}</span></header>
       <div id="workspace-content" className="workspace-content" tabIndex={-1}>{children}</div>
-    </div>
-  </>;
+        <footer className="workspace-footer">Kudlab · Apoyo al seguimiento pedagógico</footer>
+      </SidebarInset>
+  </SidebarProvider>;
 }
 
 export function Dashboard({ user }: { user: Identity }) {

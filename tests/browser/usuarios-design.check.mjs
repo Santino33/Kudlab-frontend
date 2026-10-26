@@ -31,6 +31,10 @@ try {
       assert.equal(state.overflow, false, `${name} ${width} overflow`);
       assert.equal(state.small, 0, `${name} ${width} touch targets`);
       assert.equal(state.links.includes('/sesion'), false);
+      if (name !== 'recovery' && width >= 768) {
+        const left = await page.eval(() => document.querySelector('[data-slot=sidebar-container]').getBoundingClientRect().left);
+        assert.equal(left, 0, `sidebar starts at viewport edge at ${width}px`);
+      }
       if ([390, 768, 1440].includes(width)) await page.screenshot({ path: `${dir}/${name}-${width}.jpg`, fullPage: true });
       results.push({ name, width, ...state, links: undefined });
     }
@@ -44,10 +48,25 @@ try {
   assert.equal(await page.eval(() => document.getElementById('workspace-menu-toggle').getAttribute('aria-expanded')), 'true');
   await key(page, 'Tab', 'Tab');
   assert.equal(await page.eval(() => document.activeElement.getAttribute('href')), '/');
+  assert.equal(await page.eval(() => !!document.activeElement.closest('[role=dialog]')), true);
+  for (let i = 0; i < 8; i++) {
+    await key(page, 'Tab', 'Tab');
+    assert.equal(await page.eval(() => !!document.activeElement.closest('[role=dialog]')), true);
+  }
+  await page.screenshot({ path: `${dir}/sidebar-open-390.jpg` });
   await key(page, 'Escape', 'Escape');
   assert.equal(await page.eval(() => document.activeElement.id), 'workspace-menu-toggle');
   assert.equal(await page.eval(() => document.getElementById('workspace-menu-toggle').getAttribute('aria-expanded')), 'false');
-  results.push({ keyboardMenu: 'Enter opens, Tab enters links, Escape closes and restores focus' });
+  results.push({ keyboardMenu: 'Enter opens modal Sheet, Tab stays contained, Escape closes and restores focus' });
+
+  await page.setViewport({ width: 1440, height: 900 });
+  await page.goto(base, { settleMs: 300 });
+  await click(page, '#workspace-menu-toggle');
+  assert.equal(await page.eval(() => document.querySelector('[data-slot=sidebar-gap]').getBoundingClientRect().width), 0);
+  assert.equal(await page.eval(() => document.querySelector('[data-slot=sidebar-container]').getBoundingClientRect().width), 0);
+  await click(page, '#workspace-menu-toggle');
+  assert.equal(await page.eval(() => document.querySelector('[data-slot=sidebar-container]').getBoundingClientRect().left), 0);
+  results.push({ desktopSidebar: 'Viewport-aligned, offcanvas collapse/reopen' });
 
   await page.goto(`${base}&path=/usuarios/nueva`, { settleMs: 300 });
   await page.eval(() => document.querySelector('form button[type=submit]').focus());
@@ -80,5 +99,5 @@ try {
   results.push({ teacher: 'No management destinations' });
   assert.deepEqual(page.consoleErrors, []);
   writeFileSync('.taste-skill/browser-check.json', JSON.stringify(results, null, 2));
-  console.log('PASS: 30 screen/viewport checks, mobile keyboard menu, form validation, modal focus/Tab/Escape, TEACHER permissions; no JS exceptions.');
+  console.log('PASS: 30 screen/viewport checks, sidebar left=0 and desktop collapse, mobile Sheet keyboard/focus, form validation, modal Tab/Escape, TEACHER permissions; no JS exceptions.');
 } finally { await browser.close(); }

@@ -107,6 +107,10 @@ dashboard sin tarjetas decorativas repetidas y listado móvil legible. `/sesion`
 retirada por decisión del responsable; el inicio resuelve ADMIN/TEACHER desde la
 sesión confirmada. Skills instaladas localmente en el worktree, no globalmente.
 Ver [comparación y comprobaciones](specs/001-gestionar-usuarios/evidence/design-review.md).
+
+Corrección posterior: el sidebar artesanal fue sustituido por la composición
+oficial shadcn/Base UI, adaptada al manual, con borde izquierdo en `0px` y Sheet
+móvil. Ver [fuentes y comprobaciones](specs/001-gestionar-usuarios/evidence/sidebar-review.md).
 Ver [reconstrucción autorizada y conexión real](specs/001-gestionar-usuarios/evidence/backend-restored.md):
 P-01/P-02 disponibles en worktree backend separado, 154/154 pruebas y validación
 SPA/API parcial; T018 aún pendiente de completar. No usar backend main como sustituto:

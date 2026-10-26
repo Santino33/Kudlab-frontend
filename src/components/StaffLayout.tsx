@@ -9,6 +9,6 @@ export function StaffLayout({ children, wide = false }: { children: ReactNode; w
       </div>
     </header>}
     <main id="contenido" className={wide ? 'staff-main' : 'auth-main'}>{children}</main>
-    <footer className="auth-footer">Kudlab · Apoyo al seguimiento pedagógico</footer>
+    {!wide && <footer className="auth-footer">Kudlab · Apoyo al seguimiento pedagógico</footer>}
   </div>;
 }
