@@ -1,5 +1,21 @@
 # Inventario de capacidades reales y pendientes
 
+**Actualización posterior 2026-10-26:** [backend P-01/P-02 reconstruido y validado](../../../../specs/001-gestionar-usuarios/evidence/backend-restored.md)
+con autorización, en worktree separado sin merge a main. Suite backend 154/154,
+documentación 22/22 y conexión real de auth SPA/API parcial; el bloqueo por revisión
+ausente del registro anterior se resolvió. T018 sigue pendiente por matriz incompleta,
+sin certificación de TLS, BFCache real, usabilidad o piloto.
+
+**Estado frontend vigente 2026-10-26:** dashboard por rol, listado/filtro/paginación,
+invitación, detalle/entrega, edición, recuperación y confirmaciones de reemisión,
+inactivación y reducción implementados y conectados al backend corregido aislado.
+ADMIN accede a gestión; TEACHER solo identidad/sesión/cierre. La ampliación aprobada
+del dashboard no añade permisos. 44/57 tareas completadas; 66 pruebas auth + 67
+Usuarios, tipos/build correctos. Ver [evidencia y fuentes](../../../../specs/001-gestionar-usuarios/evidence/screens-implementation.md).
+Canjes bloqueados; ascensos, auditoría visible y reactivación diferidos.
+T018 y aceptación gráfica integral siguen pendientes, ya no por revisión ausente.
+Los registros siguientes conservan historia de preparación y no describen el estado vigente.
+
 ## Evidencia y significado de estado
 
 **Base de trabajo integrada:** la rama `feat/gestionar-usuarios` incorpora `main@664cc5c` con autenticación, catálogo visual, pruebas y constitución ratificada. La planificación de Usuarios conserva sus decisiones futuras; no se aplicaron aún sus cambios de transporte, rutas o gestión a la autenticación existente.

@@ -1,5 +1,12 @@
 # Implementation Plan: Gestionar usuarios del personal — interfaz funcional y gráfica integrada
 
+**Estado vigente 2026-10-26:** gestión, recuperación y dashboard por rol implementados;
+44/57 tareas completadas. [Dashboard aprobado posteriormente](dashboard-amendment.md)
+amplía el alcance original sin permisos nuevos. Ver [pantallas y validación parcial](evidence/screens-implementation.md).
+66 pruebas auth + 67 Usuarios, tipos/build correctos. P-01/P-02 siguen locales en
+backend separado; no usar main sin esas correcciones. T018 y aceptación manual
+integral siguen pendientes. Los apartados de preparación siguientes son históricos.
+
 **Feature**: `001-gestionar-usuarios` | **Date**: 2026-10-25 | **Spec**: [spec.md](spec.md)
 
 **Worktree**: `spec-usuarios`, rama `feat/gestionar-usuarios`. Documentos guardados en `72bd7ca`; **main `664cc5c` integrado mediante merge `e45b05d`**, autorizado por el responsable, con único conflicto documental resuelto conservando ambas fuentes. La autenticación, catálogo, estilos y constitución son ahora base real de esta rama. No se ha implementado código nuevo de Usuarios ni aplicado los deltas de transporte previstos.

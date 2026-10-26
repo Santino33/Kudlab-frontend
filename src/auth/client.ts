@@ -1,4 +1,5 @@
 import type { Identity } from './state.ts';
+import { validateApiOrigin } from '../lib/http.ts';
 
 export type Fetch = (input: string, init: RequestInit) => Promise<Response>;
 export type SessionResult =
@@ -19,11 +20,12 @@ function identity(value: unknown): Identity | undefined {
   return { id: value.id, email: value.email, name: value.name, role: value.role };
 }
 
-export function createAuthClient(fetcher: Fetch = (url, init) => fetch(url, init)): AuthClient {
-  async function request(path: string, signal: AbortSignal, body?: { email: string; password: string }) {
-    const response = await fetcher(`/api/auth/${path}`, {
+export function createAuthClient(origin: string, fetcher: Fetch = (url, init) => fetch(url, init)): AuthClient {
+  const base = validateApiOrigin(origin);
+  async function request(path: string, signal: AbortSignal, body?: { email: string; password: string; rememberMe: false } | Record<string, never>) {
+    const response = await fetcher(`${base}/api/auth/${path}`, {
       method: path === 'get-session' ? 'GET' : 'POST',
-      credentials: 'same-origin', cache: 'no-store', redirect: 'error', signal,
+      credentials: 'include', cache: 'no-store', redirect: 'error', signal,
       headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
@@ -49,7 +51,7 @@ export function createAuthClient(fetcher: Fetch = (url, init) => fetch(url, init
     },
     async signIn(email, password, signal) {
       try {
-        const result = await request('sign-in/email', signal, { email, password });
+        const result = await request('sign-in/email', signal, { email, password, rememberMe: false });
         if (result?.status === 400 && result.data.code === 'INVALID_INPUT') return { kind: 'input' };
         if (result?.status === 401 && result.data.code === 'INVALID_CREDENTIALS') return { kind: 'credentials' };
         const user = result?.status === 200 && identity(result.data.user);
@@ -59,7 +61,7 @@ export function createAuthClient(fetcher: Fetch = (url, init) => fetch(url, init
     },
     async signOut(signal) {
       try {
-        const result = await request('sign-out', signal);
+        const result = await request('sign-out', signal, {});
         if (result?.status === 200 && result.data.success === true) return { kind: 'success' };
         if (result?.status === 401 && result.data.code === 'UNAUTHENTICATED') return { kind: 'absent' };
       } catch { /* A lost response cannot confirm server-side revocation. */ }

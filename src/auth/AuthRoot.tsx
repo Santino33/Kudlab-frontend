@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { ArrowRight, CircleAlert, CircleCheck, LoaderCircle, LogOut, RotateCcw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createAuthClient } from './client.ts';
-import { createAuthController } from './controller.ts';
+import { StaffLayout } from '@/components/StaffLayout';
 import type { AuthController } from './controller.ts';
+import type { Identity } from './state.ts';
 
 const errorMessages = {
   input: 'Corrige los datos de acceso.',
@@ -17,8 +17,13 @@ const errorMessages = {
   loginUnconfirmed: 'No pudimos confirmar el inicio de sesión',
 };
 
-export function AuthRoot({ controller: injected }: { controller?: AuthController }) {
-  const [controller] = useState(() => injected ?? createAuthController(createAuthClient()));
+export function AuthRoot({ controller, renderAuthenticated, publicContent, onSuspend, notice }: {
+  controller: AuthController;
+  renderAuthenticated?: (user: Identity, controller: AuthController, generation: number) => ReactNode;
+  publicContent?: () => ReactNode;
+  onSuspend?: () => void;
+  notice?: ReactNode;
+}) {
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const [email, setEmail] = useState('');
   const [invalid, setInvalid] = useState<{ email?: string; password?: string }>({});
@@ -26,31 +31,42 @@ export function AuthRoot({ controller: injected }: { controller?: AuthController
   const passwordInput = useRef<HTMLInputElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const summary = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLElement>(null);
+  const publicOnly = Boolean(publicContent);
+  const [publicPage, setPublicPage] = useState({ hidden: document.visibilityState === 'hidden', epoch: 0 });
 
   useEffect(() => {
     // Native page lifecycle events must commit the safe DOM before a bfcache snapshot.
-    const hide = () => flushSync(() => controller.suspend());
-    const show = () => { if (document.visibilityState !== 'hidden') controller.resume(); };
+    const hide = () => flushSync(() => {
+      onSuspend?.();
+      if (publicOnly) setPublicPage((page) => page.hidden ? page : { hidden: true, epoch: page.epoch + 1 });
+      else controller.suspend();
+    });
+    const show = () => {
+      if (document.visibilityState === 'hidden') return;
+      if (publicOnly) setPublicPage((page) => ({ ...page, hidden: false }));
+      else controller.resume();
+    };
     const visibility = () => document.visibilityState === 'hidden' ? hide() : show();
     window.addEventListener('pagehide', hide);
     window.addEventListener('pageshow', show);
     document.addEventListener('visibilitychange', visibility);
-    controller.start();
-    if (document.visibilityState === 'hidden') controller.suspend();
+    if (!publicOnly) controller.start();
+    if (document.visibilityState === 'hidden') { onSuspend?.(); if (!publicOnly) controller.suspend(); }
     return () => {
       window.removeEventListener('pagehide', hide);
       window.removeEventListener('pageshow', show);
       document.removeEventListener('visibilitychange', visibility);
-      controller.stop();
+      if (!publicOnly) controller.stop();
     };
-  }, [controller]);
+  }, [controller, publicOnly, onSuspend]);
   useLayoutEffect(() => {
     if (state.kind !== 'signingIn' && passwordInput.current) passwordInput.current.value = '';
     setInvalid({});
     if (document.visibilityState === 'hidden') return;
     if (state.kind === 'signedOut' && state.error) summary.current?.focus();
-    else title.current?.focus();
-  }, [state]);
+    else (title.current ?? content.current?.querySelector('h1'))?.focus();
+  }, [state, publicPage.hidden, publicPage.epoch]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,7 +86,8 @@ export function AuthRoot({ controller: injected }: { controller?: AuthController
     state.kind === 'checkUnavailable' ? 'No pudimos comprobar tu acceso' :
     state.kind === 'signingOut' ? 'Cerrando sesión' :
     state.kind === 'signOutUnconfirmed' ? 'No pudimos confirmar el cierre' : 'Iniciar sesión';
-  const error = state.kind === 'signedOut' && state.error ? errorMessages[state.error] : undefined;
+  const error = Object.values(invalid).join(' ') ||
+    (state.kind === 'signedOut' && state.error ? errorMessages[state.error] : undefined);
   const signingIn = state.kind === 'signingIn';
   const description = state.kind === 'authenticated' ? 'Esta es tu sesión actual en Kudlab.' :
     state.kind === 'checking' ? 'Estamos verificando tu sesión antes de continuar.' :
@@ -79,16 +96,13 @@ export function AuthRoot({ controller: injected }: { controller?: AuthController
     state.kind === 'signOutUnconfirmed' ? 'Tu sesión podría seguir activa. Reintenta para comprobar el resultado del cierre.' :
     'Usa el correo y la contraseña asociados a tu cuenta.';
 
-  return <div className="auth-page">
-    <header className="auth-header">
-      <div className="auth-header-inner">
-        <p className="auth-brand">Kudlab</p>
-        <p className="auth-eyebrow">Acceso del personal</p>
-      </div>
-    </header>
-    <main className="auth-main">
-      <section className="auth-content" aria-labelledby="auth-title">
-        <Card>
+  const authenticatedContent = !publicOnly && state.kind === 'authenticated' ?
+    renderAuthenticated?.(state.user, controller, state.generation) : undefined;
+
+  return <StaffLayout wide={authenticatedContent !== undefined}>
+      <section ref={content} className={authenticatedContent !== undefined ? 'staff-content' : 'auth-content'} aria-labelledby="auth-title">
+        {notice && <div className="mb-6">{notice}</div>}
+        {publicOnly ? <div key={publicPage.epoch}>{publicPage.hidden ? <Card><CardHeader><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Acceso en pausa</h1><p>Los datos de recuperación fueron retirados.</p></CardHeader></Card> : publicContent?.()}</div> : authenticatedContent ?? <Card>
           <CardHeader>
             <p className="auth-eyebrow">{state.kind === 'authenticated' ? 'Tu cuenta' : 'Solo para profesores'}</p>
             <h1 id="auth-title" className="auth-heading" ref={title} tabIndex={-1}>{heading}</h1>
@@ -127,6 +141,7 @@ export function AuthRoot({ controller: injected }: { controller?: AuthController
                 </Button>
                 {signingIn && <p className="auth-eyebrow">Espera a que termine este intento antes de volver a enviar.</p>}
               </div>
+            <a href="/recuperar-acceso" className="staff-link w-fit">¿Olvidaste tu contraseña?</a>
             </form>}
             {state.kind === 'authenticated' && <>
               <div className="flex items-center gap-2"><CircleCheck size={20} aria-hidden="true" /><p>Sesión iniciada</p></div>
@@ -136,14 +151,13 @@ export function AuthRoot({ controller: injected }: { controller?: AuthController
                 <div><dt>Rol</dt><dd>{state.user.role}</dd></div>
               </dl>
               <Button variant="outline" className="w-full" onClick={controller.signOut}><LogOut aria-hidden="true" /><span className="min-w-0 [overflow-wrap:anywhere]">Cerrar sesión</span></Button>
+              <a className="staff-link" href="/">Ir al inicio</a>
             </>}
             {(state.kind === 'checkUnavailable' || state.kind === 'signOutUnconfirmed') &&
               <Button variant="outline" className="w-full" onClick={controller.retry}><RotateCcw aria-hidden="true" /><span className="min-w-0 [overflow-wrap:anywhere]">Reintentar</span></Button>}
           </CardContent>
           <CardFooter>Acceso exclusivo para profesores con cuenta habilitada.</CardFooter>
-        </Card>
+        </Card>}
       </section>
-    </main>
-    <footer className="auth-footer">Kudlab · Apoyo al seguimiento pedagógico</footer>
-  </div>;
+  </StaffLayout>;
 }

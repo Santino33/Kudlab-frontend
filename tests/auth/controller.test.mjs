@@ -10,7 +10,7 @@ function fixture() {
   const calls = [];
   const timers = new Map();
   let timerId = 0;
-  const client = createAuthClient((url, init) => new Promise((resolve, reject) => {
+  const client = createAuthClient('http://localhost:3000', (url, init) => new Promise((resolve, reject) => {
     calls.push({ url, signal: init.signal, resolve: (data, status = 200) => resolve(Response.json(data, { status })), reject });
   }));
   const controller = createAuthController(client, {
@@ -31,7 +31,21 @@ for (const role of ['ADMIN', 'TEACHER']) test(`US1: ${role} sign-in and ten repe
   assert.equal(f.controller.getSnapshot().kind, 'signingIn');
   assert.equal(JSON.stringify(f.controller.getSnapshot()).includes('synthetic-only'), false);
   f.calls[1].resolve({ user: { ...user, role } }); await tick();
+  assert.equal(f.controller.getSnapshot().kind, 'checking');
+  assert.equal('user' in f.controller.getSnapshot(), false);
+  f.calls[2].resolve(session(role)); await tick();
   assert.equal(f.controller.getSnapshot().user.role, role);
+  f.controller.stop();
+});
+test('successful login without confirmed cookie session never opens protected content', async () => {
+  const f = fixture(); await f.signedOut();
+  f.controller.signIn('a@example.test', 'synthetic-only');
+  f.calls[1].resolve({ user }); await tick();
+  assert.equal(f.controller.getSnapshot().kind, 'checking');
+  f.calls[2].resolve({ code: 'UNAUTHENTICATED' }, 401); await tick();
+  assert.equal(f.controller.getSnapshot().kind, 'signedOut');
+  assert.equal('user' in f.controller.getSnapshot(), false);
+  assert.equal(f.calls.length, 3);
   f.controller.stop();
 });
 for (const [status, code, error] of [[400, 'INVALID_INPUT', 'input'], [401, 'INVALID_CREDENTIALS', 'credentials']]) {
@@ -45,7 +59,7 @@ for (const [status, code, error] of [[400, 'INVALID_INPUT', 'input'], [401, 'INV
 for (const outcome of ['valid', 'absent', 'failed']) test(`US1: uncertain login reconciles ${outcome} before another attempt`, async () => {
   const f = fixture(); await f.signedOut(); f.controller.signIn('a', 'synthetic-only');
   f.calls[1].reject(Error('network')); await tick();
-  assert.equal(f.calls[2].url, '/api/auth/get-session');
+  assert.equal(f.calls[2].url, 'http://localhost:3000/api/auth/get-session');
   f.controller.signIn('a', 'synthetic-only'); assert.equal(f.calls.length, 3);
   if (outcome === 'valid') f.calls[2].resolve(session());
   else if (outcome === 'absent') f.calls[2].resolve({ code: 'UNAUTHENTICATED' }, 401);
@@ -60,7 +74,7 @@ test('US1: timeout locks until transport settles; obsolete login cannot reopen a
   assert.equal(f.calls[1].signal.aborted, true);
   f.controller.signIn('a', 'b'); assert.equal(f.calls.length, 2);
   f.calls[1].resolve({ user }); await tick();
-  assert.equal(f.calls[2].url, '/api/auth/get-session');
+  assert.equal(f.calls[2].url, 'http://localhost:3000/api/auth/get-session');
   f.controller.stop(); f.calls[2].resolve(session()); await tick();
   assert.equal(f.controller.getSnapshot().kind, 'checking');
 });
@@ -116,13 +130,13 @@ for (const outcome of ['valid', 'absent', 'failed']) test(`US3: uncertain close 
   const f = fixture(); await f.authenticated(); f.controller.signOut();
   f.calls[1].reject(Error('lost')); await tick();
   assert.equal(f.controller.getSnapshot().kind, 'signOutUnconfirmed'); assert.equal(f.calls.length, 2);
-  f.controller.retry(); assert.equal(f.calls[2].url, '/api/auth/get-session');
+  f.controller.retry(); assert.equal(f.calls[2].url, 'http://localhost:3000/api/auth/get-session');
   if (outcome === 'valid') f.calls[2].resolve(session());
   else if (outcome === 'absent') f.calls[2].resolve({ code: 'UNAUTHENTICATED' }, 401);
   else f.calls[2].reject(Error('network'));
   await tick(); assert.equal('user' in f.controller.getSnapshot(), false);
   if (outcome === 'valid') {
-    assert.equal(f.calls[3].url, '/api/auth/sign-out');
+    assert.equal(f.calls[3].url, 'http://localhost:3000/api/auth/sign-out');
     f.calls[3].resolve({ success: true }); await tick();
     assert.equal(f.controller.getSnapshot().reason, 'closed');
   } else assert.equal(f.controller.getSnapshot().kind, outcome === 'absent' ? 'signedOut' : 'signOutUnconfirmed');
@@ -144,7 +158,7 @@ for (const outcome of ['valid', 'absent', 'failed']) test(`US4: forbidden rechec
   const f = fixture(); await f.authenticated();
   f.controller.notify({ generation: f.controller.getGeneration(), category: 'forbidden' });
   assert.equal(f.controller.getSnapshot().kind, 'checking'); assert.equal('user' in f.controller.getSnapshot(), false);
-  assert.equal(f.calls[1].url, '/api/auth/get-session');
+  assert.equal(f.calls[1].url, 'http://localhost:3000/api/auth/get-session');
   if (outcome === 'valid') f.calls[1].resolve(session());
   else if (outcome === 'absent') f.calls[1].resolve({ code: 'UNAUTHENTICATED' }, 401);
   else f.calls[1].reject(Error('network'));
@@ -177,4 +191,13 @@ test('cleanup cancels timers immediately even when a transport ignores abort', a
   assert.equal(f.timers.size, 0);
   f.calls[0].resolve(session()); await tick();
   assert.equal(f.controller.getSnapshot().kind, 'checking');
+});
+test('explicit business revalidation withdraws the snapshot before applying the current role', async () => {
+  const f=fixture(); await f.authenticated();
+  f.controller.revalidate();
+  assert.equal(f.controller.getSnapshot().kind,'checking');
+  assert.equal('user' in f.controller.getSnapshot(),false);
+  f.calls.at(-1).resolve(session('TEACHER')); await tick();
+  assert.equal(f.controller.getSnapshot().user.role,'TEACHER');
+  assert.equal(f.calls.length,2);f.controller.stop();
 });

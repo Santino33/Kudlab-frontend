@@ -12,3 +12,9 @@ build/
 .env.*
 !.env.example
 *.local
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/

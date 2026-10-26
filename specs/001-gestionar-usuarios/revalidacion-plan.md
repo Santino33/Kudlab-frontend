@@ -1,5 +1,17 @@
 # Revalidación para planificación — 2026-10-25
 
+**Actualización posterior 2026-10-26:** P-01/P-02 reconstruidas con autorización
+en worktree persistente separado, 154/154 pruebas backend y conexión real parcial
+SPA/API. [Revisión, hashes y límites](evidence/backend-restored.md). Esto elimina
+el bloqueo por ausencia descrito abajo; no incorpora los cambios a backend main
+ni completa T018. Se conservan registros anteriores como historia.
+
+**Revalidación durante implementación, 2026-10-26:** la revisión corregida externa
+antes verificada ya no está disponible en `/tmp/opencode/kudlab-auth-backend-validation`;
+Git la lista `prunable`. Backend principal sigue en `ff46f8a`, limpio y sin P-01/P-02.
+La coincidencia histórica de hashes de este informe no prueba disponibilidad actual.
+T001–T017 implementadas; T018 bloqueada. Ver [evidencia vigente](evidence/us1.md).
+
 **Estado vigente de la base frontend:** rama `feat/gestionar-usuarios`, documentos guardados en `72bd7ca` y main `664cc5c` integrado por `e45b05d`. La sección final [Preparación del worktree para desarrollo](#preparación-del-worktree-para-desarrollo) registra evidencia actual. Las referencias iniciales a SPA vacía/constitución sin ratificar describen la revisión histórica, no la base integrada.
 
 ## Revisión y límites

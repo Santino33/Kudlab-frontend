@@ -1,6 +1,13 @@
 # Phase 1 — Guía de validación
 
-**Estado:** base de autenticación/UI de main ya integrada en `feat/gestionar-usuarios`; no se han implementado todavía gestión/recuperación de esta feature ni `test:usuarios`. `npm test`, `test:auth` y build son ejecutables hoy. No describir esta guía como E2E de Usuarios ya superado. Preparación y verificaciones en [revalidacion-plan.md](revalidacion-plan.md#preparación-del-worktree-para-desarrollo).
+**Estado 2026-10-26:** gestión, recuperación y dashboard ADMIN/TEACHER implementados.
+`npm ci`, `npm test` (tipos), `test:auth` (66), `test:usuarios` (67) y build pasan.
+Integración real parcial registrada en [evidencia de pantallas](evidence/screens-implementation.md),
+con [backend reconstruido](evidence/backend-restored.md), sin merge a main.
+Vista de revisión en ejecución: `http://localhost:5187/`, API 3002, base desechable;
+el perfil aprobado sigue siendo 5173/3000. No interferir con servicios existentes.
+La matriz posterior conserva escenarios pendientes de aceptación integral; no
+interpretar implementación ni comprobación por DOM como validación real de teclado.
 
 Referencias: [spec y resultados](spec.md), [contrato UI](contracts/ui.md), [consumo](contracts/api-consumption.md), [modelo](data-model.md), [evidencia](revalidacion-plan.md).
 
@@ -9,7 +16,13 @@ Referencias: [spec y resultados](spec.md), [contrato UI](contracts/ui.md), [cons
 - Node 24 y npm; usar el lockfile del proyecto.
 - Backend aislado preparado por su responsable, con datos totalmente ficticios, al menos dos ADMIN activos y un TEACHER activo con credenciales conocidas de prueba. Preparar también cuentas pendiente/inactiva. No activar usuarios por UI de invitación: ese canje está bloqueado. No compartir credenciales reales en documentación ni herramientas.
 - PostgreSQL migrado y proveedor de correo de pruebas autorizados son prerrequisitos del backend, no acciones de este comando. Captura de correo backend está restringida a entorno de pruebas; no apuntar a buzones reales de los ejemplos.
-- Perfil confirmado **para la futura extensión**: SPA `http://localhost:5173`, API `http://localhost:3000`; `SPA_ORIGIN`/`trustedOrigins` deben coincidir. `RESET_BASE_URL` será configurado por el responsable backend como `http://localhost:5173/recuperar-acceso/confirmar`, sin query/fragmento inicial. La base heredada todavía usa rutas relativas/proxy local 3001: no cambiarlo al preparar la rama ni enviar credenciales a un proceso de 3000/3001 sin comprobar su procedencia. No editar backend/configuración efectiva desde frontend para acomodar una suposición.
+- Perfil implementado en cliente: SPA `http://localhost:5173`, API mediante
+  `VITE_API_ORIGIN=http://localhost:3000` (ver `.env.example`); sin proxy heredado
+  a 3001. Configurar localmente el origen público y reiniciar Vite si cambia.
+  `SPA_ORIGIN`/`trustedOrigins` deben coincidir; configuración efectiva backend
+  sigue a cargo del responsable. `RESET_BASE_URL` futuro:
+  `http://localhost:5173/recuperar-acceso/confirmar`, sin query/fragmento inicial.
+  No enviar credenciales a un puerto sin comprobar la revisión/base aislada.
 - La aplicación futura leerá `VITE_API_ORIGIN=http://localhost:3000`; es un origen público, no secreto. No colocar credenciales SMTP, contraseñas de prueba, conexión de BD ni secretos Better Auth en variables `VITE_*`.
 
 ## 2. Comandos disponibles hoy
@@ -24,11 +37,16 @@ npm run build
 npm run dev -- --host localhost --port 5173 --strictPort
 ```
 
-Resultados esperados actuales: instalación, tipos, test:auth y build correctos; Vite sirve AuthRoot gráfico de main, sin recorridos de gestión/recuperación. Sin API comprobada puede mostrar acceso no disponible, no un login operativo por defecto. `npm test` solo es TypeScript y test:auth es lógica/HTTP simulado. `--strictPort` evita cambiar silenciosamente el origen permitido. No arrancar backend ni enviar correos como efecto de preparar esta rama.
+Resultados actuales: instalación, tipos, test:auth, test:usuarios y build correctos;
+Vite sirve dashboard y pantallas de gestión/recuperación. Sin origen válido se muestra
+configuración no disponible y no se llama API; con origen pero sin API, acceso no
+comprobado. `npm test` solo es TypeScript, suites Node usan HTTP simulado.
+`--strictPort` evita cambiar el origen permitido. No arrancar backend ni enviar correo
+sin entorno autorizado. Ejecutar también `npm run test:usuarios` en este estado.
 
 ## 3. Comandos y preparación después de implementar
 
-El plan prevé añadir `test:usuarios` con runner nativo Node, sin nuevas dependencias:
+`test:usuarios` está disponible con runner nativo Node, sin nuevas dependencias:
 
 ```sh
 npm test

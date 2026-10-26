@@ -1,5 +1,11 @@
 # Feature Specification: Gestionar usuarios del personal
 
+**Ampliación aprobada 2026-10-26:** [dashboard principal por rol y prioridad de
+pantallas funcionales](dashboard-amendment.md). `/` ofrece inicio autenticado
+ADMIN/TEACHER, sin capacidades administrativas para docentes ni módulos de relleno.
+Esta decisión posterior sustituye la exclusión inicial del dashboard; mantiene
+los bloqueos Q1/Q2 y los límites de permisos de Q3.
+
 **Feature Branch**: `feat/gestionar-usuarios`, worktree `spec-usuarios`; documentos guardados en `72bd7ca` e integración de `main@664cc5c` mediante merge `e45b05d`, autorizados por el responsable. No fue una rama creada por hook.
 
 **Created**: 2026-10-25

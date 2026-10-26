@@ -1,5 +1,82 @@
+import { useMemo, useState } from 'react';
 import { AuthRoot } from './auth/AuthRoot.tsx';
+import type { AuthController } from './auth/controller.ts';
+import { createAuthController } from './auth/controller.ts';
+import { createAuthClient } from './auth/client.ts';
+import { Alert, AlertDescription } from './components/ui/alert';
+import { Card, CardContent, CardHeader } from './components/ui/card';
+import { canManageAccounts, resolveRoute } from './features/usuarios/navigation.ts';
+import type { captureEntry } from './features/usuarios/navigation.ts';
+import { StaffLayout } from './components/StaffLayout';
+import { createHttpClient } from './lib/http.ts';
+import { createUsuariosApi } from './features/usuarios/api.ts';
+import { Dashboard, Workspace } from './features/usuarios/Workspace';
+import { Accounts } from './features/usuarios/Accounts';
+import { AccountDetail } from './features/usuarios/AccountDetail';
+import { AccountForm } from './features/usuarios/AccountForm';
+import { Recovery } from './features/usuarios/Recovery';
+import { Notice } from './features/usuarios/shared';
+import { Button } from './components/ui/button';
 
-export function App() {
-  return <AuthRoot />;
+function DestinationNotice({ blocked = false, denied = false }: { blocked?: boolean; denied?: boolean }) {
+  return <Card>
+    <CardHeader><h1 id="auth-title" className="auth-heading" tabIndex={-1}>
+      {blocked ? 'Enlace no disponible' : denied ? 'No tienes acceso a este destino' : 'Destino no disponible'}
+    </h1></CardHeader>
+    <CardContent>
+      <Alert><AlertDescription>{blocked ?
+        'No podemos identificar un trámite utilizable con este enlace. No se ha realizado ninguna operación.' :
+        denied ? 'El servidor no ha autorizado este destino con tu acceso actual.' :
+        'Este destino no está disponible en esta versión.'}</AlertDescription></Alert>
+      <a className="staff-link" href={blocked ? '/acceso' : '/'}>{blocked ? 'Ir al acceso' : 'Volver al inicio'}</a>
+    </CardContent>
+  </Card>;
+}
+
+export function App({ controller: injected, apiOrigin, pathname = window.location.pathname, search = window.location.search, initialEntry, fetcher = globalThis.fetch }: {
+  controller?: AuthController; apiOrigin?: string; pathname?: string; search?: string;
+  initialEntry?: ReturnType<typeof captureEntry>; fetcher?: typeof fetch;
+}) {
+  const [entry] = useState(() => initialEntry ?? { route: resolveRoute(pathname, search), recovery: { read: () => undefined, clear() {} } });
+  const route = entry.route;
+  const [uncertain, setUncertain] = useState(false);
+  const [controller] = useState(() => {
+    if (injected) return injected;
+    try { return createAuthController(createAuthClient(apiOrigin ?? '', (url, init) => fetcher(url, init))); }
+    catch { return undefined; }
+  });
+  const apis = useMemo(() => {
+    if (!controller || !apiOrigin) return;
+    try { return {
+      accounts: createUsuariosApi(createHttpClient(apiOrigin, controller, fetcher, () => setUncertain(true))),
+      recovery: createUsuariosApi(createHttpClient(apiOrigin, { getGeneration: controller.getGeneration, notify() {} }, fetcher)),
+    }; } catch { return; }
+  }, [controller, apiOrigin, fetcher]);
+  if (route.kind === 'blockedLink' || route.kind === 'unavailable') {
+    return <StaffLayout><section className="auth-content" aria-labelledby="auth-title">
+      <DestinationNotice blocked={route.kind === 'blockedLink'} />
+    </section></StaffLayout>;
+  }
+  if (!controller || !apis) {
+    return <StaffLayout><section className="auth-content" aria-labelledby="auth-title"><Card>
+      <CardHeader><h1 id="auth-title" className="auth-heading">Acceso no disponible</h1></CardHeader>
+      <CardContent><Alert><AlertDescription>No se ha configurado un origen válido para la API. Solicita al responsable que revise la configuración.</AlertDescription></Alert></CardContent>
+    </Card></section></StaffLayout>;
+  }
+  if (route.kind === 'recoveryRequest' || route.kind === 'recoveryConfirm') {
+    return <AuthRoot controller={controller} onSuspend={entry.recovery.clear} publicContent={() =>
+      <Recovery api={apis.recovery} confirm={route.kind === 'recoveryConfirm'} ticket={entry.recovery} />} />;
+  }
+  const management = ['accounts', 'invite', 'detail', 'edit'].includes(route.kind);
+  return <AuthRoot controller={controller} notice={uncertain ? <Notice title="Hay una operación sin confirmar">
+    <p>No la repitas sin revisar el estado actual de la cuenta. El fallo no demuestra que se haya deshecho.</p>
+    <Button variant="outline" className="mt-4" onClick={() => setUncertain(false)}>Ya revisé el estado actual</Button>
+  </Notice> : undefined} renderAuthenticated={route.kind === 'session' ? undefined :
+    (user, access, generation) => <Workspace user={user} section={management ? 'accounts' : 'home'} signOut={access.signOut}>
+      <div key={`${generation}:${route.kind}`}>{management && !canManageAccounts(access.getSnapshot()) ? <DestinationNotice denied /> :
+        route.kind === 'accounts' ? <Accounts api={apis.accounts} /> :
+        route.kind === 'invite' ? <AccountForm api={apis.accounts} locked={uncertain} /> :
+        route.kind === 'detail' ? <AccountDetail api={apis.accounts} accountId={route.accountId} revalidate={access.revalidate} locked={uncertain} /> :
+        route.kind === 'edit' ? <AccountForm api={apis.accounts} accountId={route.accountId} locked={uncertain} /> : <Dashboard user={user} />}</div>
+    </Workspace>} />;
 }

@@ -6,6 +6,12 @@ Contrato de comportamiento futuro, no implementación ni maqueta gráfica. Deriv
 
 ## Navegación de alcance finito
 
+**Actualización aprobada:** `/` es el dashboard por rol y `/acceso`, tras confirmar
+sesión, presenta el mismo inicio. ADMIN tiene accesos reales a usuarios/invitación;
+TEACHER solo identidad/estado/cierre y navegación de ese acceso. Ver
+[ampliación](../dashboard-amendment.md). No se añaden permisos backend ni capacidades
+académicas. La tabla original siguiente conserva la procedencia del diseño previo.
+
 Rutas frontend de diseño, no rutas backend. Links nativos producen carga de página; App resuelve pathname y consulta sesión antes de mostrar destinos protegidos. No instalar router ni implementar uno genérico. Ruta desconocida presenta destino no disponible y acceso/inicio autorizado, sin abrir módulos de relleno.
 
 No depender solo del arranque/remontaje: conservar el manejo existente pageshow/pagehide/visibilitychange de AuthRoot/controlador, deduplicar revalidación y retirar DOM/snapshot/datos protegidos antes de suspender o restaurar desde BFCache. Ninguna respuesta de generación antigua repone datos o roba foco; no desactivar BFCache ni mantener sesión por polling. La integración futura de negocio/recuperación debe ampliar esta garantía existente.
