@@ -122,14 +122,14 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, onSus
             {error && <Alert ref={summary} tabIndex={-1}><CircleAlert aria-hidden="true" /><AlertDescription>{error}</AlertDescription></Alert>}
             {(state.kind === 'signedOut' || signingIn) && <form className="auth-form" onSubmit={submit} noValidate aria-busy={signingIn}>
               <div className="auth-field">
-                <Label htmlFor="email">Correo <span className="auth-required">(obligatorio)</span></Label>
+                <Label htmlFor="email">Correo</Label>
                 <Input id="email" ref={emailInput} name="email" type="email" autoComplete="username" required
                   value={email} onChange={(event) => setEmail(event.target.value)}
                   aria-invalid={Boolean(invalid.email)} aria-describedby={invalid.email ? 'email-error' : undefined} />
                 {invalid.email && <p id="email-error" className="auth-field-error" role="alert"><CircleAlert size={20} aria-hidden="true" />{invalid.email}</p>}
               </div>
               <div className="auth-field">
-                <Label htmlFor="password">Contraseña <span className="auth-required">(obligatorio)</span></Label>
+                <Label htmlFor="password">Contraseña</Label>
                 <Input id="password" ref={passwordInput} name="password" type="password" autoComplete="current-password" required
                   aria-invalid={Boolean(invalid.password)} aria-describedby={invalid.password ? 'password-error' : undefined} />
                 {invalid.password && <p id="password-error" className="auth-field-error" role="alert"><CircleAlert size={20} aria-hidden="true" />{invalid.password}</p>}

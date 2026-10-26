@@ -115,7 +115,7 @@ Iconografía: **Lucide es la familia aprobada**, todavía no instalada. Mantener
 
 | Patrón | Regla operativa |
 | --- | --- |
-| Formularios | Etiqueta persistente; ayuda y restricciones antes de enviar; obligatoriedad explícita. No usar placeholder como etiqueta. Errores junto al campo y resumen al enviar si hay varios; conservar datos no sensibles. Validar tras interacción, no castigar cada tecla. Permitir pegado y gestores de contraseñas |
+| Formularios | Etiqueta persistente sin sufijos «(obligatorio)»/«(obligatoria)» (C-07); conservar `required`, validación, ayuda y restricciones antes de enviar. No usar placeholder como etiqueta. Errores junto al campo y resumen al enviar si hay varios; conservar datos no sensibles. Validar tras interacción, no castigar cada tecla. Permitir pegado y gestores de contraseñas |
 | Botones | Verbo + objeto, primaria y secundaria distinguibles. Estados base, hover, presión, foco, carga e inactivo especificados. Carga con texto («Guardando…»), sin doble envío ni pérdida del ancho. Explicar cerca por qué una acción está inactiva |
 | Navegación | Ubicación y sección actual claras, enlace activo también indicado por forma/texto. Orden estable; enlaces para destinos, botones para acciones. Solo destinos autorizados y existentes; no menús académicos de relleno |
 | Tarjetas | Agrupar una unidad real de contenido; título, información y acción explícita. No hacer toda la tarjeta clicable si contiene controles anidados. No convertir cada dato en tarjeta |
@@ -172,6 +172,7 @@ Objetivo recomendado: **WCAG 2.2 nivel AA**; no equivale a certificación del pr
 | C-04 | Aprobado por responsable tras revisión | Mapeos semánticos de colores resueltos, geometría, tipografía, patrones, responsive y objetivo WCAG 2.2 AA de las secciones 3–7. No incluye pendientes explícitos ni certifica cumplimiento |
 | C-05 | Aprobado por responsable | shadcn/ui + Base UI + Lucide; MCP de shadcn de proyecto para consultar componentes. No autoriza implementar interfaces en esta tarea |
 | C-06 | Aprobado por responsable el 2026-10-25 durante planificación de Usuarios | Fallback neutral Dark 1 sobre blanco, título/texto explícitos e icono con etiqueta cuando aporte; sin asignar Error/Warning/Info/Success ni rojo destructivo. Confirmación: «Aprobar fallback (recomendado)». No resuelve P-01 ni certifica accesibilidad |
+| C-07 | Confirmado por responsable el 2026-10-26 | Todas las etiquetas del frontend omiten «(obligatorio)» y «(obligatoria)». Es un cambio de texto: se conservan obligatoriedad semántica, validación y asociación etiqueta/control; no cambia contratos backend |
 | P-04 | Pendiente | Prioridad de dispositivos del profesorado y activos gráficos de marca; no bloquean documentar Usuarios sin inventarlos |
 
 ## 10. Fuentes y límites de evidencia

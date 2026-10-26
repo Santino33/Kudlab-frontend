@@ -82,13 +82,13 @@ export function Recovery({ api, confirm, ticket }: { api: UsuariosApi; confirm: 
       </Notice>}
       {Object.keys(issues).length > 0 && <Notice title="Revisa los datos">{Object.values(issues).join(' ')}</Notice>}
       <form className="auth-form" onSubmit={submit} noValidate aria-busy={mutation.pending}>
-        {!confirm ? <div className="auth-field"><Label htmlFor="recovery-email">Correo institucional (obligatorio)</Label>
+        {!confirm ? <div className="auth-field"><Label htmlFor="recovery-email">Correo institucional</Label>
           <Input ref={emailInput} id="recovery-email" type="email" name="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} aria-invalid={Boolean(issues.email)} aria-describedby="recovery-email-help" />
           <p id="recovery-email-help" className="text-sm">{issues.email ?? 'El correo con el que accedes a Kudlab, terminado en .edu.co.'}</p></div> : <>
-          <div className="auth-field"><Label htmlFor="new-password">Nueva contraseña (obligatoria)</Label>
+          <div className="auth-field"><Label htmlFor="new-password">Nueva contraseña</Label>
             <Input ref={password} id="new-password" type={showPasswords ? 'text' : 'password'} name="newPassword" autoComplete="new-password" required maxLength={128} aria-invalid={Boolean(issues.password)} aria-describedby="new-password-help" />
             <p id="new-password-help" className="text-sm">{issues.password ?? 'Entre 8 y 128 caracteres, con una mayúscula (A–Z), una minúscula (a–z) y un número.'}</p></div>
-          <div className="auth-field"><Label htmlFor="confirm-password">Confirmar contraseña (obligatorio)</Label>
+          <div className="auth-field"><Label htmlFor="confirm-password">Confirmar contraseña</Label>
             <Input ref={confirmation} id="confirm-password" type={showPasswords ? 'text' : 'password'} name="confirmation" autoComplete="new-password" required maxLength={128} aria-invalid={Boolean(issues.confirmation)} aria-describedby={issues.confirmation ? 'password-confirmation-error' : undefined} />
             {issues.confirmation && <p id="password-confirmation-error">{issues.confirmation}</p>}</div>
           <Button type="button" variant="outline" className="w-fit" aria-pressed={showPasswords} aria-controls="new-password confirm-password" onClick={() => setShowPasswords(value => !value)}>

@@ -68,10 +68,10 @@ function Editor({ api, account, review, refreshing, locked }: { api: UsuariosApi
       {blocked && !editing && <ActionLink href="/usuarios">Revisar el listado antes de volver a invitar</ActionLink>}
       {Object.keys(issues).length > 0 && <Notice title="Revisa los datos">{Object.values(issues).join(' ')}</Notice>}
       <form className="auth-form" noValidate onSubmit={submit} aria-busy={mutation.pending}>
-        <div className="auth-field"><Label htmlFor="account-name">Nombre completo (obligatorio)</Label>
+        <div className="auth-field"><Label htmlFor="account-name">Nombre completo</Label>
           <Input ref={nameInput} id="account-name" name="name" autoComplete="name" required maxLength={200} value={name} onChange={(event) => setName(event.target.value)} aria-invalid={Boolean(nameIssue)} aria-describedby="account-name-help" />
           <p id="account-name-help" className="text-sm">{nameIssue ?? 'Máximo 200 caracteres.'}</p></div>
-        <div className="auth-field"><Label htmlFor="account-email">{editing ? 'Correo' : 'Correo institucional'} (obligatorio)</Label>
+        <div className="auth-field"><Label htmlFor="account-email">{editing ? 'Correo' : 'Correo institucional'}</Label>
           <Input ref={emailInput} id="account-email" name="email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} aria-invalid={Boolean(emailIssue)} aria-describedby="account-email-help" />
           <p id="account-email-help" className="text-sm">{emailIssue ?? 'Debe terminar en .edu.co. El cambio de correo puede requerir confirmación.'}</p></div>
         {!editing && <p>Rol inicial: <strong>Docente (TEACHER)</strong></p>}

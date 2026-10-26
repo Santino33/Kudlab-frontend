@@ -59,7 +59,6 @@
 .auth-form { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 1.5rem; }
 .auth-field { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: .5rem; }
 .auth-field label, .auth-field-error { overflow-wrap: anywhere; }
-.auth-required { font-size: 1rem; font-weight: 400; }
 .auth-field-error { display: flex; align-items: flex-start; gap: .5rem; }
 .auth-field-error svg { flex: 0 0 1.25rem; margin-top: .25rem; }
 .auth-identity { display: grid; gap: 1rem; }
