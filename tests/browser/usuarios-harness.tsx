@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from '../../src/App.tsx';
 import { createAuthClient } from '../../src/auth/client.ts';
 import { createAuthController } from '../../src/auth/controller.ts';
+import { resolveRoute } from '../../src/features/usuarios/navigation.ts';
 import '../../src/styles.css';
 
 // Test-only fake transport; no network fallback or retained credentials.
@@ -32,6 +33,16 @@ const accounts = [
   { id: 'cuenta-admin', name: 'Camilo Torres', email: 'camilo@ejemplo.edu.co', role: 'ADMIN', status: 'ACTIVA', createdAt: '2026-10-15T14:00:00Z' },
 ];
 const businessFetch: typeof fetch = async (input, init) => {
+  const target = new URL(String(input));
+  if (target.pathname.startsWith('/api/v1/auth/password-recovery/')) {
+    const count = Number(document.body.dataset.recoverySubmissions ?? 0) + 1;
+    document.body.dataset.recoverySubmissions = String(count);
+    if (scenario.get('recovery') === 'unavailable') throw new TypeError('Synthetic unavailable');
+    if (scenario.get('recovery') === 'pending') return new Promise<Response>(() => {});
+    const status = Number(scenario.get('recovery'));
+    if ([400, 410, 503].includes(status)) return Response.json({ code: status === 410 ? 'VERIFICATION_EXPIRED' : 'INVALID_INPUT' }, { status });
+    return target.pathname.endsWith('/request') ? Response.json({ message: 'Si corresponde, recibirás instrucciones en tu correo.' }, { status: 202 }) : Response.json({ success: true });
+  }
   if (scenario.get('business') === 'unavailable' || init?.method !== 'GET') throw new TypeError('Synthetic unavailable');
   if (scenario.get('business') === 'forbidden') return Response.json({ code: 'FORBIDDEN' }, { status: 403 });
   const url = new URL(String(input));
@@ -43,6 +54,13 @@ const businessFetch: typeof fetch = async (input, init) => {
   return account ? Response.json(account) : Response.json({ code: 'NOT_FOUND' }, { status: 404 });
 };
 
+// Synthetic token only: never a mailbox URL or real token in this test harness.
+let recoveryToken = scenario.get('ticket') === 'valid' ? 'synthetic-recovery-only' : undefined;
+const path = scenario.get('path') ?? '/';
+const initialEntry = path.startsWith('/recuperar-acceso') ? {
+  route: resolveRoute(path, ''), recovery: { read: () => recoveryToken, clear: () => { recoveryToken = undefined; } },
+} : undefined;
+
 createRoot(document.getElementById('root')!).render(<StrictMode>
-  <App controller={controller} apiOrigin="http://localhost:3000" fetcher={businessFetch} pathname={scenario.get('path') ?? '/'} search={scenario.has('blocked') ? '?token=synthetic' : ''} />
+  <App controller={controller} apiOrigin="http://localhost:3000" fetcher={businessFetch} initialEntry={initialEntry} pathname={path} search={scenario.has('blocked') ? '?token=synthetic' : ''} />
 </StrictMode>);

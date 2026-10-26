@@ -98,7 +98,7 @@ y [preparación verificada](specs/001-gestionar-usuarios/revalidacion-plan.md#pr
 Dashboard extensible mediante descriptores tipados en `src/features/usuarios/dashboard.ts`,
 sin agregar router ni dependencias. 44/57 tareas completadas; validación manual integral pendiente.
 Ver [pantallas y evidencia](specs/001-gestionar-usuarios/evidence/screens-implementation.md).
-Verificación actual: 66 pruebas auth + 67 Usuarios, tipos y build correctos.
+Verificación actual: 66 pruebas auth + 70 Usuarios, tipos y build correctos.
 Revisión local en ejecución: SPA `http://localhost:5187/`, API `http://localhost:3002`,
 base desechable y correo capturado; no reemplaza el perfil aprobado 5173/3000.
 
@@ -111,6 +111,13 @@ Ver [comparación y comprobaciones](specs/001-gestionar-usuarios/evidence/design
 Corrección posterior: el sidebar artesanal fue sustituido por la composición
 oficial shadcn/Base UI, adaptada al manual, con borde izquierdo en `0px` y Sheet
 móvil. Ver [fuentes y comprobaciones](specs/001-gestionar-usuarios/evidence/sidebar-review.md).
+
+Recuperación refinada: solicitud, confirmación neutra, nueva contraseña con
+mostrar/ocultar, validación, enlace no utilizable, errores e incertidumbre y retorno
+al acceso. [Prueba SMTP real autorizada y límites](specs/001-gestionar-usuarios/evidence/recovery-review.md).
+Vista de este ensayo: `http://localhost:5188/recuperar-acceso`, API SMTP 3004 y
+base desechable **separada**; no reemplaza los servicios previos 5187/3002 ni el
+perfil aprobado 5173/3000. Un envío aceptado no confirma recepción en el buzón.
 Ver [reconstrucción autorizada y conexión real](specs/001-gestionar-usuarios/evidence/backend-restored.md):
 P-01/P-02 disponibles en worktree backend separado, 154/154 pruebas y validación
 SPA/API parcial; T018 aún pendiente de completar. No usar backend main como sustituto:

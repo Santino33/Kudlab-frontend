@@ -13,6 +13,10 @@ login heredado como una pantalla nueva ni se declara la feature terminada.
 **Revisión de diseño posterior:** `/sesion` retirada por petición expresa; T017
 conserva su descripción de implementación inicial, sustituida en navegación por
 el inicio por rol. Evidencia y límites en [revisión visual](evidence/design-review.md).
+
+**Recuperación refinada y ensayo SMTP:** ver [revisión y resultado](evidence/recovery-review.md).
+No se marca T036 ni el gate integral por un único mensaje aceptado: falta recepción
+y cierre del recorrido por el titular, además de los escenarios manuales pendientes.
 Ver [setup](evidence/setup.md), [referencia visual](evidence/visual-reference.md),
 [base común](evidence/foundation.md) y [US1/bloqueo](evidence/us1.md).
 Los estados «solo preparación» que siguen conservan el contexto anterior a esta ejecución.

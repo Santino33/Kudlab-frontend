@@ -1,13 +1,19 @@
 # Phase 1 — Guía de validación
 
 **Estado 2026-10-26:** gestión, recuperación y dashboard ADMIN/TEACHER implementados.
-`npm ci`, `npm test` (tipos), `test:auth` (66), `test:usuarios` (67) y build pasan.
+`npm ci`, `npm test` (tipos), `test:auth` (66), `test:usuarios` (70) y build pasan.
 Integración real parcial registrada en [evidencia de pantallas](evidence/screens-implementation.md),
 con [backend reconstruido](evidence/backend-restored.md), sin merge a main.
 Vista de revisión en ejecución: `http://localhost:5187/`, API 3002, base desechable;
 el perfil aprobado sigue siendo 5173/3000. No interferir con servicios existentes.
 La matriz posterior conserva escenarios pendientes de aceptación integral; no
 interpretar implementación ni comprobación por DOM como validación real de teclado.
+
+**Ensayo de recuperación SMTP posterior:** SPA 5188/API 3004, base desechable
+`kudlab_recovery_preview`, revisión backend `feat/configure-smtp@a3be18e` sin editar
+código. Usar `http://localhost:5188/recuperar-acceso` para ese ensayo, no 5187 que
+conserva API de captura. El titular elige la contraseña desde el enlace recibido;
+no solicitarla ni copiar el enlace/token en evidencias. Ver [resultado](evidence/recovery-review.md).
 
 Referencias: [spec y resultados](spec.md), [contrato UI](contracts/ui.md), [consumo](contracts/api-consumption.md), [modelo](data-model.md), [evidencia](revalidacion-plan.md).
 

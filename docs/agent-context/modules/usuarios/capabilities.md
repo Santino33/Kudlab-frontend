@@ -1,5 +1,11 @@
 # Inventario de capacidades reales y pendientes
 
+**Recuperación, revisión posterior 2026-10-26:** pantallas refinadas y prueba real
+SMTP autorizada sobre cuenta TEACHER en base desechable separada. Un único correo
+aceptado por el proveedor; recepción/cambio elegido por el titular aún pendientes.
+66 pruebas auth + 70 Usuarios, tipos/build y 15 combinaciones de estado/ancho en
+Chrome correctas. [Fuentes, evidencia y límites](../../../../specs/001-gestionar-usuarios/evidence/recovery-review.md).
+
 **Actualización posterior 2026-10-26:** [backend P-01/P-02 reconstruido y validado](../../../../specs/001-gestionar-usuarios/evidence/backend-restored.md)
 con autorización, en worktree separado sin merge a main. Suite backend 154/154,
 documentación 22/22 y conexión real de auth SPA/API parcial; el bloqueo por revisión
