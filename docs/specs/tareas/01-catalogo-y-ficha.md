@@ -133,3 +133,13 @@ Dark 1/blanco 13.31:1, borde/foco con mismos colores; sin colores diagnósticos.
 Reflujo 320px comprobado, **no zoom nativo 400%** (atajo del navegador embebido no
 modificó viewport). No lector de pantalla, dispositivos físicos, BFCache real,
 TLS/despliegue ni aceptación con profesores. No se declara piloto listo.
+
+### Revisión final entregada
+
+Backend `8dd556d` incluye auth `518e88b`, catálogo `36d760d` y refactor final.
+Se repitieron después del refactor 242/242 pruebas backend (39 archivos), tipos y
+docs:check 22/22. Frontend `1f5f778` incluye las correcciones/refactor ya verificados
+y este cierre documental posterior. Último recorrido con procesos reales reiniciados
+sobre el refactor: login TEACHER por URL directa de ficha, lista y detalle 200,
+ambos Cache-Control no-store; lista solo TG-01 y assignable=false. No se mezclaron
+pruebas destructivas de fixtures con los procesos del recorrido.
