@@ -1,4 +1,5 @@
-// Base técnica sin pantallas: los recorridos de Usuarios solo están documentados.
+import { AuthRoot } from './auth/AuthRoot.tsx';
+
 export function App() {
-  return null;
+  return <AuthRoot />;
 }
