@@ -3,6 +3,7 @@
 .opencode/skills/*
 !.opencode/skills/ponytail/
 skills-lock.json
+.taste-skill/
 
 node_modules/
 dist/

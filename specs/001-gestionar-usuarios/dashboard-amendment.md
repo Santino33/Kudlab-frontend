@@ -1,5 +1,10 @@
 # Dashboard y prioridad de entrega — aprobación del responsable
 
+**Decisión posterior 2026-10-26:** el responsable retiró `/sesion`. El inicio
+identifica el rol mediante la sesión confirmada y muestra directamente la interfaz
+ADMIN/TEACHER. Se eliminan la ruta y los enlaces «Mi sesión»; identidad y cierre
+permanecen en el espacio de trabajo. La mención siguiente registra el diseño anterior.
+
 **2026-10-26.** El responsable pidió expresamente añadir el dashboard principal,
 extensible por funcionalidades y diferenciado para ADMIN/TEACHER, manteniendo la
 identidad existente y componentes shadcn. Indicó que el valor principal de esta

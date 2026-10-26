@@ -3,7 +3,7 @@ import type { AccessState } from '../../auth/state.ts';
 export const canManageAccounts = (state: AccessState) => state.kind === 'authenticated' && state.user.role === 'ADMIN' && !state.denied;
 
 export type Route =
-  | { kind: 'entry' | 'access' | 'session' | 'accounts' | 'invite' | 'recoveryRequest' |
+  | { kind: 'entry' | 'access' | 'accounts' | 'invite' | 'recoveryRequest' |
       'recoveryConfirm' | 'unavailable' | 'blockedLink' }
   | { kind: 'detail' | 'edit'; accountId: string };
 
@@ -14,7 +14,6 @@ export function resolveRoute(pathname: string, search: string): Route {
   switch (pathname) {
     case '/': return { kind: 'entry' };
     case '/acceso': return { kind: 'access' };
-    case '/sesion': return { kind: 'session' };
     case '/usuarios': return { kind: 'accounts' };
     case '/usuarios/nueva': return { kind: 'invite' };
     case '/recuperar-acceso': return { kind: 'recoveryRequest' };

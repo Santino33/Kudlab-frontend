@@ -71,8 +71,8 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
   return <AuthRoot controller={controller} notice={uncertain ? <Notice title="Hay una operación sin confirmar">
     <p>No la repitas sin revisar el estado actual de la cuenta. El fallo no demuestra que se haya deshecho.</p>
     <Button variant="outline" className="mt-4" onClick={() => setUncertain(false)}>Ya revisé el estado actual</Button>
-  </Notice> : undefined} renderAuthenticated={route.kind === 'session' ? undefined :
-    (user, access, generation) => <Workspace user={user} section={management ? 'accounts' : 'home'} signOut={access.signOut}>
+  </Notice> : undefined} renderAuthenticated={
+    (user, access, generation) => <Workspace user={user} section={route.kind === 'invite' ? 'invite' : management ? 'accounts' : 'home'} signOut={access.signOut}>
       <div key={`${generation}:${route.kind}`}>{management && !canManageAccounts(access.getSnapshot()) ? <DestinationNotice denied /> :
         route.kind === 'accounts' ? <Accounts api={apis.accounts} /> :
         route.kind === 'invite' ? <AccountForm api={apis.accounts} locked={uncertain} /> :

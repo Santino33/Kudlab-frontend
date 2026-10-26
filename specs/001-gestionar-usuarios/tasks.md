@@ -9,6 +9,10 @@ rol implementados. 44/57 tareas completadas; siguen abiertas las validaciones
 manuales integrales y el gate gráfico. Ver [evidencia de pantallas](evidence/screens-implementation.md)
 y [ampliación aprobada del dashboard](dashboard-amendment.md). No se presenta el
 login heredado como una pantalla nueva ni se declara la feature terminada.
+
+**Revisión de diseño posterior:** `/sesion` retirada por petición expresa; T017
+conserva su descripción de implementación inicial, sustituida en navegación por
+el inicio por rol. Evidencia y límites en [revisión visual](evidence/design-review.md).
 Ver [setup](evidence/setup.md), [referencia visual](evidence/visual-reference.md),
 [base común](evidence/foundation.md) y [US1/bloqueo](evidence/us1.md).
 Los estados «solo preparación» que siguen conservan el contexto anterior a esta ejecución.

@@ -20,7 +20,7 @@ No depender solo del arranque/remontaje: conservar el manejo existente pageshow/
 | --- | --- | --- |
 | `/` | Entrada | Sin token: resolver sesión y ofrecer acceso o destino por rol. Con token query fuera de recuperación: estado de enlace bloqueado sin canje |
 | `/acceso` | Público | Correo/contraseña, recuperación, envío único y mensaje uniforme. Sin selector de rol, signup, Google o «recordarme» |
-| `/sesion` | Sesión vigente | TEACHER: solo estado de acceso y cerrar sesión. ADMIN puede ir a gestión autorizada, sin sección académica |
+| `/sesion` (retirada por decisión posterior) | No disponible | Sin pantalla ni enlace; identidad, rol y cierre integrados en el inicio |
 | `/usuarios` | ADMIN | Listado, filtro por estado, paginación, invitación y enlaces de detalle |
 | `/usuarios/nueva` | ADMIN | Nombre/correo, explicación de cuenta pendiente y bloqueo actual de aceptación; no contraseña ni selector ADMIN |
 | `/usuarios/:id` | ADMIN | Datos confirmados, entrega/vencimiento si existen, edición, reemisión pendiente, inactivación/reducción cuando corresponden; sin historial/reactivación/ascensos |
@@ -65,7 +65,7 @@ Aplicar `docs/design/agent-design-manual.md`; reutilizar componentes shadcn/ui B
 
 ## Condiciones observables de aceptación
 
-1. TEACHER accede a `/sesion` y no ve cuentas, perfil editable, ascensos o módulos académicos. Entradas directas ADMIN no muestran datos ni envían mutaciones.
+1. TEACHER accede a `/` y no ve cuentas, perfil editable, ascensos o módulos académicos. Entradas directas ADMIN no muestran datos ni envían mutaciones. `/sesion` ya no es una ruta válida.
 2. ADMIN ve solo operaciones allowlist y estados actuales; cancelar cualquier confirmación no envía solicitud.
 3. Cambiar cuenta/filtro mientras carga no muestra una respuesta vieja como nueva; ante 401/403 retira datos indebidos.
 4. Dobles pulsaciones y errores inciertos nunca duplican automáticamente mutaciones; el aviso persiste hasta revisión autorizada o salida explícita.

@@ -25,6 +25,24 @@ const controller = createAuthController(createAuthClient('http://localhost:3000'
   return Response.json({ user });
 }));
 
+const accounts = [
+  { id: 'cuenta-lucia', name: 'Lucía Martínez', email: 'lucia@ejemplo.edu.co', role: 'TEACHER', status: 'ACTIVA', createdAt: '2026-10-20T14:00:00Z' },
+  { id: 'cuenta-andres', name: 'Andrés Rojas', email: 'andres@ejemplo.edu.co', role: 'TEACHER', status: 'PENDIENTE', deliveryStatus: 'ENVIADA', invitationExpiresAt: '2026-11-02T14:00:00Z', createdAt: '2026-10-26T14:00:00Z' },
+  { id: 'cuenta-ana', name: 'Ana Beltrán', email: 'ana@ejemplo.edu.co', role: 'TEACHER', status: 'INACTIVA', createdAt: '2026-10-18T14:00:00Z' },
+  { id: 'cuenta-admin', name: 'Camilo Torres', email: 'camilo@ejemplo.edu.co', role: 'ADMIN', status: 'ACTIVA', createdAt: '2026-10-15T14:00:00Z' },
+];
+const businessFetch: typeof fetch = async (input, init) => {
+  if (scenario.get('business') === 'unavailable' || init?.method !== 'GET') throw new TypeError('Synthetic unavailable');
+  if (scenario.get('business') === 'forbidden') return Response.json({ code: 'FORBIDDEN' }, { status: 403 });
+  const url = new URL(String(input));
+  if (url.pathname === '/api/v1/accounts') {
+    const items = scenario.get('business') === 'empty' ? [] : accounts.filter(account => !url.searchParams.has('status') || account.status === url.searchParams.get('status'));
+    return Response.json({ items, total: items.length, limit: 20, offset: 0 });
+  }
+  const account = accounts.find(item => url.pathname === `/api/v1/accounts/${item.id}`);
+  return account ? Response.json(account) : Response.json({ code: 'NOT_FOUND' }, { status: 404 });
+};
+
 createRoot(document.getElementById('root')!).render(<StrictMode>
-  <App controller={controller} apiOrigin="http://localhost:3000" fetcher={async () => { throw new TypeError('Synthetic unavailable'); }} pathname={scenario.get('path') ?? '/'} search={scenario.has('blocked') ? '?token=synthetic' : ''} />
+  <App controller={controller} apiOrigin="http://localhost:3000" fetcher={businessFetch} pathname={scenario.get('path') ?? '/'} search={scenario.has('blocked') ? '?token=synthetic' : ''} />
 </StrictMode>);

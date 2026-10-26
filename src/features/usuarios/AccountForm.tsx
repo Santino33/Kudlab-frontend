@@ -55,11 +55,13 @@ function Editor({ api, account, review, refreshing, locked }: { api: UsuariosApi
   const blocked = mutation.result?.kind === 'error' && mutation.result.status === 409 || Boolean(mutation.result && 'uncertain' in mutation.result && mutation.result.uncertain);
   return <div className="staff-stack">
     <a className="staff-link w-fit" href={back}><ArrowLeft className="mr-2 size-4" aria-hidden="true" />{editing ? 'Volver a la cuenta' : 'Volver al listado'}</a>
-    <Card className="staff-form"><CardHeader><p className="auth-eyebrow">Administración · {editing ? 'Datos de la cuenta' : 'Incorporar personal'}</p>
+    <Card className="staff-form"><CardHeader>
       <h1 id="auth-title" className="auth-heading" tabIndex={-1}>{editing ? 'Editar cuenta' : 'Invitar profesor'}</h1>
       <p>{editing ? 'Actualiza el nombre o solicita un cambio de correo.' : 'Crea una cuenta docente pendiente. No se asigna una contraseña desde aquí.'}</p>
     </CardHeader><CardContent>
-      <InlineHelp>La aceptación de la invitación y la confirmación del nuevo correo no están disponibles en esta versión. Crear o editar la cuenta no completa esos procesos.</InlineHelp>
+      <InlineHelp>{!editing ? 'La activación por invitación aún no está disponible. La cuenta se creará pendiente.' : account?.status === 'PENDIENTE' ?
+        'El cambio de correo reemite la invitación. Su aceptación aún no está disponible.' :
+        'La confirmación del nuevo correo aún no está disponible. El cambio no se completa desde aquí.'}</InlineHelp>
       {account && <div><p className="font-semibold">Correo vigente</p><p className="[overflow-wrap:anywhere]">{account.email}</p>{account.pendingEmail && <p className="mt-2 [overflow-wrap:anywhere]">Pendiente de confirmación: {account.pendingEmail}</p>}</div>}
       {mutation.result && <ResultError result={mutation.result} retry={editing ? () => { review(); mutation.clear(); } : undefined} />}
       {refreshing && <Loading text="Revisando el estado actual; tu borrador no se sobrescribirá" />}

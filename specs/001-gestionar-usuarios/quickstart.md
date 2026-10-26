@@ -65,7 +65,7 @@ No ejecutar `shadcn init` ni regenerar componentes al preparar la rama: Base UI/
 | Escenario | Pasos | Resultado esperado / evidencia |
 | --- | --- | --- |
 | Acceso ADMIN | Abrir `/acceso`, ingresar credenciales válidas | Gestión ADMIN accesible; login envía `rememberMe: false`; requests con cookies. No registrar valor de cookies/cabeceras/token en evidencia |
-| Acceso TEACHER | Ingresar y abrir `/sesion`; probar entrada directa `/usuarios` | Solo estado/cierre; sin datos o mutaciones de cuentas ni módulos académicos |
+| Acceso TEACHER | Ingresar y abrir `/`; probar entrada directa `/usuarios` | Inicio docente con identidad/cierre; sin datos o mutaciones de cuentas ni módulos académicos. `/sesion` retirada |
 | Credenciales inválidas | Probar incorrectas, cuenta desconocida, pendiente/inactiva | Mensaje uniforme; sin datos protegidos. Indisponibilidad distinta de error de credenciales |
 | Sesión/permisos retirados | Responsable de pruebas inactiva o reduce rol mientras vista está abierta; luego operar | Retirar datos desde rechazo/revalidación y no mantener controles ADMIN cacheados. No implementar polling para mantener actividad |
 | Cierre | Cerrar sesión y probar petición posterior; repetir con red interrumpida | Cierre procesado cuando respuesta válida; sin acceso previo reutilizable en caso normal. Fallo comunica cierre no confirmado y retira datos; no prometer revocación remota |

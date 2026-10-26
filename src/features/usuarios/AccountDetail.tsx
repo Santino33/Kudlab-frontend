@@ -28,12 +28,12 @@ export function AccountDetail({ api, accountId, revalidate, locked = false }: { 
     {!account && !query.result && <><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Detalle de cuenta</h1><Loading text="Consultando cuenta" /></>}
     {!account && query.result && query.result.kind !== 'success' && <><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Detalle de cuenta</h1><ResultError result={query.result} retry={review} /></>}
     {account && <>
-      <header className="staff-heading"><div className="workspace-page-heading"><p className="auth-eyebrow">Administración · Cuenta del personal</p>
+      <header className="staff-heading"><div className="workspace-page-heading">
         <h1 id="auth-title" className="auth-heading" tabIndex={-1}>{account.name}</h1><p className="[overflow-wrap:anywhere]">{account.email}</p></div>
         <ActionLink href={`/usuarios/${encodeURIComponent(account.id)}/editar`} primary>Editar cuenta</ActionLink>
       </header>
       {notice && <Notice title="Operación confirmada" focus>Se muestran los datos devueltos por el servidor. Un envío aceptado no demuestra recepción del correo.</Notice>}
-      <Card><CardHeader><h2 className="staff-section-title">Datos de la cuenta</h2><p>Información confirmada, sin cambios anticipados.</p></CardHeader><CardContent>
+      <Card><CardHeader><h2 className="staff-section-title">Datos de la cuenta</h2></CardHeader><CardContent>
         <dl className="account-facts"><div><dt>Nombre</dt><dd>{account.name}</dd></div><div><dt>Correo vigente</dt><dd>{account.email}</dd></div>
           <div><dt>Rol</dt><dd>{roleLabel[account.role]}</dd></div><div><dt>Estado</dt><dd><span className="account-status">{statusLabel[account.status]}</span></dd></div>
           <div><dt>Creada</dt><dd>{formatDate(account.createdAt)}</dd></div>{account.pendingEmail && <div><dt>Correo pendiente de confirmación</dt><dd>{account.pendingEmail}</dd></div>}</dl>

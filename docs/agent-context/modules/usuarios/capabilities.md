@@ -16,6 +16,10 @@ Canjes bloqueados; ascensos, auditoría visible y reactivación diferidos.
 T018 y aceptación gráfica integral siguen pendientes, ya no por revisión ausente.
 Los registros siguientes conservan historia de preparación y no describen el estado vigente.
 
+**Diseño posterior:** `/sesion` eliminada por petición expresa; `/` presenta
+directamente el espacio ADMIN/TEACHER tras verificar la sesión. Navegación móvil
+plegable y listado adaptado sin ocultar campos. [Evidencia visual y de teclado](../../../../specs/001-gestionar-usuarios/evidence/design-review.md).
+
 ## Evidencia y significado de estado
 
 **Base de trabajo integrada:** la rama `feat/gestionar-usuarios` incorpora `main@664cc5c` con autenticación, catálogo visual, pruebas y constitución ratificada. La planificación de Usuarios conserva sus decisiones futuras; no se aplicaron aún sus cambios de transporte, rutas o gestión a la autenticación existente.
