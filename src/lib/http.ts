@@ -24,7 +24,7 @@ export function createHttpClient(origin: string, access: Pick<AuthController, 'g
   const base = validateApiOrigin(origin);
   return {
     async request<T, Field extends string = UserField>(path: string, options: {
-      method?: 'GET' | 'POST' | 'PATCH' | 'PUT'; body?: unknown; bodyAbsent?: boolean; signal: AbortSignal;
+      method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'; body?: unknown; bodyAbsent?: boolean; signal: AbortSignal;
       decodeFields?(data: unknown): { field: Field; reason: string }[];
       decode(data: unknown, status: number): T | undefined;
     }): Promise<HttpResult<T, Field>> {

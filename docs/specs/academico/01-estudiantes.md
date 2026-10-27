@@ -1,5 +1,7 @@
 # Spec frontend: gestión de estudiantes
 
+**Ampliación posterior — Cursos, 2026-10-26:** el bloqueo de proveedor de grupos/registro y la falta de integración real de esta entrega histórica quedan superados por [Mis cursos](02-cursos.md), implementado junto al backend en worktrees separados y probado con API/PostgreSQL aislados. La entrada principal ahora es Mis cursos y las rutas antiguas conservan compatibilidad. Los resultados y límites originales siguientes no describen el alcance ampliado; consentimiento, activación y aceptación de piloto continúan fuera.
+
 **Fecha:** 2026-10-26. **Estado:** implementación parcial, verificada con dobles de transporte; no integración API/BD ni entrega completa del registro.
 
 ## Feature frontend

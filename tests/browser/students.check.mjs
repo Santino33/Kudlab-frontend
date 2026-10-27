@@ -74,7 +74,7 @@ try {
   await fixture({ path: base });
   await page.eval(() => document.getElementById('workspace-menu-toggle').focus()); await press('Enter');
   assert.equal(await page.eval(() => Boolean(document.querySelector('[role=dialog]'))), true);
-  await page.eval(() => document.querySelector('[role=dialog] a[href="/academico/estudiantes"]').click());
+  await page.eval(() => document.querySelector('[role=dialog] a[href="/academico/cursos"]').click());
   await page.eval(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   assert.equal(await page.eval(() => Boolean(document.querySelector('[role=dialog]'))), false);
   results.push({ mobile: 'Academic sidebar navigation closes modal Sheet' });

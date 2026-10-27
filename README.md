@@ -10,6 +10,8 @@ La validación todavía no está cerrada ni habilita despliegue/piloto: ver
 
 ## Requisitos e instalación
 
+**Cursos en esta rama:** sidebar e inicio usan «Mis cursos». ADMIN crea/edita/elimina cursos vacíos y asigna profesor; TEACHER gestiona estudiantes dentro de sus cursos, incluido registro. Requiere la rama backend `feat/cursos-y-estudiantes`, no solo su `main` base. Transferencia con confirmación; ADMIN sin acceso a registros estudiantiles. [Contrato, fuentes, pruebas y límites](docs/specs/academico/02-cursos.md).
+
 **Vertical 01 en esta rama:** catálogo `/tareas` y ficha `/tareas/:taskId`
 conectados a API/persistencia reales para ADMIN y TEACHER activos. TG-01 no se
 presenta como integrada ni asignable; no hay ejecución ni segundo juego ficticio.
@@ -40,6 +42,7 @@ npm test
 npm run test:auth
 npm run test:usuarios
 npm run test:tareas
+npm run test:estudiantes
 npm run build
 npm run preview
 ```

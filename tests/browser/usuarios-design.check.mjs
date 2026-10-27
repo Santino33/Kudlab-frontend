@@ -14,6 +14,7 @@ const key = async (page, key, code) => {
   await page.send('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode, ...(key === 'Enter' ? { text: '\r', unmodifiedText: '\r' } : {}) });
   await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode });
   await page.eval(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.eval(() => Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {}))));
 };
 const click = async (page, selector) => {
   const p = await page.eval(s => { const r = document.querySelector(s).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }, selector);
@@ -63,9 +64,12 @@ try {
   await page.setViewport({ width: 1440, height: 900 });
   await page.goto(base, { settleMs: 300 });
   await click(page, '#workspace-menu-toggle');
+  await page.eval(() => Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {}))));
   assert.equal(await page.eval(() => document.querySelector('[data-slot=sidebar-gap]').getBoundingClientRect().width), 0);
-  assert.equal(await page.eval(() => document.querySelector('[data-slot=sidebar-container]').getBoundingClientRect().width), 0);
+  assert.equal(await page.eval(() => document.querySelector('[data-slot=sidebar-container]').getBoundingClientRect().right), 0);
+  assert.equal(await page.eval(() => document.querySelector('[data-slot=sidebar-container]').inert), true);
   await click(page, '#workspace-menu-toggle');
+  await page.eval(() => Promise.all(document.getAnimations().map(animation => animation.finished.catch(() => {}))));
   assert.equal(await page.eval(() => document.querySelector('[data-slot=sidebar-container]').getBoundingClientRect().left), 0);
   results.push({ desktopSidebar: 'Viewport-aligned, offcanvas collapse/reopen' });
 

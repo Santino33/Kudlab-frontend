@@ -6,8 +6,10 @@ export const canManageStudents = (state: AccessState) => state.kind === 'authent
 
 export type Route =
   | { kind: 'entry' | 'access' | 'accounts' | 'invite' | 'recoveryRequest' |
-      'recoveryConfirm' | 'unavailable' | 'blockedLink' | 'tasks' | 'students' | 'studentNew' }
-  | { kind: 'studentDetail' | 'studentEdit'; studentId: string }
+      'recoveryConfirm' | 'unavailable' | 'blockedLink' | 'tasks' | 'groups' | 'groupNew' }
+  | { kind: 'students' | 'studentNew'; groupId?: string }
+  | { kind: 'studentDetail' | 'studentEdit'; studentId: string; groupId?: string }
+  | { kind: 'groupDetail' | 'groupEdit'; groupId: string }
   | { kind: 'taskDetail'; taskId: string }
   | { kind: 'detail' | 'edit'; accountId: string };
 
@@ -17,6 +19,7 @@ export const routeTitles: Record<Route['kind'], string> = {
   recoveryConfirm: 'Nueva contraseña', unavailable: 'Página no disponible', blockedLink: 'Enlace no disponible',
   tasks: 'Tareas digitales', taskDetail: 'Ficha de tarea', students: 'Estudiantes',
   studentNew: 'Registrar estudiante', studentDetail: 'Ficha de estudiante', studentEdit: 'Editar estudiante',
+  groups: 'Mis cursos', groupNew: 'Crear curso', groupDetail: 'Curso', groupEdit: 'Editar curso',
 };
 
 export function resolveRoute(pathname: string, search: string): Route {
@@ -28,11 +31,23 @@ export function resolveRoute(pathname: string, search: string): Route {
     case '/acceso': return { kind: 'access' };
     case '/usuarios': return { kind: 'accounts' };
     case '/tareas': return { kind: 'tasks' };
+    case '/academico/cursos': return { kind: 'groups' };
+    case '/academico/cursos/nuevo': return { kind: 'groupNew' };
     case '/academico/estudiantes': return { kind: 'students' };
     case '/academico/estudiantes/nuevo': return { kind: 'studentNew' };
     case '/usuarios/nueva': return { kind: 'invite' };
     case '/recuperar-acceso': return { kind: 'recoveryRequest' };
     case '/recuperar-acceso/confirmar': return { kind: 'recoveryConfirm' };
+  }
+  const course = /^\/academico\/cursos\/([^/]+)(?:\/(editar|estudiantes\/nuevo|estudiantes\/([^/]+)(\/editar)?))?$/.exec(pathname);
+  if (course) {
+    try {
+      const groupId = decodeURIComponent(course[1]);
+      if (!course[2]) return { kind: 'groupDetail', groupId };
+      if (course[2] === 'editar') return { kind: 'groupEdit', groupId };
+      if (course[2] === 'estudiantes/nuevo') return { kind: 'studentNew', groupId };
+      return { kind: course[4] ? 'studentEdit' : 'studentDetail', groupId, studentId: decodeURIComponent(course[3]) };
+    } catch { return { kind: 'unavailable' }; }
   }
   const studentMatch = /^\/academico\/estudiantes\/([^/]+)(\/editar)?$/.exec(pathname);
   if (studentMatch) {

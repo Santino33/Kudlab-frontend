@@ -6,8 +6,8 @@ import { createAuthController } from '../../src/auth/controller.ts';
 import { createHttpClient } from '../../src/lib/http.ts';
 
 test('role destinations depend on confirmed identity, not account or session IDs', () => {
-  assert.deepEqual(dashboardFeatures('TEACHER').map(feature => feature.href), ['/academico/estudiantes', '/tareas']);
-  assert.deepEqual(dashboardFeatures('ADMIN').map(feature => feature.href), ['/usuarios', '/usuarios/nueva', '/tareas']);
+  assert.deepEqual(dashboardFeatures('TEACHER').map(feature => feature.href), ['/academico/cursos', '/tareas']);
+  assert.deepEqual(dashboardFeatures('ADMIN').map(feature => feature.href), ['/academico/cursos', '/usuarios', '/usuarios/nueva', '/tareas']);
   assert.equal(canManageAccounts({ kind: 'authenticated', user: { role: 'ADMIN' } }), true);
   assert.equal(canManageAccounts({ kind: 'authenticated', user: { role: 'ADMIN' }, denied: true }), false);
   for (const state of [{ kind: 'checking' }, { kind: 'authenticated', user: { role: 'TEACHER' } },
