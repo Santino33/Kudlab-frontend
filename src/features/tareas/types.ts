@@ -2,6 +2,8 @@ export const reasonLabels = {
   INTEGRATION_PENDING: 'Pendiente de integración: el juego aún no ha sido cotejado y validado con la plataforma.',
   CONFIGURATION_UNPUBLISHED: 'Sin configuración publicada.',
   TASK_DISABLED: 'La tarea está deshabilitada administrativamente.',
+  CONFIGURATION_UNSUPPORTED: 'La configuración no es compatible con el juego disponible.',
+  METHODOLOGY_PENDING: 'La ficha de cálculo está pendiente de aprobación metodológica.',
 };
 export type TaskSummary = {
   id: string; title: string; description: string; isEnabled: boolean; integrationReady: boolean;

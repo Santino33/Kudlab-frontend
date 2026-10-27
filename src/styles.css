@@ -1,5 +1,15 @@
 @import 'tailwindcss';
 
+/* J-02 reuses staff surfaces and controls, not the game's visual identity. */
+.activity-form { max-width: 48rem; padding: 1.5rem; border: 1px solid var(--border); border-radius: .75rem; background: var(--background); }
+.activity-choice { display: flex; align-items: center; gap: .75rem; min-height: 2.75rem; cursor: pointer; }
+.activity-choice input { flex: none; width: 1.25rem; height: 1.25rem; accent-color: var(--foreground); }
+.activity-choice input:focus-visible { outline: 2px solid var(--foreground); outline-offset: 3px; }
+.activity-roster { display: grid; gap: 1.5rem; }
+.activity-roster > li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+.activity-frame { width: 100%; height: max(32rem, calc(100dvh - 12rem)); border: 0; outline: 1px solid var(--foreground); background: var(--background); }
+.staff-table-region.activity-evidence th:first-child { min-width: 0; width: 5rem; }
+
 /* Brand unchanged; supporting neutrals approved in the UI review. */
 :root {
   font-family: system-ui, sans-serif;

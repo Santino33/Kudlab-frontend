@@ -1,5 +1,11 @@
 # Kudlab Frontend
 
+**J-02:** asignaciones, inicio supervisado con Kudlab Play 1.1, consulta individual
+de sesiones/evidencia/indicadores y recuperación de envíos. Entrega técnica con
+datos ficticios y BD aislada, sin acceso por códigos ni habilitación con menores.
+Requiere el backend J-02 y Play de la misma entrega. [Contrato UI, fuentes y límites](docs/specs/tareas/02-integracion-play.md).
+Las exclusiones históricas de ejecución que siguen describen las iteraciones anteriores.
+
 Base de la SPA de Kudlab con React, TypeScript, Tailwind CSS y Vite, gestionada con npm. Kudlab es un piloto de apoyo al seguimiento pedagógico; no produce diagnósticos clínicos ni sustituye la evaluación curricular. El producto y las reglas de negocio se consultan en el backend, no se redefinen aquí.
 
 **Estado:** dashboard por rol y pantallas de Usuarios implementados: listado,

@@ -25,7 +25,7 @@ export function Catalog({ api }: { api: TasksApi }) {
   return <div className="staff-stack">
     <header className="workspace-page-heading"><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Tareas digitales</h1>
       <p>Explora la finalidad pedagógica de cada juego y consulta su disponibilidad.</p></header>
-    <p className="availability-note">Por ahora puedes consultar las fichas. La asignación y la ejecución de juegos aún no están disponibles.</p>
+    <p className="availability-note">Para asignar una actividad disponible, abre el curso en Mis cursos. La disponibilidad requiere configuración compatible y autorización de participación.</p>
     {!query.result && <Loading text="Consultando tareas" />}
     {query.result && query.result.kind !== 'success' && <TaskFailure missing={false} retry={query.reload} />}
     {page && (page.items.length === 0 ? <Notice title="Todavía no hay juegos registrados"><p>Los juegos registrados aparecerán aquí cuando estén disponibles para consulta.</p></Notice> :
