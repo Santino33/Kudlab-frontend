@@ -57,6 +57,8 @@ Recetas de navegador, integración y límites en [quickstart](specs/001-autentic
   AuthRoot real y fetch sin red, solo Vite desarrollo y fuera del build productivo.
 - `src/styles.css`: entrada Tailwind; `vite.config.ts` y `tsconfig.json`: configuración mínima.
 - `src/features/usuarios/`: dashboard, pantallas, operaciones, tipos y rutas; `src/lib/http.ts`: transporte de negocio generacional.
+- Organización actual: `usuarios/accounts/` agrupa gestión de cuentas; `usuarios/recovery/`, recuperación; `usuarios/workspace/`, marco e inicio por rol. `src/lib/navigation.ts` conserva la raíz autenticada al navegar entre destinos protegidos.
+- [Revisión integral de interfaz y flujos](docs/design/ui-flow-review.md): hallazgos, cambios, fuentes y límites de la validación con datos ficticios.
 - [AGENTS.md](AGENTS.md): reglas obligatorias para agentes.
 - [Índice de contexto](docs/agent-context/INDEX.md): cómo consultar el backend canónico.
 - [Manual de diseño para agentes](docs/design/agent-design-manual.md): base visual aprobada, colores confirmados y decisiones pendientes.

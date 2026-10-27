@@ -4,9 +4,10 @@ import { CircleAlert, LoaderCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button, buttonVariants } from '@/components/ui/button';
 import type { HttpResult, Account } from './types.ts';
+import { navigate } from '../../lib/navigation.ts';
 
 export function ActionLink({ href, children, primary = false }: { href: string; children: ReactNode; primary?: boolean }) {
-  return <a href={href} className={`${buttonVariants({ variant: primary ? 'default' : 'outline' })} no-underline`}>{children}</a>;
+  return <a href={href} onClick={href === '/usuarios' || href.startsWith('/usuarios/') || href === '/tareas' || href.startsWith('/academico/') ? navigate : undefined} className={`${buttonVariants({ variant: primary ? 'default' : 'outline' })} no-underline`}>{children}</a>;
 }
 export function Notice({ title, children, focus = false, focusKey }: { title: string; children?: ReactNode; focus?: boolean; focusKey?: unknown }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -25,7 +26,9 @@ export function ResultError({ result, retry }: { result: HttpResult<unknown>; re
   return <Notice title={title} focus focusKey={result}>
     <p>{uncertain ? 'Es posible que se haya aplicado algún cambio. Revisa el estado actual antes de volver a enviarlo; no se repetirá automáticamente.' :
       code === 'LAST_ADMIN' ? 'Esta acción no se puede realizar sobre el último administrador activo.' :
-      result.kind === 'error' && result.status === 409 ? 'Consulta el estado actual antes de intentar otra acción. No se sobrescribirán datos automáticamente.' : 'No se mostrará información que no haya podido comprobarse.'}</p>
+      result.kind === 'error' && result.status === 409 ? 'Consulta el estado actual antes de intentar otra acción. No se sobrescribirán datos automáticamente.' :
+      result.kind === 'error' && result.status === 404 ? 'Esta cuenta ya no está disponible. Vuelve a profesores para consultar el listado actual.' :
+      result.kind === 'error' && result.status === 400 ? 'Corrige los campos indicados y vuelve a enviar el formulario.' : 'No pudimos cargar la información. Vuelve a intentarlo para consultar el estado actual.'}</p>
     {retry && <Button variant="outline" className="mt-4" onClick={retry}>Consultar estado actual</Button>}
   </Notice>;
 }

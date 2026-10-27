@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
-import { Browser } from '../../.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs';
+const { Browser } = await import(process.env.KUDLAB_CDP_DRIVER ?? '../../.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs');
 
 const origin = process.env.RECOVERY_PREVIEW_ORIGIN ?? 'http://localhost:5188';
 const fixture = '/tests/browser/usuarios-harness.html?path=';
-const dir = '.taste-skill/recovery';
+const dir = process.env.KUDLAB_BROWSER_OUTPUT ?? '/tmp/opencode/kudlab-ui-recovery';
 mkdirSync(dir, { recursive: true });
 const browser = await Browser.launch();
 try {

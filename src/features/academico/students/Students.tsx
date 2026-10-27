@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 import { Loading, Notice } from '../../usuarios/shared';
 import { useMutation, useQuery } from '../../usuarios/hooks';
 import type { HttpResult } from '../../usuarios/types.ts';
-import { navigateTasks as navigate } from '../../tareas/navigation.ts';
+import { navigate } from '../../../lib/navigation.ts';
 import type { StudentsApi, StudentWrite } from './api.ts';
 import { fieldLabels, studentChanges, studentFields, studentIssues } from './types.ts';
 import type { Student, StudentField, StudentInput } from './types.ts';
@@ -29,7 +29,7 @@ function Failure({ result, retry }: { result: HttpResult<unknown, StudentField>;
   const status = result.kind === 'error' ? result.status : undefined;
   const uncertain = 'uncertain' in result && result.uncertain;
   return <Notice focus focusKey={result} title={uncertain ? 'No pudimos confirmar el guardado' : status === 404 ? 'No encontramos el recurso o ya no tienes acceso' : status === 409 ? 'Código de estudiante no disponible' : status === 400 ? 'Revisa los datos del formulario' : 'La consulta no está disponible'}>
-    <p>{uncertain ? 'El cambio podría haberse guardado. Comprueba el estado antes de decidir otra escritura; no se repetirá automáticamente.' : status === 404 ? 'No podemos mostrar datos de este recurso desde tu acceso actual.' : status === 409 ? 'Utiliza otro código. No se revela a quién pertenece el código ocupado.' : status === 400 ? 'Corrige los campos indicados o revisa los datos enviados.' : 'No pudimos obtener una respuesta válida. Puedes volver a consultar manualmente.'}</p>
+    <p>{uncertain ? 'El cambio podría haberse guardado. Consulta el registro antes de volver a guardar; no repetiremos el cambio automáticamente.' : status === 404 ? 'No podemos mostrar este registro con tu acceso actual. Vuelve al listado de estudiantes.' : status === 409 ? 'Utiliza otro código de estudiante.' : status === 400 ? 'Corrige los campos indicados o revisa los datos enviados.' : 'No pudimos cargar la información. Vuelve a intentar la consulta.'}</p>
     {retry && <Button variant="outline" className="mt-4" onClick={retry}>{uncertain ? 'Comprobar estado actual' : 'Reintentar consulta'}</Button>}
   </Notice>;
 }
@@ -43,17 +43,21 @@ function Facts({ student }: { student: Student }) {
 export function Students({ api }: { api: StudentsApi }) {
   const query = useQuery((signal) => api.list(signal), 'students');
   return <div className="staff-stack">
-    <header className="staff-heading"><div className="workspace-page-heading"><Heading>Estudiantes</Heading><p>Registros de los grupos bajo tu responsabilidad</p></div><Link href={`${studentsPath}/nuevo`} primary>Registrar estudiante</Link></header>
-    <p>Los nombres de los grupos todavía no están disponibles. La lista incluye registros activos e inactivos.</p>
+    <header className="staff-heading"><div className="workspace-page-heading"><Heading>Estudiantes</Heading><p>Consulta y actualiza los registros de tus grupos, incluidos los inactivos.</p></div></header>
+    <p className="availability-note">El registro de nuevos estudiantes aún no está disponible: falta la consulta de grupos autorizados.</p>
     {!query.result ? <Loading text="Consultando estudiantes" /> : query.result.kind !== 'success' ? <Failure result={query.result} retry={query.reload} /> : !query.result.data.items.length ?
       <Notice title="No hay estudiantes en tus grupos" /> :
-      <div className="overflow-x-auto rounded-xl border border-border" role="region" aria-label="Listado de estudiantes, desplazable horizontalmente" tabIndex={0}>
+      <><p className="text-sm text-muted" role="status">{query.result.data.items.length} {query.result.data.items.length === 1 ? 'estudiante' : 'estudiantes'} en tus grupos</p><div className="staff-table-region accounts-table-view" role="region" aria-label="Listado de estudiantes, desplazable horizontalmente" tabIndex={0}>
         <Table aria-label="Estudiantes de tus grupos" className="min-w-[38rem]"><TableHeader><TableRow><TableHead>Código</TableHead><TableHead>Nombres</TableHead><TableHead>Apellidos</TableHead><TableHead>Estado</TableHead><TableHead>Ficha</TableHead></TableRow></TableHeader>
           <TableBody>{query.result.data.items.map((student) => <TableRow key={student.id}>
             <TableCell>{student.studentCode}</TableCell><TableCell>{student.firstName}</TableCell><TableCell>{student.lastName}</TableCell><TableCell className="whitespace-nowrap">{student.isActive ? 'Activo' : 'Inactivo'}</TableCell>
             <TableCell><a href={detailPath(student.id)} onClick={navigate} className="staff-link whitespace-nowrap" aria-label={`Ver ficha de ${student.firstName} ${student.lastName}, código ${student.studentCode}`}>Ver ficha</a></TableCell>
           </TableRow>)}</TableBody></Table>
-      </div>}
+      </div><ul className="accounts-list-view" aria-label="Estudiantes de tus grupos">{query.result.data.items.map((student) => <li key={student.id}>
+        <h2 className="font-semibold [overflow-wrap:anywhere]">{student.firstName} {student.lastName}</h2>
+        <dl className="account-facts"><div><dt>Código</dt><dd>{student.studentCode}</dd></div><div><dt>Estado</dt><dd>{student.isActive ? 'Activo' : 'Inactivo'}</dd></div></dl>
+        <a href={detailPath(student.id)} onClick={navigate} className="staff-link w-fit" aria-label={`Ver ficha de ${student.firstName} ${student.lastName}, código ${student.studentCode}`}>Ver ficha</a>
+      </li>)}</ul></>}
   </div>;
 }
 
@@ -78,9 +82,9 @@ export function StudentDetail({ api, studentId, write, reviewed }: { api: Studen
       <header className="staff-heading"><Heading>{student.firstName} {student.lastName}</Heading><Link href={`${detailPath(student.id)}/editar`} primary>Editar estudiante</Link></header>
       <p role="status">{notice}</p><Facts student={student} />
       {write?.phase === 'uncertain' && write.id === student.id && <Notice title="Hay un guardado sin confirmar">
-        <p>Comprueba el registro con una nueva lectura. El estado observado no demuestra quién realizó el cambio. Los borradores se retiran cuando se vuelve a comprobar el acceso.</p>
+        <p>Vuelve a consultar el registro y revisa sus datos antes de guardar de nuevo. La consulta muestra el estado actual, pero no confirma quién hizo el cambio. El borrador se retiró al volver a comprobar tu acceso.</p>
         <Button variant="outline" className="mt-4" onClick={check} disabled={query.fetching}>Comprobar estado actual</Button>
-        {checking && !query.fetching && <div className="staff-stack mt-4"><p role="status">Estado confirmado por lectura: {student.isActive ? 'activo' : 'inactivo'}. Revisa también el código y los nombres antes de decidir otro guardado.</p><Button variant="outline" onClick={() => { reviewed(); setChecking(false); }}>He revisado el estado; permitir una nueva decisión</Button></div>}
+        {checking && !query.fetching && <div className="staff-stack mt-4"><p role="status">Estado confirmado por lectura: {student.isActive ? 'activo' : 'inactivo'}. Revisa también el código y los nombres antes de decidir otro guardado.</p><Button variant="outline" onClick={() => { reviewed(); setChecking(false); }}>Ya revisé el registro</Button></div>}
       </Notice>}
       {student.isActive ? <Deactivate api={api} student={student} locked={Boolean(write)} onSuccess={() => { setNotice('Estudiante inactivado'); query.reload(); }} review={check} /> : <p>Este registro está inactivo. La edición sigue permitida; esta pantalla no permite reactivarlo.</p>}
     </> : <><Heading>Ficha de estudiante</Heading>{query.fetching || !query.result ? <Loading text="Consultando estudiante" /> : <Failure result={query.result} retry={query.reload} />}</>}
@@ -157,7 +161,7 @@ function EditForm({ api, student, locked }: { api: StudentsApi; student: Student
   const lost = [mutation.result, reconciliation.result].find((result) => result?.kind === 'error' && result.status === 404);
   if (lost) return <Failure result={lost} />;
   return <form className="auth-form" noValidate onSubmit={submit} aria-busy={mutation.pending}>
-    <p>Todos los campos son obligatorios. Solo se cambiarán los datos modificados.</p>
+    <p>Todos los campos son obligatorios. El grupo y el estado no cambiarán al guardar.</p>
     {failedSubmit > 0 && Object.keys(issues).length > 0 && <div ref={summary} tabIndex={-1} role="alert" className="rounded-xl border border-border p-4">
       <h2 className="font-semibold">Revisa los datos del formulario</h2><ul>{Object.entries(issues).map(([field, reason]) => <li key={field}><a className="staff-link" href={`#student-${field}`}>{fieldLabels[field as StudentField]}: {reason}</a></li>)}</ul>
     </div>}
@@ -168,7 +172,7 @@ function EditForm({ api, student, locked }: { api: StudentsApi; student: Student
       {issues[field] && <p id={`student-${field}-error`} className="auth-field-error">{issues[field]}</p>}
     </div>)}
     <p>Grupo: nombre no disponible. Estado: {student.isActive ? 'Activo' : 'Inactivo'}. No se modificarán.</p>
-    <p className="text-sm">No se detectan ediciones simultáneas de otras personas. Revisa los datos antes de guardar.</p>
+    <p className="text-sm">Si otra persona está editando este registro, sus cambios podrían reemplazarse. Revisa los datos antes de guardar.</p>
     <p role="status">{mutation.pending ? 'Guardando estudiante…' : message}</p>
     {mutation.result && mutation.result.kind !== 'success' && <Failure result={mutation.result} retry={uncertain ? check : undefined} />}
     {reconciliation.pending && <Loading text="Comprobando estado" />}

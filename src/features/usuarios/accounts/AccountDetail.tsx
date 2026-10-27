@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import type { UsuariosApi } from './api.ts';
-import type { Account } from './types.ts';
-import { useMutation, useQuery } from './hooks';
-import { ActionLink, Delivery, formatDate, InlineHelp, Loading, Notice, ResultError, roleLabel, statusLabel } from './shared';
+import type { UsuariosApi } from '../api.ts';
+import type { Account } from '../types.ts';
+import { useMutation, useQuery } from '../hooks';
+import { ActionLink, Delivery, formatDate, InlineHelp, Loading, Notice, ResultError, roleLabel, statusLabel } from '../shared';
+import { navigate } from '../../../lib/navigation.ts';
 
 type Action = 'reissue' | 'deactivate' | 'demote';
 const actions = {
@@ -24,7 +25,7 @@ export function AccountDetail({ api, accountId, revalidate, locked = false }: { 
   useEffect(() => { if (account && document.visibilityState !== 'hidden') document.getElementById('auth-title')?.focus(); }, [account?.id]);
   const review = () => { setUpdated(undefined); query.reload(); };
   return <div className="staff-stack">
-    <a className="staff-link w-fit" href="/usuarios"><ArrowLeft className="mr-2 size-4" aria-hidden="true" />Volver al listado</a>
+    <a className="staff-link w-fit" href="/usuarios" onClick={navigate}><ArrowLeft className="mr-2 size-4" aria-hidden="true" />Volver a profesores</a>
     {!account && !query.result && <><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Detalle de cuenta</h1><Loading text="Consultando cuenta" /></>}
     {!account && query.result && query.result.kind !== 'success' && <><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Detalle de cuenta</h1><ResultError result={query.result} retry={review} /></>}
     {account && <>

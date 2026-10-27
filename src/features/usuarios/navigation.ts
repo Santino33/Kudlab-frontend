@@ -11,6 +11,14 @@ export type Route =
   | { kind: 'taskDetail'; taskId: string }
   | { kind: 'detail' | 'edit'; accountId: string };
 
+export const routeTitles: Record<Route['kind'], string> = {
+  entry: 'Inicio', access: 'Acceso', accounts: 'Profesores', invite: 'Invitar profesor',
+  detail: 'Cuenta de profesor', edit: 'Editar cuenta', recoveryRequest: 'Recuperar contraseña',
+  recoveryConfirm: 'Nueva contraseña', unavailable: 'Página no disponible', blockedLink: 'Enlace no disponible',
+  tasks: 'Tareas digitales', taskDetail: 'Ficha de tarea', students: 'Estudiantes',
+  studentNew: 'Registrar estudiante', studentDetail: 'Ficha de estudiante', studentEdit: 'Editar estudiante',
+};
+
 export function resolveRoute(pathname: string, search: string): Route {
   if (new URLSearchParams(search).has('token') && pathname !== '/recuperar-acceso/confirmar') {
     return { kind: 'blockedLink' };

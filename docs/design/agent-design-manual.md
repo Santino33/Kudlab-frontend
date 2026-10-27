@@ -182,3 +182,11 @@ Objetivo recomendado: **WCAG 2.2 nivel AA**; no equivale a certificación del pr
 - Backend consultado solo para contexto: `docs/agent-context/project-context.md` y `docs/agent-context/decisions.md`, en checkout `cd3c2b485d5b3649310ba1807aac90f0f818d174`. Resolver su ruta mediante el índice frontend. El checkout tiene cambios ajenos; no se modificaron ni se validaron capacidades en ejecución. Los documentos leídos no equivalen a aprobación de todos sus RF.
 - Skills cargadas en el entorno inicial: `ui-ux-pro-max` (jerarquía, estados y accesibilidad), `apple-design` (legibilidad, control, feedback y movimiento reducido), `design-taste-frontend` (contención visual y coherencia). Al mover la sesión dejaron de estar disponibles; no se ejecutaron sus scripts ni inspecciones. No se adoptan paletas automáticas, materiales Apple ni reglas de landing como marca Kudlab.
 - Referencia técnica: [WCAG 2.2](https://www.w3.org/TR/WCAG22/). Los ratios documentados se calcularon con luminancia relativa sRGB; no hay interfaz implementada o auditada en este trabajo.
+
+## 11. Revisión integral de la interfaz — 2026-10-26
+
+La petición expresa del responsable autoriza rediseñar **el frontend existente**, preservar los colores principales y elegir colores de apoyo. Para esta revisión se adoptan `surface.subtle: #F6F8FB`, `surface.active: #E9EEF5`, `text.secondary: #52627A` y `border.structural: #DCE3ED`, definidos una sola vez en `src/styles.css`. Los controles y el foco mantienen Dark 1; el borde estructural tenue no sustituye el límite funcional de un control. Primary, Secondary, Dark 1 y Disabled conservan sus valores exactos. No se asignan colores de diagnóstico ni se resuelve P-01.
+
+Se mantiene la familia de sistema, geometría 8/12px, superficies opacas, controles de al menos 44px y movimiento reducido. La barra lateral se pliega por debajo de 1024px; las listas de estudiantes y tareas tienen representación móvil sin eliminar campos. Las afirmaciones históricas de raíz vacía o ausencia de componentes no describen el estado actual.
+
+La dirección visual y sus adaptaciones al producto, contraste, recorridos, comprobaciones y límites se registran en [la revisión integral](ui-flow-review.md). La autorización de diseño no amplía contratos, roles ni funcionalidades del backend.

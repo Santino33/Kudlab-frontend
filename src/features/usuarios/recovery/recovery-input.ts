@@ -1,4 +1,4 @@
-import { validNewPassword } from './types.ts';
+import { validNewPassword } from '../types.ts';
 
 export function recoveryPasswordIssues(password: string, confirmation: string): { password?: string; confirmation?: string } {
   return {

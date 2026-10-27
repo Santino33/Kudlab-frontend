@@ -5,7 +5,7 @@ export function StaffLayout({ children, wide = false }: { children: ReactNode; w
     {!wide && <header className="auth-header">
       <div className="auth-header-inner">
         <p className="auth-brand">Kudlab</p>
-        <p className="auth-eyebrow">Acceso del personal</p>
+        <p className="auth-caption">Acceso del profesorado</p>
       </div>
     </header>}
     <main id="contenido" className={wide ? 'staff-main' : 'auth-main'}>{children}</main>
