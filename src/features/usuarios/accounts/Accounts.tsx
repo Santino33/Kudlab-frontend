@@ -4,12 +4,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { UsuariosApi } from './api.ts';
-import { accountStatuses } from './types.ts';
-import type { AccountStatus } from './types.ts';
-import type { Account } from './types.ts';
-import { useQuery } from './hooks';
-import { ActionLink, Loading, ResultError, roleLabel, statusLabel } from './shared';
+import type { UsuariosApi } from '../api.ts';
+import { accountStatuses } from '../types.ts';
+import type { AccountStatus } from '../types.ts';
+import type { Account } from '../types.ts';
+import { useQuery } from '../hooks';
+import { ActionLink, Loading, ResultError, roleLabel, statusLabel } from '../shared';
+import { navigate } from '../../../lib/navigation.ts';
 
 const invitationLabel = (account: Account) => account.deliveryStatus === 'ENVIADA' ? 'Envío aceptado' : account.deliveryStatus === 'ERROR' ? 'Error de envío' : account.deliveryStatus === 'PENDIENTE' ? 'Envío pendiente' : 'Sin información de entrega';
 
@@ -20,7 +21,7 @@ export function Accounts({ api }: { api: UsuariosApi }) {
   const page = query.result?.kind === 'success' ? query.result.data : undefined;
   return <div className="staff-stack">
     <header className="staff-heading"><div className="workspace-page-heading">
-      <h1 id="auth-title" className="auth-heading" tabIndex={-1}>Usuarios del personal</h1><p>Consulta las cuentas de profesores y administra su acceso.</p></div>
+      <h1 id="auth-title" className="auth-heading" tabIndex={-1}>Profesores</h1><p>Consulta las cuentas de tu equipo y administra su acceso.</p></div>
       <ActionLink href="/usuarios/nueva" primary><UserPlus className="size-5" aria-hidden="true" />Invitar profesor</ActionLink>
     </header>
     <div className="accounts-toolbar"><div className="auth-field"><Label htmlFor="status-filter">Estado de la cuenta</Label>
@@ -40,13 +41,13 @@ export function Accounts({ api }: { api: UsuariosApi }) {
           <TableCell><p className="font-semibold">{account.name}</p><p className="mt-1 text-sm">{account.email}</p></TableCell>
           <TableCell>{roleLabel[account.role]}</TableCell><TableCell><span className="account-status">{statusLabel[account.status]}</span></TableCell>
           <TableCell>{invitationLabel(account)}</TableCell>
-          <TableCell><a className="staff-link" href={`/usuarios/${encodeURIComponent(account.id)}`} aria-label={`Ver cuenta de ${account.name}`}>Ver cuenta<ArrowRight className="ml-2 size-4" aria-hidden="true" /></a></TableCell>
+          <TableCell><a className="staff-link" onClick={navigate} href={`/usuarios/${encodeURIComponent(account.id)}`} aria-label={`Ver cuenta de ${account.name}`}>Ver cuenta<ArrowRight className="ml-2 size-4" aria-hidden="true" /></a></TableCell>
         </TableRow>)}</TableBody></Table>
       </div><ul className="accounts-list-view" aria-label="Usuarios del personal">{page.items.map(account => <li key={account.id}>
         <h2 className="font-semibold">{account.name}</h2><p className="[overflow-wrap:anywhere]">{account.email}</p>
         <dl className="account-facts"><div><dt>Rol</dt><dd>{roleLabel[account.role]}</dd></div><div><dt>Estado</dt><dd>{statusLabel[account.status]}</dd></div>
           <div className="col-span-full"><dt>Invitación</dt><dd>{invitationLabel(account)}</dd></div></dl>
-        <a className="staff-link w-fit" href={`/usuarios/${encodeURIComponent(account.id)}`} aria-label={`Ver cuenta de ${account.name}`}>Ver cuenta<ArrowRight className="ml-2 size-4" aria-hidden="true" /></a>
+        <a className="staff-link w-fit" onClick={navigate} href={`/usuarios/${encodeURIComponent(account.id)}`} aria-label={`Ver cuenta de ${account.name}`}>Ver cuenta<ArrowRight className="ml-2 size-4" aria-hidden="true" /></a>
       </li>)}</ul></>}
       <nav aria-label="Paginación de usuarios" className="accounts-pagination"><p role="status">{page.total === 0 || page.items.length === 0 ? '0 cuentas en esta página' : `${offset + 1}–${offset + page.items.length} de ${page.total} cuentas`}</p>
         <div className="staff-actions"><Button variant="outline" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 20))}><ArrowLeft aria-hidden="true" />Anterior</Button>

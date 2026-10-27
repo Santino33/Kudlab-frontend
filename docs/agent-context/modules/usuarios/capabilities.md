@@ -1,5 +1,7 @@
 # Inventario de capacidades reales y pendientes
 
+**Revisión integral de interfaz, 2026-10-26:** Inicio TEACHER enlaza a Estudiantes y Tareas ya implementados; ADMIN mantiene gestión de profesores y consulta de Tareas, sin permisos académicos nuevos. Navegación protegida compartida conserva avisos inciertos y separa estados por ID de cuenta. Pantallas agrupadas en `accounts/`, `recovery/`, `workspace/`. Las menciones históricas a TEACHER «solo identidad» no describen su inicio actual. [Hallazgos, fuentes y validación](../../../design/ui-flow-review.md). Alta de estudiantes y canjes continúan bloqueados; no se declara piloto listo.
+
 **Académico, 2026-10-26:** [gestión de estudiantes](../../../specs/academico/01-estudiantes.md) incorpora navegación TEACHER y consulta/edición/inactivación como módulo separado. No amplía permisos de Usuarios ni concede acceso académico a ADMIN. Transporte compartido admite cuerpo explícitamente ausente y decodificación académica independiente; regresión 66 auth + 70 Usuarios + 11 Tareas correcta. Registro bloqueado por consulta de grupos ausente; no se verificó integración API/BD ni piloto.
 
 **Vertical Tareas 01, 2026-10-26:** esta rama añade consulta de catálogo/ficha

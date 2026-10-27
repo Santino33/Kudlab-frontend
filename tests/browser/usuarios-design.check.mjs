@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 // Optional browser check: install the project design-taste-frontend skill first.
-import { Browser } from '../../.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs';
+const { Browser } = await import(process.env.KUDLAB_CDP_DRIVER ?? '../../.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs');
 
 const browser = await Browser.launch();
 const results = [];
-const dir = '.taste-skill/screens';
+const dir = process.env.KUDLAB_BROWSER_OUTPUT ?? '/tmp/opencode/kudlab-ui-usuarios';
 mkdirSync(dir, { recursive: true });
-const base = 'http://localhost:5187/tests/browser/usuarios-harness.html?role=ADMIN';
+const origin = process.env.KUDLAB_TEST_ORIGIN ?? 'http://localhost:5187';
+const base = `${origin}/tests/browser/usuarios-harness.html?role=ADMIN`;
 const key = async (page, key, code) => {
   const windowsVirtualKeyCode = { Enter: 13, Tab: 9, Escape: 27 }[key];
   await page.send('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode, ...(key === 'Enter' ? { text: '\r', unmodifiedText: '\r' } : {}) });
@@ -31,7 +32,7 @@ try {
       assert.equal(state.overflow, false, `${name} ${width} overflow`);
       assert.equal(state.small, 0, `${name} ${width} touch targets`);
       assert.equal(state.links.includes('/sesion'), false);
-      if (name !== 'recovery' && width >= 768) {
+      if (name !== 'recovery' && width >= 1024) {
         const left = await page.eval(() => document.querySelector('[data-slot=sidebar-container]').getBoundingClientRect().left);
         assert.equal(left, 0, `sidebar starts at viewport edge at ${width}px`);
       }
@@ -91,13 +92,13 @@ try {
   assert.equal(await page.eval(() => document.activeElement.textContent), 'Inactivar cuenta');
   results.push({ keyboardDialog: 'Safe initial focus, Tab containment, Escape closes and restores trigger' });
 
-  await page.goto('http://localhost:5187/tests/browser/usuarios-harness.html?role=TEACHER', { settleMs: 300 });
+  await page.goto(`${origin}/tests/browser/usuarios-harness.html?role=TEACHER`, { settleMs: 300 });
   const teacher = await page.eval(() => ({ links: [...document.querySelectorAll('a')].map(e => e.getAttribute('href')), role: document.querySelector('.dashboard-account').textContent }));
   assert.equal(teacher.links.some(href => href.startsWith('/usuarios')), false);
   assert.ok(teacher.role.includes('Docente'));
   await page.screenshot({ path: `${dir}/teacher-1440.jpg` });
   results.push({ teacher: 'No management destinations' });
   assert.deepEqual(page.consoleErrors, []);
-  writeFileSync('.taste-skill/browser-check.json', JSON.stringify(results, null, 2));
+  writeFileSync(`${dir}/browser-check.json`, JSON.stringify(results, null, 2));
   console.log('PASS: 30 screen/viewport checks, sidebar left=0 and desktop collapse, mobile Sheet keyboard/focus, form validation, modal Tab/Escape, TEACHER permissions; no JS exceptions.');
 } finally { await browser.close(); }

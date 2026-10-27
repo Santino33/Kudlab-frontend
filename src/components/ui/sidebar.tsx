@@ -48,9 +48,9 @@ function Sidebar({ children, className, ...props }: ComponentProps<'div'>) {
       <div data-slot="sidebar-inner" className={cn('flex min-h-0 flex-1 flex-col', className)} {...props}>{children}</div>
     </SheetContent>
   </Sheet>;
-  return <div data-slot="sidebar" data-state={open ? 'expanded' : 'collapsed'} data-collapsible={open ? '' : 'offcanvas'} className="group peer hidden text-foreground md:block">
+  return <div data-slot="sidebar" data-state={open ? 'expanded' : 'collapsed'} data-collapsible={open ? '' : 'offcanvas'} className="group peer hidden text-foreground lg:block">
     <div data-slot="sidebar-gap" className="relative w-64 bg-transparent group-data-[collapsible=offcanvas]:w-0" />
-    <div data-slot="sidebar-container" className={cn('fixed inset-y-0 left-0 z-10 hidden h-svh w-64 border-r border-border md:flex group-data-[collapsible=offcanvas]:hidden', className)} {...props}>
+    <div data-slot="sidebar-container" className={cn('fixed inset-y-0 left-0 z-10 hidden h-svh w-64 border-r border-border lg:flex group-data-[collapsible=offcanvas]:hidden', className)} {...props}>
       <div data-slot="sidebar-inner" data-sidebar="sidebar" className="flex size-full flex-col bg-background">{children}</div>
     </div>
   </div>;

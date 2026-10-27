@@ -144,7 +144,7 @@ export async function runStudentChecks() {
     clickText('Ir a comprobar el registro'); await until(() => [...host().querySelectorAll('button')].some(button => button.textContent === 'Comprobar estado actual'));
     clickText('Comprobar estado actual'); await until(() => text().includes('Estado confirmado por lectura'));
     assert(text().includes('Cambio confirmado por lectura'), 'Observed server state');
-    clickText('He revisado el estado; permitir una nueva decisión'); await until(() => !text().includes('Hay un guardado sin confirmar'));
+    clickText('Ya revisé el registro'); await until(() => !text().includes('Hay un guardado sin confirmar'));
     assert(mutations(f.calls).length === 1, 'Reading never writes');
   });
   await run('inactivación sin respuesta: lectura confirma inactivo sin repetir POST', async () => {

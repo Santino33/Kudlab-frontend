@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { flushSync } from 'react-dom';
-import { ArrowRight, CircleAlert, CircleCheck, LoaderCircle, LogOut, RotateCcw } from 'lucide-react';
+import { ArrowRight, CircleAlert, CircleCheck, Eye, EyeOff, LoaderCircle, LogOut, RotateCcw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import type { Identity } from './state.ts';
 
 const errorMessages = {
   input: 'Corrige los datos de acceso.',
-  credentials: 'Credenciales inválidas',
+  credentials: 'El correo o la contraseña no son correctos. Revisa los datos e inténtalo de nuevo.',
   loginUnconfirmed: 'No pudimos confirmar el inicio de sesión',
 };
 
@@ -26,6 +26,7 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, onSus
 }) {
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   const [email, setEmail] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [invalid, setInvalid] = useState<{ email?: string; password?: string }>({});
   const emailInput = useRef<HTMLInputElement>(null);
   const passwordInput = useRef<HTMLInputElement>(null);
@@ -61,7 +62,10 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, onSus
     };
   }, [controller, publicOnly, onSuspend]);
   useLayoutEffect(() => {
-    if (state.kind !== 'signingIn' && passwordInput.current) passwordInput.current.value = '';
+    if (state.kind !== 'signingIn') {
+      if (passwordInput.current) passwordInput.current.value = '';
+      setShowPassword(false);
+    }
     setInvalid({});
     if (document.visibilityState === 'hidden') return;
     if (state.kind === 'signedOut' && state.error) summary.current?.focus();
@@ -104,7 +108,6 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, onSus
         {notice && <div className="mb-6">{notice}</div>}
         {publicOnly ? <div key={publicPage.epoch}>{publicPage.hidden ? <Card><CardHeader><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Acceso en pausa</h1><p>Los datos de recuperación fueron retirados.</p></CardHeader></Card> : publicContent?.()}</div> : authenticatedContent ?? <Card>
           <CardHeader>
-            <p className="auth-eyebrow">{state.kind === 'authenticated' ? 'Tu cuenta' : 'Solo para profesores'}</p>
             <h1 id="auth-title" className="auth-heading" ref={title} tabIndex={-1}>{heading}</h1>
             <p>{description}</p>
           </CardHeader>
@@ -124,22 +127,25 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, onSus
               <div className="auth-field">
                 <Label htmlFor="email">Correo</Label>
                 <Input id="email" ref={emailInput} name="email" type="email" autoComplete="username" required
-                  value={email} onChange={(event) => setEmail(event.target.value)}
+                  value={email} disabled={signingIn} onChange={(event) => setEmail(event.target.value)}
                   aria-invalid={Boolean(invalid.email)} aria-describedby={invalid.email ? 'email-error' : undefined} />
                 {invalid.email && <p id="email-error" className="auth-field-error" role="alert"><CircleAlert size={20} aria-hidden="true" />{invalid.email}</p>}
               </div>
               <div className="auth-field">
                 <Label htmlFor="password">Contraseña</Label>
-                <Input id="password" ref={passwordInput} name="password" type="password" autoComplete="current-password" required
+                <Input id="password" ref={passwordInput} name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required disabled={signingIn}
                   aria-invalid={Boolean(invalid.password)} aria-describedby={invalid.password ? 'password-error' : undefined} />
                 {invalid.password && <p id="password-error" className="auth-field-error" role="alert"><CircleAlert size={20} aria-hidden="true" />{invalid.password}</p>}
+                <Button type="button" variant="outline" className="w-fit" aria-pressed={showPassword} aria-controls="password" disabled={signingIn} onClick={() => setShowPassword(value => !value)}>
+                  {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}{showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                </Button>
               </div>
               <div className="grid gap-2">
                 <Button className="w-full" type="submit" disabled={signingIn}>
                   <span className="min-w-0 [overflow-wrap:anywhere]">{signingIn ? 'Iniciando sesión' : 'Iniciar sesión'}</span>
                   {signingIn ? <LoaderCircle aria-hidden="true" /> : <ArrowRight aria-hidden="true" />}
                 </Button>
-                {signingIn && <p className="auth-eyebrow">Espera a que termine este intento antes de volver a enviar.</p>}
+                {signingIn && <p className="auth-caption">Espera a que termine este intento antes de volver a enviar.</p>}
               </div>
             <a href="/recuperar-acceso" className="staff-link w-fit">¿Olvidaste tu contraseña?</a>
             </form>}

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { recoveryPasswordIssues } from '../../src/features/usuarios/recovery-input.ts';
+import { recoveryPasswordIssues } from '../../src/features/usuarios/recovery/recovery-input.ts';
 
 test('recovery accepts a matching password without transforming its value', () => {
   assert.deepEqual(recoveryPasswordIssues('Correcta123', 'Correcta123'), {});

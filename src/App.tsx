@@ -10,16 +10,16 @@ import { createAuthController } from './auth/controller.ts';
 import { createAuthClient } from './auth/client.ts';
 import { Alert, AlertDescription } from './components/ui/alert';
 import { Card, CardContent, CardHeader } from './components/ui/card';
-import { canConsultTasks, canManageAccounts, canManageStudents, resolveRoute } from './features/usuarios/navigation.ts';
+import { canConsultTasks, canManageAccounts, canManageStudents, resolveRoute, routeTitles } from './features/usuarios/navigation.ts';
 import type { captureEntry } from './features/usuarios/navigation.ts';
 import { StaffLayout } from './components/StaffLayout';
 import { createHttpClient } from './lib/http.ts';
 import { createUsuariosApi } from './features/usuarios/api.ts';
-import { Dashboard, Workspace } from './features/usuarios/Workspace';
-import { Accounts } from './features/usuarios/Accounts';
-import { AccountDetail } from './features/usuarios/AccountDetail';
-import { AccountForm } from './features/usuarios/AccountForm';
-import { Recovery } from './features/usuarios/Recovery';
+import { Dashboard, Workspace } from './features/usuarios/workspace/Workspace';
+import { Accounts } from './features/usuarios/accounts/Accounts';
+import { AccountDetail } from './features/usuarios/accounts/AccountDetail';
+import { AccountForm } from './features/usuarios/accounts/AccountForm';
+import { Recovery } from './features/usuarios/recovery/Recovery';
 import { Notice } from './features/usuarios/shared';
 import { Button } from './components/ui/button';
 
@@ -51,7 +51,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
   }, []);
   useEffect(() => {
     document.getElementById('auth-title')?.focus();
-    document.title = `${route.kind === 'studentNew' ? 'Registrar estudiante · ' : route.kind === 'studentEdit' ? 'Editar estudiante · ' : route.kind === 'studentDetail' ? 'Ficha de estudiante · ' : route.kind === 'students' ? 'Estudiantes · ' : ''}Kudlab`;
+    document.title = `${routeTitles[route.kind]} · Kudlab`;
   }, [route]);
   const [uncertain, setUncertain] = useState(false);
   const [studentWrite, setStudentWrite] = useState<StudentWrite>();
@@ -93,7 +93,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
   </Notice> : undefined} renderAuthenticated={
     (user, access, generation) => <Workspace user={user} section={students ? 'students' : tasks ? 'tasks' : route.kind === 'invite' ? 'invite' : management ? 'accounts' : 'home'} signOut={access.signOut}>
       {studentWrite && canManageStudents(access.getSnapshot()) && <div className="mb-6"><StudentWriteNotice write={studentWrite} /></div>}
-      <div key={`${generation}:${route.kind}:${'studentId' in route ? route.studentId : route.kind === 'taskDetail' ? route.taskId : ''}`}>{(management && !canManageAccounts(access.getSnapshot())) || (tasks && !canConsultTasks(access.getSnapshot())) || (students && !canManageStudents(access.getSnapshot())) ? <DestinationNotice denied /> :
+      <div key={`${generation}:${route.kind}:${'studentId' in route ? route.studentId : 'accountId' in route ? route.accountId : route.kind === 'taskDetail' ? route.taskId : ''}`}>{(management && !canManageAccounts(access.getSnapshot())) || (tasks && !canConsultTasks(access.getSnapshot())) || (students && !canManageStudents(access.getSnapshot())) ? <DestinationNotice denied /> :
         route.kind === 'students' ? <Students api={apis.students} /> :
         route.kind === 'studentNew' ? <StudentRegistration /> :
         route.kind === 'studentDetail' ? <StudentDetail api={apis.students} studentId={route.studentId} write={studentWrite} reviewed={() => setStudentWrite(undefined)} /> :

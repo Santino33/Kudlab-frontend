@@ -7,7 +7,7 @@ import { Loading, Notice } from '../usuarios/shared';
 import type { TasksApi } from './api.ts';
 import type { TaskSummary } from './types.ts';
 import { reasonLabels } from './types.ts';
-import { navigateTasks } from './navigation.ts';
+import { navigate } from '../../lib/navigation.ts';
 
 function Preparation({ task }: { task: TaskSummary }) {
   return <div className="grid gap-3"><span className="task-state">{task.assignable ? 'Lista para asignar' : 'No lista para asignar'}</span>
@@ -15,7 +15,7 @@ function Preparation({ task }: { task: TaskSummary }) {
 }
 function TaskFailure({ missing, retry }: { missing: boolean; retry(): void }) {
   return <Notice title={missing ? 'No encontramos esta tarea' : 'No pudimos consultar las tareas'}>
-    <p>{missing ? 'El enlace no corresponde a una tarea del catálogo actual.' : 'La información no pudo comprobarse. No se mostrará una lista vacía como si fuera un resultado.'}</p>
+    <p>{missing ? 'El enlace no corresponde a una tarea del catálogo actual. Vuelve al catálogo para consultar las tareas disponibles.' : 'No pudimos cargar el catálogo. Vuelve a intentarlo para consultar las tareas.'}</p>
     {!missing && <Button variant="outline" className="mt-4" onClick={retry}>Reintentar</Button>}
   </Notice>;
 }
@@ -24,21 +24,24 @@ export function Catalog({ api }: { api: TasksApi }) {
   const page = query.result?.kind === 'success' ? query.result.data : undefined;
   return <div className="staff-stack">
     <header className="workspace-page-heading"><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Tareas digitales</h1>
-      <p>Consulta los juegos del alcance actual, su finalidad y su preparación. Una ficha metodológica no significa que el juego esté integrado.</p></header>
-    <p className="task-context">El segundo juego está por definir. La familiarización (TG-00) y el cierre (TG-06) son apoyos, no juegos asignables independientes.</p>
+      <p>Explora la finalidad pedagógica de cada juego y consulta su disponibilidad.</p></header>
+    <p className="availability-note">Por ahora puedes consultar las fichas. La asignación y la ejecución de juegos aún no están disponibles.</p>
     {!query.result && <Loading text="Consultando tareas" />}
     {query.result && query.result.kind !== 'success' && <TaskFailure missing={false} retry={query.reload} />}
     {page && (page.items.length === 0 ? <Notice title="Todavía no hay juegos registrados"><p>Los juegos registrados aparecerán aquí cuando estén disponibles para consulta.</p></Notice> :
-      <div className="staff-table-region" role="region" aria-label="Catálogo de juegos; desplazamiento horizontal disponible" tabIndex={0}>
+      <><div className="staff-table-region accounts-table-view" role="region" aria-label="Catálogo de juegos; desplazamiento horizontal disponible" tabIndex={0}>
         <Table><TableCaption className="px-4 pt-4">Juegos registrados en el alcance actual</TableCaption><TableHeader><TableRow>
           <TableHead>Nombre y código</TableHead><TableHead>Disponibilidad</TableHead><TableHead>Preparación</TableHead><TableHead>Ficha</TableHead>
         </TableRow></TableHeader><TableBody>{page.items.map((task) => <TableRow key={task.id}>
           <TableCell><p className="font-semibold">{task.title}</p><p className="text-sm mt-1">{task.id}</p></TableCell>
           <TableCell><span className="task-state">{task.isEnabled ? 'Habilitada' : 'Deshabilitada'}</span><p className="text-sm mt-3">Estado administrativo</p></TableCell>
           <TableCell><Preparation task={task} /></TableCell>
-          <TableCell><a className="staff-link whitespace-nowrap" onClick={navigateTasks} href={`/tareas/${encodeURIComponent(task.id)}`} aria-label={`Ver ficha de ${task.title} (${task.id})`}>Ver ficha<ArrowRight className="ml-2 size-5 shrink-0" aria-hidden="true" /></a></TableCell>
+          <TableCell><a className="staff-link whitespace-nowrap" onClick={navigate} href={`/tareas/${encodeURIComponent(task.id)}`} aria-label={`Ver ficha de ${task.title} (${task.id})`}>Ver ficha<ArrowRight className="ml-2 size-5 shrink-0" aria-hidden="true" /></a></TableCell>
         </TableRow>)}</TableBody></Table>
-      </div>)}
+      </div><ul className="accounts-list-view" aria-label="Catálogo de juegos">{page.items.map((task) => <li key={task.id}>
+        <h2 className="font-semibold">{task.title}</h2><p className="text-sm">{task.id} · {task.isEnabled ? 'Habilitada' : 'Deshabilitada'}</p>
+        <Preparation task={task} /><a className="staff-link w-fit" onClick={navigate} href={`/tareas/${encodeURIComponent(task.id)}`} aria-label={`Ver ficha de ${task.title} (${task.id})`}>Ver ficha<ArrowRight className="ml-2 size-5" aria-hidden="true" /></a>
+      </li>)}</ul></>)}
   </div>;
 }
 
@@ -47,7 +50,7 @@ export function TaskDetail({ api, taskId }: { api: TasksApi; taskId: string }) {
   const task = query.result?.kind === 'success' ? query.result.data : undefined;
   useEffect(() => { document.getElementById('auth-title')?.focus(); }, [task?.id]);
   return <div className="staff-stack task-detail">
-    <a href="/tareas" onClick={navigateTasks} className="staff-link w-fit"><ArrowLeft className="mr-2 size-5" aria-hidden="true" />Volver a tareas</a>
+    <a href="/tareas" onClick={navigate} className="staff-link w-fit"><ArrowLeft className="mr-2 size-5" aria-hidden="true" />Volver a tareas</a>
     <header className="workspace-page-heading"><h1 id="auth-title" className="auth-heading" tabIndex={-1}>{task ? `${task.title} · ${task.id}` : 'Ficha de tarea'}</h1>
       {task && <p>{task.description}</p>}</header>
     {!query.result && <Loading text="Consultando ficha" />}

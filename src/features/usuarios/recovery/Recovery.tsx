@@ -5,12 +5,12 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { UsuariosApi } from './api.ts';
-import type { RecoveryTicket } from './navigation.ts';
-import { validInstitutionalEmail } from './types.ts';
+import type { UsuariosApi } from '../api.ts';
+import type { RecoveryTicket } from '../navigation.ts';
+import { validInstitutionalEmail } from '../types.ts';
 import { recoveryPasswordIssues } from './recovery-input.ts';
-import { useMutation } from './hooks';
-import { ActionLink, Notice } from './shared';
+import { useMutation } from '../hooks';
+import { ActionLink, Notice } from '../shared';
 
 export function Recovery({ api, confirm, ticket }: { api: UsuariosApi; confirm: boolean; ticket: RecoveryTicket }) {
   const [email, setEmail] = useState('');
@@ -63,7 +63,7 @@ export function Recovery({ api, confirm, ticket }: { api: UsuariosApi; confirm: 
   </CardHeader><CardContent>
     {success ? <><div className="staff-stack" role="status">
       {confirm ? <p>Los accesos anteriores se cerraron. Este cambio no inicia sesión automáticamente.</p> : <>
-        <p>La respuesta es la misma para todos los correos válidos: no confirma que exista una cuenta ni garantiza la entrega.</p>
+        <p>Por seguridad, no confirmamos si el correo tiene una cuenta. Si no recibes el mensaje, revisa las siguientes recomendaciones.</p>
         <div className="recovery-guidance"><h2 className="font-semibold">¿No encuentras el mensaje?</h2>
           <p>Revisa spam o correo no deseado y comprueba que usaste el correo vigente de tu cuenta. Si el mensaje llega, abre el enlace más reciente.</p></div>
       </>}
