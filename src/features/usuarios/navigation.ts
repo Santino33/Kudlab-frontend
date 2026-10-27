@@ -2,10 +2,12 @@ import type { AccessState } from '../../auth/state.ts';
 
 export const canManageAccounts = (state: AccessState) => state.kind === 'authenticated' && state.user.role === 'ADMIN' && !state.denied;
 export const canConsultTasks = (state: AccessState) => state.kind === 'authenticated' && !state.denied;
+export const canManageStudents = (state: AccessState) => state.kind === 'authenticated' && state.user.role === 'TEACHER' && !state.denied;
 
 export type Route =
   | { kind: 'entry' | 'access' | 'accounts' | 'invite' | 'recoveryRequest' |
-      'recoveryConfirm' | 'unavailable' | 'blockedLink' | 'tasks' }
+      'recoveryConfirm' | 'unavailable' | 'blockedLink' | 'tasks' | 'students' | 'studentNew' }
+  | { kind: 'studentDetail' | 'studentEdit'; studentId: string }
   | { kind: 'taskDetail'; taskId: string }
   | { kind: 'detail' | 'edit'; accountId: string };
 
@@ -18,9 +20,17 @@ export function resolveRoute(pathname: string, search: string): Route {
     case '/acceso': return { kind: 'access' };
     case '/usuarios': return { kind: 'accounts' };
     case '/tareas': return { kind: 'tasks' };
+    case '/academico/estudiantes': return { kind: 'students' };
+    case '/academico/estudiantes/nuevo': return { kind: 'studentNew' };
     case '/usuarios/nueva': return { kind: 'invite' };
     case '/recuperar-acceso': return { kind: 'recoveryRequest' };
     case '/recuperar-acceso/confirmar': return { kind: 'recoveryConfirm' };
+  }
+  const studentMatch = /^\/academico\/estudiantes\/([^/]+)(\/editar)?$/.exec(pathname);
+  if (studentMatch) {
+    let studentId = '';
+    try { studentId = decodeURIComponent(studentMatch[1]); } catch { /* Neutral not-found page. */ }
+    return { kind: studentMatch[2] ? 'studentEdit' : 'studentDetail', studentId };
   }
   if (pathname.startsWith('/tareas/')) {
     try { return { kind: 'taskDetail', taskId: decodeURIComponent(pathname.slice('/tareas/'.length)) }; }

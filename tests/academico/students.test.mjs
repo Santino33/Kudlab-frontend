@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createStudentsApi } from '../../src/features/academico/students/api.ts';
 import { parseStudent, parseStudents, studentChanges, studentIssues } from '../../src/features/academico/students/types.ts';
 import { createHttpClient } from '../../src/lib/http.ts';
+import { resolveRoute, canManageStudents } from '../../src/features/usuarios/navigation.ts';
 
 const student = { id: '00000000-0000-4000-8000-000000000001', groupId: '00000000-0000-4000-8000-000000000002', studentCode: '0001-Á', firstName: 'Nombre ficticio', lastName: 'Apellido de prueba', isActive: true };
 const signal = () => new AbortController().signal;
@@ -91,4 +92,24 @@ test('late generations and aborted mutations cannot produce success or replay', 
   finish(Response.json({ ...student, isActive: false }));
   assert.deepEqual(await write, { kind: 'unavailable', uncertain: true });
   assert.equal(calls.length, 2); assert.deepEqual(notifications, []);
+});
+test('finite academic routes preserve neutral unknown IDs and require active non-denied TEACHER', () => {
+  assert.deepEqual(resolveRoute('/academico/estudiantes', ''), { kind: 'students' });
+  assert.deepEqual(resolveRoute('/academico/estudiantes/nuevo', ''), { kind: 'studentNew' });
+  assert.deepEqual(resolveRoute(`/academico/estudiantes/${student.id}`, ''), { kind: 'studentDetail', studentId: student.id });
+  assert.deepEqual(resolveRoute('/academico/estudiantes/%ZZ/editar', ''), { kind: 'studentEdit', studentId: '' });
+  assert.equal(resolveRoute('/academico/estudiantes', '?token=private').kind, 'blockedLink');
+  for (const state of [{ kind: 'checking' }, { kind: 'signedOut' }, { kind: 'authenticated', denied: true, user: { role: 'TEACHER' } }, { kind: 'authenticated', denied: false, user: { role: 'ADMIN' } }]) assert.equal(canManageStudents(state), false);
+  assert.equal(canManageStudents({ kind: 'authenticated', denied: false, user: { role: 'TEACHER' } }), true);
+});
+test('an interrupted write keeps only nonpersonal uncertainty across generations', async () => {
+  const states = [];
+  let generation = 1, finish;
+  const api = createStudentsApi(createHttpClient('http://localhost:3000', { getGeneration: () => generation, notify() {} }, () => new Promise(resolve => { finish = resolve; })), (state) => states.push(state));
+  const pending = api.update(student, { firstName: 'Cambio' }, signal());
+  assert.deepEqual(states, [{ id: student.id, phase: 'pending' }]);
+  generation++;
+  finish(Response.json({ ...student, firstName: 'Cambio' })); await pending;
+  assert.deepEqual(states[1], { id: student.id, phase: 'uncertain' });
+  assert.ok(!JSON.stringify(states).includes('Cambio'));
 });

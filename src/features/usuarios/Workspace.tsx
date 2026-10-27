@@ -9,7 +9,7 @@ import { dashboardFeatures } from './dashboard.ts';
 import { ActionLink, roleLabel } from './shared';
 
 export function Workspace({ user, section, signOut, children }: {
-  user: Identity; section: 'home' | 'accounts' | 'invite' | 'tasks'; signOut(): void; children: ReactNode;
+  user: Identity; section: 'home' | 'accounts' | 'invite' | 'tasks' | 'students'; signOut(): void; children: ReactNode;
 }) {
   return <SidebarProvider>
     <a className="workspace-skip" href="#workspace-content">Saltar al contenido</a>
@@ -24,6 +24,10 @@ export function Workspace({ user, section, signOut, children }: {
               <SidebarMenuItem><SidebarMenuButton isActive={section === 'accounts'} render={<a href="/usuarios" aria-current={section === 'accounts' ? 'page' : undefined} />}><Users aria-hidden="true" />Usuarios</SidebarMenuButton></SidebarMenuItem>
               <SidebarMenuItem><SidebarMenuButton isActive={section === 'invite'} render={<a href="/usuarios/nueva" aria-current={section === 'invite' ? 'page' : undefined} />}><UserPlus aria-hidden="true" />Invitar profesor</SidebarMenuButton></SidebarMenuItem>
             </>}
+            {user.role === 'TEACHER' && <SidebarMenuItem>
+              <p className="px-3 pt-4 text-sm font-semibold">Académico</p>
+              <SidebarMenuButton isActive={section === 'students'} render={<a href="/academico/estudiantes" onClick={navigateTasks} aria-current={section === 'students' ? 'page' : undefined} />}><Users aria-hidden="true" />Estudiantes</SidebarMenuButton>
+            </SidebarMenuItem>}
             <SidebarMenuItem><SidebarMenuButton isActive={section === 'tasks'} render={<a href="/tareas" onClick={navigateTasks} aria-current={section === 'tasks' ? 'page' : undefined} />}><BookOpen aria-hidden="true" />Tareas</SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu></nav>
         </SidebarGroup></SidebarContent>
@@ -33,7 +37,7 @@ export function Workspace({ user, section, signOut, children }: {
           </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="workspace-toolbar"><SidebarTrigger id="workspace-menu-toggle" /><span className="text-sm">{section === 'home' ? 'Inicio' : section === 'invite' ? 'Invitar profesor' : section === 'tasks' ? 'Tareas' : 'Usuarios'}</span></header>
+        <header className="workspace-toolbar"><SidebarTrigger id="workspace-menu-toggle" /><span className="text-sm">{section === 'home' ? 'Inicio' : section === 'invite' ? 'Invitar profesor' : section === 'students' ? 'Académico · Estudiantes' : section === 'tasks' ? 'Tareas' : 'Usuarios'}</span></header>
       <div id="workspace-content" className="workspace-content" tabIndex={-1}>{children}</div>
         <footer className="workspace-footer">Kudlab · Apoyo al seguimiento pedagógico</footer>
       </SidebarInset>
