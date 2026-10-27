@@ -1,5 +1,7 @@
 # Índice de contexto del frontend
 
+**Ampliación solicitada 2026-10-26:** [Estudiantes en Académico](../specs/academico/01-estudiantes.md): listado/ficha/edición/inactivación implementados y probados con dobles. Registro bloqueado por falta de consulta de grupos autorizados; no se declara feature completa ni integración real/piloto. Las descripciones de base sin pantallas que siguen conservan contexto histórico.
+
 ## Fuente canónica y ruta local
 
 `[RUTA_LOCAL_DEL_BACKEND]` = `/home/santino/Universidad/TrabajoCampo/Kudlab-backend` en este entorno. [Abrir RUTA_LOCAL_DEL_BACKEND][RUTA_LOCAL_DEL_BACKEND]. No es una variable del navegador ni una dependencia npm.

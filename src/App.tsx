@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createTasksApi } from './features/tareas/api.ts';
+import { createStudentsApi } from './features/academico/students/api.ts';
+import type { StudentWrite } from './features/academico/students/api.ts';
+import { Students, StudentDetail, StudentEdit, StudentRegistration, StudentWriteNotice } from './features/academico/students/Students';
 import { Catalog, TaskDetail } from './features/tareas/Catalog';
 import { AuthRoot } from './auth/AuthRoot.tsx';
 import type { AuthController } from './auth/controller.ts';
@@ -7,7 +10,7 @@ import { createAuthController } from './auth/controller.ts';
 import { createAuthClient } from './auth/client.ts';
 import { Alert, AlertDescription } from './components/ui/alert';
 import { Card, CardContent, CardHeader } from './components/ui/card';
-import { canConsultTasks, canManageAccounts, resolveRoute } from './features/usuarios/navigation.ts';
+import { canConsultTasks, canManageAccounts, canManageStudents, resolveRoute } from './features/usuarios/navigation.ts';
 import type { captureEntry } from './features/usuarios/navigation.ts';
 import { StaffLayout } from './components/StaffLayout';
 import { createHttpClient } from './lib/http.ts';
@@ -46,8 +49,12 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
     window.addEventListener('popstate', changed);
     return () => window.removeEventListener('popstate', changed);
   }, []);
-  useEffect(() => { document.getElementById('auth-title')?.focus(); }, [route]);
+  useEffect(() => {
+    document.getElementById('auth-title')?.focus();
+    document.title = `${route.kind === 'studentNew' ? 'Registrar estudiante · ' : route.kind === 'studentEdit' ? 'Editar estudiante · ' : route.kind === 'studentDetail' ? 'Ficha de estudiante · ' : route.kind === 'students' ? 'Estudiantes · ' : ''}Kudlab`;
+  }, [route]);
   const [uncertain, setUncertain] = useState(false);
+  const [studentWrite, setStudentWrite] = useState<StudentWrite>();
   const [controller] = useState(() => {
     if (injected) return injected;
     try { return createAuthController(createAuthClient(apiOrigin ?? '', (url, init) => fetcher(url, init))); }
@@ -58,6 +65,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
     try { return {
       accounts: createUsuariosApi(createHttpClient(apiOrigin, controller, fetcher, () => setUncertain(true))),
       tasks: createTasksApi(createHttpClient(apiOrigin, controller, fetcher)),
+      students: createStudentsApi(createHttpClient(apiOrigin, controller, fetcher, () => setStudentWrite((state) => state ? { ...state, phase: 'uncertain' } : state)), setStudentWrite),
       recovery: createUsuariosApi(createHttpClient(apiOrigin, { getGeneration: controller.getGeneration, notify() {} }, fetcher)),
     }; } catch { return; }
   }, [controller, apiOrigin, fetcher]);
@@ -78,12 +86,18 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
   }
   const management = ['accounts', 'invite', 'detail', 'edit'].includes(route.kind);
   const tasks = route.kind === 'tasks' || route.kind === 'taskDetail';
+  const students = ['students', 'studentNew', 'studentDetail', 'studentEdit'].includes(route.kind);
   return <AuthRoot controller={controller} notice={uncertain ? <Notice title="Hay una operación sin confirmar">
     <p>No la repitas sin revisar el estado actual de la cuenta. El fallo no demuestra que se haya deshecho.</p>
     <Button variant="outline" className="mt-4" onClick={() => setUncertain(false)}>Ya revisé el estado actual</Button>
   </Notice> : undefined} renderAuthenticated={
-    (user, access, generation) => <Workspace user={user} section={tasks ? 'tasks' : route.kind === 'invite' ? 'invite' : management ? 'accounts' : 'home'} signOut={access.signOut}>
-      <div key={`${generation}:${route.kind}:${route.kind === 'taskDetail' ? route.taskId : ''}`}>{(management && !canManageAccounts(access.getSnapshot())) || (tasks && !canConsultTasks(access.getSnapshot())) ? <DestinationNotice denied /> :
+    (user, access, generation) => <Workspace user={user} section={students ? 'students' : tasks ? 'tasks' : route.kind === 'invite' ? 'invite' : management ? 'accounts' : 'home'} signOut={access.signOut}>
+      {studentWrite && canManageStudents(access.getSnapshot()) && <div className="mb-6"><StudentWriteNotice write={studentWrite} /></div>}
+      <div key={`${generation}:${route.kind}:${'studentId' in route ? route.studentId : route.kind === 'taskDetail' ? route.taskId : ''}`}>{(management && !canManageAccounts(access.getSnapshot())) || (tasks && !canConsultTasks(access.getSnapshot())) || (students && !canManageStudents(access.getSnapshot())) ? <DestinationNotice denied /> :
+        route.kind === 'students' ? <Students api={apis.students} /> :
+        route.kind === 'studentNew' ? <StudentRegistration /> :
+        route.kind === 'studentDetail' ? <StudentDetail api={apis.students} studentId={route.studentId} write={studentWrite} reviewed={() => setStudentWrite(undefined)} /> :
+        route.kind === 'studentEdit' ? <StudentEdit api={apis.students} studentId={route.studentId} locked={Boolean(studentWrite)} /> :
         route.kind === 'tasks' ? <Catalog api={apis.tasks} /> :
         route.kind === 'taskDetail' ? <TaskDetail api={apis.tasks} taskId={route.taskId} /> :
         route.kind === 'accounts' ? <Accounts api={apis.accounts} /> :
