@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ArrowRight, Home, LogOut, Users, UserPlus, BookOpen } from 'lucide-react';
+import { ArrowRight, Database, Home, LogOut, Users, UserPlus, BookOpen } from 'lucide-react';
 import { navigate } from '../../../lib/navigation.ts';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { dashboardFeatures } from './dashboard.ts';
 import { ActionLink, roleLabel } from '../shared';
 
 export function Workspace({ user, section, signOut, children }: {
-  user: Identity; section: 'home' | 'accounts' | 'invite' | 'tasks' | 'students'; signOut(): void; children: ReactNode;
+  user: Identity; section: 'home' | 'accounts' | 'invite' | 'tasks' | 'groups'; signOut(): void; children: ReactNode;
 }) {
   return <SidebarProvider>
     <a className="workspace-skip" href="#workspace-content">Saltar al contenido</a>
@@ -24,10 +24,8 @@ export function Workspace({ user, section, signOut, children }: {
               <SidebarMenuItem><SidebarMenuButton isActive={section === 'accounts'} render={<a href="/usuarios" onClick={navigate} aria-current={section === 'accounts' ? 'page' : undefined} />}><Users aria-hidden="true" />Profesores</SidebarMenuButton></SidebarMenuItem>
               <SidebarMenuItem><SidebarMenuButton isActive={section === 'invite'} render={<a href="/usuarios/nueva" onClick={navigate} aria-current={section === 'invite' ? 'page' : undefined} />}><UserPlus aria-hidden="true" />Invitar profesor</SidebarMenuButton></SidebarMenuItem>
             </>}
-            {user.role === 'TEACHER' && <SidebarMenuItem>
-              <SidebarMenuButton isActive={section === 'students'} render={<a href="/academico/estudiantes" onClick={navigate} aria-current={section === 'students' ? 'page' : undefined} />}><Users aria-hidden="true" />Estudiantes</SidebarMenuButton>
-            </SidebarMenuItem>}
-            <SidebarMenuItem><SidebarMenuButton isActive={section === 'tasks'} render={<a href="/tareas" onClick={navigate} aria-current={section === 'tasks' ? 'page' : undefined} />}><BookOpen aria-hidden="true" />Tareas digitales</SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton isActive={section === 'groups'} render={<a href="/academico/cursos" onClick={navigate} aria-current={section === 'groups' ? 'page' : undefined} />}><BookOpen aria-hidden="true" />Mis cursos</SidebarMenuButton></SidebarMenuItem>
+            <SidebarMenuItem><SidebarMenuButton isActive={section === 'tasks'} render={<a href="/tareas" onClick={navigate} aria-current={section === 'tasks' ? 'page' : undefined} />}><Database aria-hidden="true" />Tareas digitales</SidebarMenuButton></SidebarMenuItem>
           </SidebarMenu></nav>
         </SidebarGroup></SidebarContent>
           <SidebarFooter>
@@ -36,7 +34,7 @@ export function Workspace({ user, section, signOut, children }: {
           </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="workspace-toolbar"><SidebarTrigger id="workspace-menu-toggle" /><span className="text-sm">{section === 'home' ? 'Inicio' : section === 'invite' ? 'Profesores / Invitar profesor' : section === 'students' ? 'Estudiantes' : section === 'tasks' ? 'Tareas digitales' : 'Profesores'}</span><span className="workspace-scope">Espacio docente</span></header>
+        <header className="workspace-toolbar"><SidebarTrigger id="workspace-menu-toggle" /><span className="text-sm">{section === 'home' ? 'Inicio' : section === 'invite' ? 'Profesores / Invitar profesor' : section === 'groups' ? 'Mis cursos' : section === 'tasks' ? 'Tareas digitales' : 'Profesores'}</span><span className="workspace-scope">Espacio docente</span></header>
       <div id="workspace-content" className="workspace-content" tabIndex={-1}>{children}</div>
         <footer className="workspace-footer">Kudlab · Apoyo al seguimiento pedagógico</footer>
       </SidebarInset>
@@ -48,7 +46,7 @@ export function Dashboard({ user }: { user: Identity }) {
   return <div className="dashboard">
     <header className="workspace-page-heading">
       <h1 id="auth-title" className="auth-heading" tabIndex={-1}>Hola, {user.name}</h1>
-      <p>{user.role === 'ADMIN' ? 'Gestiona el acceso de tu equipo y consulta las tareas digitales.' : 'Consulta tus estudiantes o explora las tareas para tu trabajo pedagógico.'}</p>
+      <p>{user.role === 'ADMIN' ? 'Organiza tus cursos, gestiona el acceso del equipo y consulta las tareas digitales.' : 'Abre uno de tus cursos para gestionar a sus estudiantes o explora las tareas digitales.'}</p>
     </header>
     <div className={features.length ? 'dashboard-columns' : 'dashboard-personal'}>
       {features.length > 0 && <section aria-labelledby="dashboard-actions" className="dashboard-tasks">

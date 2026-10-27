@@ -1,6 +1,6 @@
 # Índice de contexto del frontend
 
-**Ampliación solicitada 2026-10-26:** [Estudiantes en Académico](../specs/academico/01-estudiantes.md): listado/ficha/edición/inactivación implementados y probados con dobles. Registro bloqueado por falta de consulta de grupos autorizados; no se declara feature completa ni integración real/piloto. Las descripciones de base sin pantallas que siguen conservan contexto histórico.
+**Ampliación solicitada 2026-10-26:** [Mis cursos](../specs/academico/02-cursos.md): ADMIN gestiona cursos/asigna profesor; TEACHER gestiona estudiantes desde su curso, incluido registro. Implementado junto a la rama backend homónima y probado con API/PostgreSQL aislados. Supera el bloqueo histórico del registro de [Estudiantes](../specs/academico/01-estudiantes.md); no acredita despliegue ni piloto. Las descripciones de base sin pantallas que siguen conservan contexto histórico.
 
 ## Fuente canónica y ruta local
 

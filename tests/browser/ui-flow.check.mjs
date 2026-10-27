@@ -86,7 +86,7 @@ try {
   passed.push('Login password visibility is keyboard-addressable and preserves the input');
 
   await page.goto(`${origin}/tests/browser/usuarios-harness.html?role=TEACHER`, { settleMs: 250 });
-  assert.equal(await page.eval(() => Boolean(document.querySelector('#workspace-content a[href="/academico/estudiantes"]'))), true);
+  assert.equal(await page.eval(() => Boolean(document.querySelector('#workspace-content a[href="/academico/cursos"]'))), true);
   assert.equal(await page.eval(() => Boolean(document.querySelector('#workspace-content a[href="/tareas"]'))), true);
   assert.equal(await page.eval(() => Boolean(document.querySelector('a[href="/usuarios"]'))), false);
   passed.push('Teacher home offers only student records and tasks, not administrative destinations');

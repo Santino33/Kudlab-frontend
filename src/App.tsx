@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createTasksApi } from './features/tareas/api.ts';
 import { createStudentsApi } from './features/academico/students/api.ts';
+import { createGroupsApi } from './features/academico/groups/api.ts';
+import type { GroupWrite } from './features/academico/groups/api.ts';
+import { Groups, GroupContent, GroupAdministration, GroupForm, GroupWriteNotice } from './features/academico/groups/Groups';
+import { Registration } from './features/academico/students/Registration';
 import type { StudentWrite } from './features/academico/students/api.ts';
 import { Students, StudentDetail, StudentEdit, StudentRegistration, StudentWriteNotice } from './features/academico/students/Students';
 import { Catalog, TaskDetail } from './features/tareas/Catalog';
@@ -55,6 +59,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
   }, [route]);
   const [uncertain, setUncertain] = useState(false);
   const [studentWrite, setStudentWrite] = useState<StudentWrite>();
+  const [groupWrite, setGroupWrite] = useState<GroupWrite>();
   const [controller] = useState(() => {
     if (injected) return injected;
     try { return createAuthController(createAuthClient(apiOrigin ?? '', (url, init) => fetcher(url, init))); }
@@ -62,10 +67,14 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
   });
   const apis = useMemo(() => {
     if (!controller || !apiOrigin) return;
-    try { return {
+    try {
+      const studentHttp = createHttpClient(apiOrigin, controller, fetcher, () => setStudentWrite(state => state ? { ...state, phase: 'uncertain' } : state));
+      return {
       accounts: createUsuariosApi(createHttpClient(apiOrigin, controller, fetcher, () => setUncertain(true))),
       tasks: createTasksApi(createHttpClient(apiOrigin, controller, fetcher)),
-      students: createStudentsApi(createHttpClient(apiOrigin, controller, fetcher, () => setStudentWrite((state) => state ? { ...state, phase: 'uncertain' } : state)), setStudentWrite),
+      students: createStudentsApi(studentHttp, setStudentWrite),
+      studentsForGroup: (id: string) => createStudentsApi(studentHttp, setStudentWrite, id),
+      groups: createGroupsApi(createHttpClient(apiOrigin, controller, fetcher), setGroupWrite),
       recovery: createUsuariosApi(createHttpClient(apiOrigin, { getGeneration: controller.getGeneration, notify() {} }, fetcher)),
     }; } catch { return; }
   }, [controller, apiOrigin, fetcher]);
@@ -87,13 +96,21 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
   const management = ['accounts', 'invite', 'detail', 'edit'].includes(route.kind);
   const tasks = route.kind === 'tasks' || route.kind === 'taskDetail';
   const students = ['students', 'studentNew', 'studentDetail', 'studentEdit'].includes(route.kind);
+  const courses = ['groups', 'groupNew', 'groupDetail', 'groupEdit'].includes(route.kind);
+  const selectedGroup = 'groupId' in route ? route.groupId : undefined;
   return <AuthRoot controller={controller} notice={uncertain ? <Notice title="Hay una operación sin confirmar">
     <p>No la repitas sin revisar el estado actual de la cuenta. El fallo no demuestra que se haya deshecho.</p>
     <Button variant="outline" className="mt-4" onClick={() => setUncertain(false)}>Ya revisé el estado actual</Button>
   </Notice> : undefined} renderAuthenticated={
-    (user, access, generation) => <Workspace user={user} section={students ? 'students' : tasks ? 'tasks' : route.kind === 'invite' ? 'invite' : management ? 'accounts' : 'home'} signOut={access.signOut}>
+    (user, access, generation) => <Workspace user={user} section={students || courses ? 'groups' : tasks ? 'tasks' : route.kind === 'invite' ? 'invite' : management ? 'accounts' : 'home'} signOut={access.signOut}>
+      {groupWrite && <div className="mb-6"><GroupWriteNotice write={groupWrite} /></div>}
       {studentWrite && canManageStudents(access.getSnapshot()) && <div className="mb-6"><StudentWriteNotice write={studentWrite} /></div>}
-      <div key={`${generation}:${route.kind}:${'studentId' in route ? route.studentId : 'accountId' in route ? route.accountId : route.kind === 'taskDetail' ? route.taskId : ''}`}>{(management && !canManageAccounts(access.getSnapshot())) || (tasks && !canConsultTasks(access.getSnapshot())) || (students && !canManageStudents(access.getSnapshot())) ? <DestinationNotice denied /> :
+      <div key={`${generation}:${route.kind}:${selectedGroup ?? ''}:${'studentId' in route ? route.studentId : 'accountId' in route ? route.accountId : route.kind === 'taskDetail' ? route.taskId : ''}`}>{(management && !canManageAccounts(access.getSnapshot())) || (tasks && !canConsultTasks(access.getSnapshot())) || (students && !canManageStudents(access.getSnapshot())) || (courses && !canConsultTasks(access.getSnapshot())) || (['groupNew', 'groupEdit'].includes(route.kind) && !canManageAccounts(access.getSnapshot())) ? <DestinationNotice denied /> :
+        route.kind === 'groups' ? <Groups api={apis.groups} admin={user.role === 'ADMIN'} write={groupWrite} reviewed={() => setGroupWrite(undefined)} /> :
+        route.kind === 'groupNew' ? <GroupForm api={apis.groups} locked={Boolean(groupWrite)} /> :
+        route.kind === 'groupEdit' ? <GroupContent api={apis.groups} groupId={route.groupId}>{group => <GroupForm api={apis.groups} before={group} locked={Boolean(groupWrite)} />}</GroupContent> :
+        route.kind === 'groupDetail' ? <GroupContent api={apis.groups} groupId={route.groupId}>{group => user.role === 'ADMIN' ? <GroupAdministration group={group} api={apis.groups} locked={Boolean(groupWrite)} /> : <Students group={group} api={apis.studentsForGroup(group.id)} write={studentWrite} reviewed={() => setStudentWrite(undefined)} />}</GroupContent> :
+        students && selectedGroup ? <GroupContent api={apis.groups} groupId={selectedGroup}>{group => route.kind === 'studentNew' ? <Registration group={group} api={apis.studentsForGroup(group.id)} locked={Boolean(studentWrite)} /> : route.kind === 'studentDetail' ? <StudentDetail group={group} api={apis.studentsForGroup(group.id)} studentId={route.studentId} write={studentWrite} reviewed={() => setStudentWrite(undefined)} /> : route.kind === 'studentEdit' ? <StudentEdit group={group} api={apis.studentsForGroup(group.id)} studentId={route.studentId} locked={Boolean(studentWrite)} /> : <Students group={group} api={apis.studentsForGroup(group.id)} />}</GroupContent> :
         route.kind === 'students' ? <Students api={apis.students} /> :
         route.kind === 'studentNew' ? <StudentRegistration /> :
         route.kind === 'studentDetail' ? <StudentDetail api={apis.students} studentId={route.studentId} write={studentWrite} reviewed={() => setStudentWrite(undefined)} /> :

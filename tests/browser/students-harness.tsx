@@ -69,7 +69,7 @@ export async function runStudentChecks() {
   await run('TEACHER: lista real, activos/inactivos, navegación, GET de ficha y atrás/adelante', async () => {
     const f = fixture(); await until(() => Boolean(host().querySelector('table')));
     assert(text().includes('Activo') && text().includes('Inactivo'), 'Both states');
-    assert(host().querySelector('a[aria-current="page"][href="/academico/estudiantes"]'), 'Active sidebar');
+    assert(host().querySelector('a[aria-current="page"][href="/academico/cursos"]'), 'Active courses sidebar');
     clickText('Ver ficha'); await until(() => text().includes('Editar estudiante'));
     assert(f.calls.some(call => call.path === `/api/v1/students/${student.id}`), 'GET detail');
     assert(!text().includes(student.groupId), 'No UUID displayed');
@@ -77,7 +77,7 @@ export async function runStudentChecks() {
     history.forward(); await until(() => text().includes('Editar estudiante'));
   });
   await run('registro bloqueado sin pedir datos personales ni enviar alta', async () => {
-    const f = fixture({ path: `${path}/nuevo` }); await until(() => text().includes('El registro requiere'));
+    const f = fixture({ path: `${path}/nuevo` }); await until(() => text().includes('Selecciona un curso'));
     assert(!host().querySelector('input,select'), 'No fake inputs'); assert(mutations(f.calls).length === 0, 'No POST');
   });
   await run('vacío y 404 neutral no muestran filas ni datos anteriores', async () => {

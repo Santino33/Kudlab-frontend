@@ -24,7 +24,7 @@ test('ambiguous or repeated tokens cannot select a transaction or trigger a muta
   assert.equal(repeated.recovery.read(), undefined);
 });
 test('dashboard descriptors expose only implemented role-specific features', () => {
-  assert.deepEqual(dashboardFeatures('TEACHER').map(f => f.href), ['/academico/estudiantes', '/tareas']);
-  assert.deepEqual(dashboardFeatures('ADMIN').map(f => f.href), ['/usuarios', '/usuarios/nueva', '/tareas']);
+  assert.deepEqual(dashboardFeatures('TEACHER').map(f => f.href), ['/academico/cursos', '/tareas']);
+  assert.deepEqual(dashboardFeatures('ADMIN').map(f => f.href), ['/academico/cursos', '/usuarios', '/usuarios/nueva', '/tareas']);
   for (const feature of dashboardFeatures('ADMIN')) assert.ok(feature.title && feature.description);
 });
