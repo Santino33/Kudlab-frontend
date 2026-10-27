@@ -11,6 +11,11 @@ export type Route =
   | { kind: 'studentDetail' | 'studentEdit'; studentId: string; groupId?: string }
   | { kind: 'groupDetail' | 'groupEdit'; groupId: string }
   | { kind: 'taskDetail'; taskId: string }
+  | { kind: 'assignments'; groupId: string }
+  | { kind: 'assignmentDetail'; groupId: string; assignmentId: string }
+  | { kind: 'supervisedExecution'; groupId: string; assignmentId: string; recipientId: string }
+  | { kind: 'studentActivities'; groupId: string; studentId: string }
+  | { kind: 'sessionResults' | 'submissionRecovery'; groupId: string; studentId: string; sessionId: string }
   | { kind: 'detail' | 'edit'; accountId: string };
 
 export const routeTitles: Record<Route['kind'], string> = {
@@ -20,6 +25,8 @@ export const routeTitles: Record<Route['kind'], string> = {
   tasks: 'Tareas digitales', taskDetail: 'Ficha de tarea', students: 'Estudiantes',
   studentNew: 'Registrar estudiante', studentDetail: 'Ficha de estudiante', studentEdit: 'Editar estudiante',
   groups: 'Mis cursos', groupNew: 'Crear curso', groupDetail: 'Curso', groupEdit: 'Editar curso',
+  assignments: 'Asignaciones', assignmentDetail: 'Detalle de asignación', supervisedExecution: 'Actividad supervisada',
+  studentActivities: 'Tareas del estudiante', sessionResults: 'Detalle de sesión', submissionRecovery: 'Recuperar envío',
 };
 
 export function resolveRoute(pathname: string, search: string): Route {
@@ -38,6 +45,12 @@ export function resolveRoute(pathname: string, search: string): Route {
     case '/usuarios/nueva': return { kind: 'invite' };
     case '/recuperar-acceso': return { kind: 'recoveryRequest' };
     case '/recuperar-acceso/confirmar': return { kind: 'recoveryConfirm' };
+  }
+  const activity = /^\/academico\/cursos\/([0-9a-f-]{36})\/(?:asignaciones(?:\/([0-9a-f-]{36})(?:\/destinatarios\/([0-9a-f-]{36})\/ejecucion)?)?|estudiantes\/([0-9a-f-]{36})\/tareas(?:\/([0-9a-f-]{36})(\/recuperacion)?)?)$/.exec(pathname);
+  if (activity) {
+    const [, groupId, assignmentId, recipientId, studentId, sessionId, recovery] = activity;
+    if (studentId) return sessionId ? { kind: recovery ? 'submissionRecovery' : 'sessionResults', groupId: groupId!, studentId, sessionId } : { kind: 'studentActivities', groupId: groupId!, studentId };
+    return assignmentId ? recipientId ? { kind: 'supervisedExecution', groupId: groupId!, assignmentId, recipientId } : { kind: 'assignmentDetail', groupId: groupId!, assignmentId } : { kind: 'assignments', groupId: groupId! };
   }
   const course = /^\/academico\/cursos\/([^/]+)(?:\/(editar|estudiantes\/nuevo|estudiantes\/([^/]+)(\/editar)?))?$/.exec(pathname);
   if (course) {

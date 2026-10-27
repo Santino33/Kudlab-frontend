@@ -16,6 +16,7 @@ import type { Student, StudentField, StudentInput } from './types.ts';
 import type { Group } from '../groups/types.ts';
 import { CourseBack } from '../groups/Groups';
 import { groupPath, groupStudentPath, groupsPath } from '../groups/navigation.ts';
+import { assignmentPath, studentTasksPath } from '../../tareas/activities/types.ts';
 
 export const studentsPath = '/academico/estudiantes';
 export const detailPath = (id: string, groupId?: string) => groupId ? groupStudentPath(groupId, id) : `${studentsPath}/${encodeURIComponent(id)}`;
@@ -48,6 +49,7 @@ export function Students({ api, group, write, reviewed }: { api: StudentsApi; gr
   return <div className="staff-stack">
     {group && <CourseBack />}
     <header className="staff-heading"><div className="workspace-page-heading"><Heading>{group?.name ?? 'Estudiantes'}</Heading><p>{group ? `Estudiantes · Grado ${group.grade} · Año ${group.schoolYear}` : 'Consulta y actualiza los registros de tus grupos, incluidos los inactivos.'}</p></div>{group && <Link href={`${groupPath(group.id)}/estudiantes/nuevo`} primary>Registrar estudiante</Link>}</header>
+    {group && <Link href={assignmentPath(group.id)}>Asignaciones de tareas digitales</Link>}
     {!group && <p className="availability-note">Para registrar estudiantes, selecciona primero un curso en <a href={groupsPath} onClick={navigate}>Mis cursos</a>.</p>}
     {!query.result ? <Loading text="Consultando estudiantes" /> : query.result.kind !== 'success' ? <Failure result={query.result} retry={query.reload} /> : !query.result.data.items.length ?
       <Notice title={group ? 'Este curso aún no tiene estudiantes' : 'No hay estudiantes en tus grupos'}><p>{group ? 'Registra el primer estudiante con el botón Registrar estudiante.' : 'Los estudiantes de tus cursos aparecerán aquí.'}</p></Notice> :
@@ -86,6 +88,7 @@ export function StudentDetail({ api, studentId, write, reviewed, group }: { api:
     {student ? <>
       <header className="staff-heading"><Heading>{student.firstName} {student.lastName}</Heading><Link href={`${detailPath(student.id, group?.id)}/editar`} primary>Editar estudiante</Link></header>
       <p role="status">{notice}</p><Facts student={student} group={group} />
+      <Link href={studentTasksPath(student.groupId, student.id)}>Tareas digitales y sesiones</Link>
       {write?.phase === 'uncertain' && write.id === student.id && <Notice title="Hay un guardado sin confirmar">
         <p>Vuelve a consultar el registro y revisa sus datos antes de guardar de nuevo. La consulta muestra el estado actual, pero no confirma quién hizo el cambio. El borrador se retiró al volver a comprobar tu acceso.</p>
         <Button variant="outline" className="mt-4" onClick={check} disabled={query.fetching}>Comprobar estado actual</Button>

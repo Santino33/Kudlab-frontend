@@ -26,6 +26,8 @@ import { AccountForm } from './features/usuarios/accounts/AccountForm';
 import { Recovery } from './features/usuarios/recovery/Recovery';
 import { Notice } from './features/usuarios/shared';
 import { Button } from './components/ui/button';
+import { createActivitiesApi } from './features/tareas/activities/api.ts';
+import { ActivityRoutes } from './features/tareas/activities/ActivityRoutes';
 
 function DestinationNotice({ blocked = false, denied = false }: { blocked?: boolean; denied?: boolean }) {
   return <Card>
@@ -72,6 +74,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
       return {
       accounts: createUsuariosApi(createHttpClient(apiOrigin, controller, fetcher, () => setUncertain(true))),
       tasks: createTasksApi(createHttpClient(apiOrigin, controller, fetcher)),
+      activities: createActivitiesApi(createHttpClient(apiOrigin, controller, fetcher)),
       students: createStudentsApi(studentHttp, setStudentWrite),
       studentsForGroup: (id: string) => createStudentsApi(studentHttp, setStudentWrite, id),
       groups: createGroupsApi(createHttpClient(apiOrigin, controller, fetcher), setGroupWrite),
@@ -97,15 +100,17 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
   const tasks = route.kind === 'tasks' || route.kind === 'taskDetail';
   const students = ['students', 'studentNew', 'studentDetail', 'studentEdit'].includes(route.kind);
   const courses = ['groups', 'groupNew', 'groupDetail', 'groupEdit'].includes(route.kind);
+  const activities = ['assignments', 'assignmentDetail', 'supervisedExecution', 'studentActivities', 'sessionResults', 'submissionRecovery'].includes(route.kind);
   const selectedGroup = 'groupId' in route ? route.groupId : undefined;
   return <AuthRoot controller={controller} notice={uncertain ? <Notice title="Hay una operación sin confirmar">
     <p>No la repitas sin revisar el estado actual de la cuenta. El fallo no demuestra que se haya deshecho.</p>
     <Button variant="outline" className="mt-4" onClick={() => setUncertain(false)}>Ya revisé el estado actual</Button>
   </Notice> : undefined} renderAuthenticated={
-    (user, access, generation) => <Workspace user={user} section={students || courses ? 'groups' : tasks ? 'tasks' : route.kind === 'invite' ? 'invite' : management ? 'accounts' : 'home'} signOut={access.signOut}>
+    (user, access, generation) => <Workspace user={user} section={students || courses || activities ? 'groups' : tasks ? 'tasks' : route.kind === 'invite' ? 'invite' : management ? 'accounts' : 'home'} signOut={access.signOut}>
       {groupWrite && <div className="mb-6"><GroupWriteNotice write={groupWrite} /></div>}
       {studentWrite && canManageStudents(access.getSnapshot()) && <div className="mb-6"><StudentWriteNotice write={studentWrite} /></div>}
-      <div key={`${generation}:${route.kind}:${selectedGroup ?? ''}:${'studentId' in route ? route.studentId : 'accountId' in route ? route.accountId : route.kind === 'taskDetail' ? route.taskId : ''}`}>{(management && !canManageAccounts(access.getSnapshot())) || (tasks && !canConsultTasks(access.getSnapshot())) || (students && !canManageStudents(access.getSnapshot())) || (courses && !canConsultTasks(access.getSnapshot())) || (['groupNew', 'groupEdit'].includes(route.kind) && !canManageAccounts(access.getSnapshot())) ? <DestinationNotice denied /> :
+      <div key={`${generation}:${route.kind}:${selectedGroup ?? ''}:${'studentId' in route ? route.studentId : 'accountId' in route ? route.accountId : route.kind === 'taskDetail' ? route.taskId : ''}:${'sessionId' in route ? route.sessionId : ''}:${'assignmentId' in route ? route.assignmentId : ''}:${'recipientId' in route ? route.recipientId : ''}`}>{(management && !canManageAccounts(access.getSnapshot())) || (tasks && !canConsultTasks(access.getSnapshot())) || ((students || activities) && !canManageStudents(access.getSnapshot())) || (courses && !canConsultTasks(access.getSnapshot())) || (['groupNew', 'groupEdit'].includes(route.kind) && !canManageAccounts(access.getSnapshot())) ? <DestinationNotice denied /> :
+        activities && selectedGroup ? <GroupContent api={apis.groups} groupId={selectedGroup}>{group => <ActivityRoutes api={apis.activities} studentsApi={apis.studentsForGroup(group.id)} tasksApi={apis.tasks} route={route} group={group} access={access} actorId={user.id} runtimeOrigin={import.meta.env.VITE_PLAY_ORIGIN ?? ''} />}</GroupContent> :
         route.kind === 'groups' ? <Groups api={apis.groups} admin={user.role === 'ADMIN'} write={groupWrite} reviewed={() => setGroupWrite(undefined)} /> :
         route.kind === 'groupNew' ? <GroupForm api={apis.groups} locked={Boolean(groupWrite)} /> :
         route.kind === 'groupEdit' ? <GroupContent api={apis.groups} groupId={route.groupId}>{group => <GroupForm api={apis.groups} before={group} locked={Boolean(groupWrite)} />}</GroupContent> :
