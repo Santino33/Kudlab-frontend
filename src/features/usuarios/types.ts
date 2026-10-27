@@ -8,9 +8,9 @@ export type UserError = {
 };
 export type ProviderError = { status: number; code?: string; message?: string };
 
-export type HttpResult<T> =
+export type HttpResult<T, Field extends string = UserField> =
   | { kind: 'success'; data: T }
-  | { kind: 'error'; status: number; code?: UserError['code']; uncertain: boolean; fields?: UserError['fields'] }
+  | { kind: 'error'; status: number; code?: UserError['code']; uncertain: boolean; fields?: { field: Field; reason: string }[] }
   | { kind: 'unavailable'; uncertain: boolean }
   | { kind: 'obsolete' };
 

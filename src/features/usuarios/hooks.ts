@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import type { HttpResult } from './types.ts';
+import type { HttpResult, UserField } from './types.ts';
 
-export function useQuery<T>(load: (signal: AbortSignal) => Promise<HttpResult<T>>, selection: string, keepOnRefresh = false) {
-  const [snapshot, setSnapshot] = useState<{ selection: string; result?: HttpResult<T> }>({ selection });
+export function useQuery<T, Field extends string = UserField>(load: (signal: AbortSignal) => Promise<HttpResult<T, Field>>, selection: string, keepOnRefresh = false) {
+  const [snapshot, setSnapshot] = useState<{ selection: string; result?: HttpResult<T, Field> }>({ selection });
   const [fetching, setFetching] = useState(true);
   const [revision, setRevision] = useState(0);
   const loader = useRef(load);
@@ -22,16 +22,16 @@ export function useQuery<T>(load: (signal: AbortSignal) => Promise<HttpResult<T>
     reload: () => { setFetching(true); setRevision((value) => value + 1); } };
 }
 
-export function useMutation<T>() {
+export function useMutation<T, Field extends string = UserField>() {
   const [pending, setPending] = useState(false);
-  const [result, setResult] = useState<HttpResult<T>>();
+  const [result, setResult] = useState<HttpResult<T, Field>>();
   const active = useRef(false);
   const flight = useRef<{ abort: AbortController; timer: ReturnType<typeof setTimeout> } | undefined>(undefined);
   useEffect(() => {
     active.current = true;
     return () => { active.current = false; if (flight.current) { clearTimeout(flight.current.timer); flight.current.abort.abort(); } };
   }, []);
-  async function run(request: (signal: AbortSignal) => Promise<HttpResult<T>>) {
+  async function run(request: (signal: AbortSignal) => Promise<HttpResult<T, Field>>) {
     if (flight.current) return;
     const abort = new AbortController();
     const timer = setTimeout(() => {
@@ -40,7 +40,7 @@ export function useMutation<T>() {
     }, 15000);
     flight.current = { abort, timer };
     setPending(true); setResult(undefined);
-    let next: HttpResult<T>;
+    let next: HttpResult<T, Field>;
     try { next = await request(abort.signal); } catch { next = { kind: 'unavailable', uncertain: true }; }
     clearTimeout(timer); flight.current = undefined;
     if (!active.current) return;

@@ -23,10 +23,11 @@ export function createHttpClient(origin: string, access: Pick<AuthController, 'g
   fetcher: typeof fetch = globalThis.fetch, onUncertain: () => void = () => {}) {
   const base = validateApiOrigin(origin);
   return {
-    async request<T>(path: string, options: {
-      method?: 'GET' | 'POST' | 'PATCH' | 'PUT'; body?: unknown; signal: AbortSignal;
+    async request<T, Field extends string = UserField>(path: string, options: {
+      method?: 'GET' | 'POST' | 'PATCH' | 'PUT'; body?: unknown; bodyAbsent?: boolean; signal: AbortSignal;
+      decodeFields?(data: unknown): { field: Field; reason: string }[];
       decode(data: unknown, status: number): T | undefined;
-    }): Promise<HttpResult<T>> {
+    }): Promise<HttpResult<T, Field>> {
       const generation = access.getGeneration();
       const current = () => generation === access.getGeneration();
       const method = options.method ?? 'GET';
@@ -38,8 +39,8 @@ export function createHttpClient(origin: string, access: Pick<AuthController, 'g
       try {
         const response = await fetcher(url.href, {
           method, credentials: 'include', cache: 'no-store', redirect: 'error', signal: options.signal,
-          headers: { Accept: 'application/json', ...(mutation ? { 'Content-Type': 'application/json' } : {}) },
-          ...(mutation ? { body: JSON.stringify(options.body ?? {}) } : {}),
+          headers: { Accept: 'application/json', ...(mutation && !options.bodyAbsent ? { 'Content-Type': 'application/json' } : {}) },
+          ...(mutation && !options.bodyAbsent ? { body: JSON.stringify(options.body ?? {}) } : {}),
         });
         if (response.redirected) throw new Error('Unexpected redirect');
         let data: unknown;
@@ -70,8 +71,9 @@ export function createHttpClient(origin: string, access: Pick<AuthController, 'g
             if (!item || typeof item !== 'object' || typeof item.field !== 'string' || !Object.hasOwn(fieldReasons, item.field) || item.reason !== fieldReasons[item.field as UserField]) return [];
             return [{ field: item.field as UserField, reason: fieldReasons[item.field as UserField] }];
           }) : [];
+        const decodedFields = options.decodeFields ? options.decodeFields(data) : fields as { field: Field; reason: string }[];
         return { kind: 'error', status: response.status, ...(code ? { code } : {}),
-          uncertain, ...(fields.length ? { fields } : {}) };
+          uncertain, ...(decodedFields.length ? { fields: decodedFields } : {}) };
       } catch {
         if (!current()) return { kind: 'obsolete' };
         if (mutation) onUncertain();
