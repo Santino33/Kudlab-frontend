@@ -1,5 +1,7 @@
 # Inventario de capacidades reales y pendientes
 
+**Académico, 2026-10-26:** [gestión de estudiantes](../../../specs/academico/01-estudiantes.md) incorpora navegación TEACHER y consulta/edición/inactivación como módulo separado. No amplía permisos de Usuarios ni concede acceso académico a ADMIN. Transporte compartido admite cuerpo explícitamente ausente y decodificación académica independiente; regresión 66 auth + 70 Usuarios + 11 Tareas correcta. Registro bloqueado por consulta de grupos ausente; no se verificó integración API/BD ni piloto.
+
 **Vertical Tareas 01, 2026-10-26:** esta rama añade consulta de catálogo/ficha
 para ADMIN/TEACHER activos, sin ampliar gestión de Usuarios ni permisos académicos.
 Conserva AuthRoot, suspensión y notificaciones transversales; 403 no repone Tareas

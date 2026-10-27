@@ -100,7 +100,7 @@ function Deactivate({ api, student, locked, onSuccess, review }: { api: Students
   return <AlertDialog open={open} onOpenChange={(next) => { if (!mutation.pending) { setOpen(next); if (!next) mutation.clear(); } }}>
     <AlertDialogTrigger id="student-deactivate" disabled={locked} render={<Button variant="outline" className="w-fit" />}>Inactivar estudiante</AlertDialogTrigger>
     <AlertDialogContent initialFocus={cancel} finalFocus={() => document.getElementById('student-deactivate') ?? document.getElementById('auth-title')}>
-      <AlertDialogHeader><AlertDialogTitle>¿Inactivar a {student.firstName} {student.lastName}?</AlertDialogTitle><AlertDialogDescription>El registro pasará a inactivo. Sus datos se conservarán. Esta pantalla no permite reactivarlo.</AlertDialogDescription></AlertDialogHeader>
+      <AlertDialogHeader><AlertDialogTitle className="[overflow-wrap:anywhere]">¿Inactivar a {student.firstName} {student.lastName}?</AlertDialogTitle><AlertDialogDescription>El registro pasará a inactivo. Sus datos se conservarán. Esta pantalla no permite reactivarlo.</AlertDialogDescription></AlertDialogHeader>
       {mutation.result && <Failure result={mutation.result} />}
       {mutation.pending && <p role="status">Inactivando estudiante…</p>}
       <AlertDialogFooter><AlertDialogCancel ref={cancel} disabled={mutation.pending}>Cancelar</AlertDialogCancel>
