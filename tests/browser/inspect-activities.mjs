@@ -21,7 +21,9 @@ Browser.launch = async (...args) => {
       if (url === target) await page.eval(async () => {
         for (let n = 0; n < 75; n++) {
           if (document.querySelector('.classroom-roster')) {
-            [...document.querySelectorAll('button')].find(b => b.textContent === 'Ocultar códigos')?.click();
+            const hide = [...document.querySelectorAll('button')].find(b => b.getAttribute('aria-label') === 'Ocultar códigos' || b.textContent === 'Ocultar códigos');
+            if (!hide) throw new Error('HIDE_CODES_CONTROL_REQUIRED');
+            hide.click();
             return;
           }
           await new Promise(resolve => setTimeout(resolve, 200));

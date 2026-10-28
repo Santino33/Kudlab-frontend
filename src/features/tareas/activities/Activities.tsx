@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +16,7 @@ import { navigate } from '../../../lib/navigation.ts';
 import type { ActivitiesApi, AssignmentInput } from './api.ts';
 import { object, assignmentPath, studentTasksPath, executionPath, executionLabels, processingLabels, metricLabels, unavailableLabels, type Assignment, type SessionDetail, type Evidence } from './types.ts';
 import { AssignmentAccess, RecoveryAccess } from './AccessCodes';
-import { prepareCodes } from './prepare-codes';
+import { newPreparation, preparationKey, readPreparation, savePreparation } from './code-preparation';
 
 export function ActivityLink({ href, children, primary = false }: { href: string; children: ReactNode; primary?: boolean }) {
   return <a href={href} onClick={navigate} className={cn(buttonVariants({ variant: primary ? 'default' : 'outline' }), 'w-fit max-w-full whitespace-normal text-left [overflow-wrap:anywhere]')}>{children}</a>;
@@ -28,6 +28,9 @@ export function ActivityFailure({ result, retry }: { result?: HttpResult<unknown
   </Notice>;
 }
 const date = (value: string | null) => value ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '—';
+function AssignmentDate({ value }: { value: string }) {
+  return <time dateTime={value}><span>{new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' }).format(new Date(value))}</span>{' '}<span className="assignment-time">{new Intl.DateTimeFormat('es-CO', { timeStyle: 'short' }).format(new Date(value))}</span></time>;
+}
 export function ActivityHeading({ children }: { children: ReactNode }) { return <h1 id="auth-title" className="auth-heading" tabIndex={-1}>{children}</h1>; }
 export function ActivityTable({ children, label, compactFirst = false }: { children: ReactNode; label: string; compactFirst?: boolean }) {
   return <><p className="text-sm sm:hidden">Puedes desplazar la tabla horizontalmente para consultar todas sus columnas.</p><div className={cn('staff-table-region', compactFirst && 'activity-evidence')} role="region" aria-label={label} tabIndex={0}><Table>{children}</Table></div></>;
@@ -55,31 +58,35 @@ function AssignmentForm({ api, studentsApi, tasksApi, group, actorId }: { api: A
   const key = `kudlab:j02:assignment:${actorId}:${group.id}`;
   const [frozen, setFrozen] = useState<AssignmentInput | undefined>(() => { try { const v = JSON.parse(sessionStorage.getItem(key) ?? 'null'); return v?.groupId === group.id && typeof v.requestId === 'string' ? v : undefined; } catch { return; } });
   const mutation = useMutation<Assignment>();
-  const [created, setCreated] = useState(false);
+  const [created, setCreated] = useState<Assignment>();
+  const submitting = useRef(false);
   const task = taskQuery.result?.kind === 'success' ? taskQuery.result.data : undefined;
   const students = studentQuery.result?.kind === 'success' ? studentQuery.result.data.items : undefined;
   async function send(input: AssignmentInput) {
-    let assignmentCreated = false;
-    const result = await mutation.run(async signal => {
-      const result = await api.create(input, signal);
-      if (result.kind !== 'success') return result;
-      assignmentCreated = true; setCreated(true);
-      return prepareCodes(api, result.data, batch => operationId(`access-create:${actorId}:${result.data.id}:${batch}`), signal);
-    });
-    if (result?.kind === 'success') { sessionStorage.removeItem(key); go(assignmentPath(group.id, result.data.id)); }
-    else if (!assignmentCreated && result?.kind === 'error' && [400, 409].includes(result.status)) { sessionStorage.removeItem(key); setFrozen(undefined); }
+    const result = created ? { kind: 'success' as const, data: created } : await mutation.run(signal => api.create(input, signal));
+    if (result?.kind === 'success') {
+      setCreated(result.data);
+      try {
+        const preparation = preparationKey(actorId, result.data.id);
+        const op = readPreparation(sessionStorage, preparation, result.data) ?? newPreparation(result.data.recipients.map(r => r.id), true);
+        savePreparation(sessionStorage, preparation, op);
+        sessionStorage.removeItem(key);
+      } catch { setError('La asignación ya está creada. No pudimos conservar el progreso de sus códigos; habilita el almacenamiento y vuelve a continuar.'); return; }
+      go(assignmentPath(group.id, result.data.id));
+    } else if (result?.kind === 'error' && [400, 409].includes(result.status)) { sessionStorage.removeItem(key); submitting.current = false; setFrozen(undefined); }
   }
   function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (mutation.pending || frozen || !task?.publishedVersion) return;
+    event.preventDefault(); if (submitting.current || mutation.pending || frozen || !task?.publishedVersion) return;
     const values = new FormData(event.currentTarget), start = new Date(String(values.get('startsAt'))), end = new Date(String(values.get('endsAt'))), maxAttempts = Number(values.get('maxAttempts'));
     if (!selected.length || !Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end || !Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 10) { setError('Selecciona estudiantes, un periodo válido y entre 1 y 10 intentos.'); return; }
     const input: AssignmentInput = { requestId: crypto.randomUUID(), taskId: 'TG-01', publishedVersionId: task.publishedVersion.id, groupId: group.id, studentIds: selected, startsAt: start.toISOString(), endsAt: end.toISOString(), maxAttempts };
-    try { sessionStorage.setItem(key, JSON.stringify(input)); } catch { setError('No podemos conservar la solicitud para reconciliarla. Habilita el almacenamiento de este sitio antes de guardar.'); return; }
+    submitting.current = true;
+    try { sessionStorage.setItem(key, JSON.stringify(input)); } catch { submitting.current = false; setError('No podemos conservar la solicitud para reconciliarla. Habilita el almacenamiento de este sitio antes de guardar.'); return; }
     setError(''); setFrozen(input); void send(input);
   }
   return <section className="staff-stack activity-form" aria-labelledby="assignment-form-title"><h2 id="assignment-form-title" className="staff-section-title">Asignar Lluvia de estrellas</h2>
     <p>Los destinatarios quedan fijados al guardar. El límite de intentos lo decide el profesor; no es un umbral científico.</p>
-    {frozen ? <Notice title={created ? 'Asignación creada; preparando códigos' : 'Hay una creación por confirmar'}><p>{frozen.studentIds.length} destinatarios · {date(frozen.startsAt)} – {date(frozen.endsAt)} · {frozen.maxAttempts} intentos. Se comprobará la misma asignación y sus códigos, sin duplicarlos.</p><Button className="mt-4" disabled={mutation.pending} onClick={() => void send(frozen)}>{mutation.pending ? 'Preparando accesos…' : 'Comprobar asignación y códigos'}</Button></Notice> : !task || !students ? (!studentQuery.result || !taskQuery.result ? <Loading text="Preparando formulario" /> : <ActivityFailure retry={() => { studentQuery.reload(); taskQuery.reload(); }} />) : <form onSubmit={submit} className="auth-form">
+    {frozen ? <Notice title={created ? 'Asignación creada' : mutation.pending ? 'Creando asignación…' : 'Hay una creación por confirmar'}><p>{frozen.studentIds.length} destinatarios · {date(frozen.startsAt)} – {date(frozen.endsAt)} · {frozen.maxAttempts} intentos. Conservamos la misma solicitud, sin duplicar la asignación.</p><Button className="mt-4" disabled={mutation.pending} onClick={() => void send(frozen)}>{mutation.pending ? 'Creando asignación…' : created ? 'Continuar con los códigos' : 'Comprobar creación'}</Button></Notice> : !task || !students ? (!studentQuery.result || !taskQuery.result ? <Loading text="Preparando formulario" /> : <ActivityFailure retry={() => { studentQuery.reload(); taskQuery.reload(); }} />) : <form onSubmit={submit} className="auth-form">
       <p>{task.pedagogicalNotice}</p>{!task.assignable && <Notice title="Actividad no disponible"><ul>{task.unavailableReasons.map(r => <li key={r}>{r === 'METHODOLOGY_PENDING' ? 'Método pendiente de aprobación' : r === 'TASK_DISABLED' ? 'Tarea deshabilitada' : 'Configuración o integración pendiente'}</li>)}</ul></Notice>}
       <fieldset className="staff-stack" disabled={mutation.pending || !task.assignable}><legend className="font-semibold mb-3">Estudiantes destinatarios</legend>
         <Button type="button" variant="outline" className="w-fit" onClick={() => setSelected(students.map(s => s.id))}>Seleccionar todos los actuales</Button>
@@ -90,7 +97,7 @@ function AssignmentForm({ api, studentsApi, tasksApi, group, actorId }: { api: A
         <div className="auth-field"><Label htmlFor="assignment-end">Disponible hasta</Label><Input id="assignment-end" name="endsAt" type="datetime-local" required /></div>
         <p>Zona horaria: {Intl.DateTimeFormat().resolvedOptions().timeZone}. El servidor comprobará la vigencia.</p>
         <div className="auth-field"><Label htmlFor="assignment-attempts">Máximo de intentos</Label><Input id="assignment-attempts" name="maxAttempts" type="number" min={1} max={10} step={1} required aria-describedby="assignment-attempts-help" /><p id="assignment-attempts-help">Entre 1 y 10. Abrir instrucciones no consume; comenzar con confirmación del servidor sí.</p></div>
-      </fieldset><p>Al guardar se preparan los códigos de los estudiantes seleccionados. Podrás mostrarlos en clase.</p><Button disabled={!task.assignable || !students.length || mutation.pending} type="submit">Guardar asignación</Button>
+      </fieldset><p>Al guardar se preparan los códigos de los estudiantes seleccionados. Podrás mostrarlos en clase.</p><Button disabled={!task.assignable || !students.length || mutation.pending} type="submit">Guardar asignación y códigos</Button>
     </form>}
     {error && <p role="alert">{error}</p>}{mutation.result && mutation.result.kind !== 'success' && <ActivityFailure result={mutation.result} />}
   </section>;
@@ -100,12 +107,18 @@ export function AssignmentDetail({ api, group, assignmentId, actorId }: { api: A
   const a = query.result?.kind === 'success' && query.result.data.groupId === group.id ? query.result.data : undefined;
   const mutation = useMutation<Assignment>(), [requestId] = useState(() => operationId(`cancel:${actorId}:${assignmentId}`));
   async function cancel() { const result = await mutation.run(signal => api.cancel(assignmentId, requestId, signal)); if (result?.kind === 'success') query.reload(); }
-  return <div className="staff-stack"><ActivityLink href={assignmentPath(group.id)}>Volver a asignaciones</ActivityLink><ActivityHeading>Estudiantes y códigos</ActivityHeading>
+  return <div className="staff-stack assignment-detail"><ActivityLink href={assignmentPath(group.id)}>Volver a asignaciones</ActivityLink>
+    {!a && <ActivityHeading>Asignación</ActivityHeading>}
     {!query.result ? <Loading text="Consultando asignación" /> : !a ? <ActivityFailure result={query.result} retry={query.reload} /> : <>
-      <p>{a.title} · {group.name} · {a.recipientCount} estudiantes</p>
-      <AssignmentAccess api={api} assignment={a} groupId={group.id} actorId={actorId} />
-      <details><summary>Configuración de la asignación</summary><div className="staff-stack mt-4"><p>Versión {a.configVersion} · {date(a.startsAt)} – {date(a.endsAt)} · Zona {Intl.DateTimeFormat().resolvedOptions().timeZone}</p><p>{a.maxAttempts} intentos por destinatario · {a.status === 'CANCELLED' ? 'Cancelada: no permite nuevos inicios' : 'Las condiciones y los destinatarios son inmutables'}</p></div></details>
-      <div className="staff-actions"><Button variant="outline" onClick={query.reload}>Actualizar asignación</Button>{a.status === 'OPEN' && <AlertDialog><AlertDialogTrigger render={<Button variant="outline" />}>Cancelar nuevos inicios</AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Cancelar nuevos inicios?</AlertDialogTitle><AlertDialogDescription>Se conservarán las sesiones, la evidencia y los destinatarios. No se podrán comenzar nuevas actividades de esta asignación.</AlertDialogDescription></AlertDialogHeader>{mutation.result && mutation.result.kind !== 'success' && <ActivityFailure result={mutation.result} />}<AlertDialogFooter><AlertDialogCancel disabled={mutation.pending}>Volver</AlertDialogCancel><Button onClick={() => void cancel()} disabled={mutation.pending}>{mutation.pending ? 'Cancelando…' : 'Cancelar nuevos inicios'}</Button></AlertDialogFooter></AlertDialogContent></AlertDialog>}</div>
+      <header className="assignment-heading"><ActivityHeading>{a.title}</ActivityHeading><p>{group.name} · {a.availability === 'CURRENT' ? 'Disponible ahora' : a.availability === 'FUTURE' ? 'Programada' : a.availability === 'CANCELLED' ? 'Cancelada' : 'Finalizada'}</p></header>
+      <section aria-label="Información de la asignación" className="assignment-summary"><dl>
+        <div><dt>Disponible desde</dt><dd><AssignmentDate value={a.startsAt} /></dd></div><div><dt>Disponible hasta</dt><dd><AssignmentDate value={a.endsAt} /></dd></div>
+        <div><dt>Máximo de intentos</dt><dd>{a.maxAttempts} por estudiante</dd></div><div><dt>Estudiantes asignados</dt><dd>{a.recipientCount}</dd></div>
+      </dl><p>Zona horaria: {Intl.DateTimeFormat().resolvedOptions().timeZone}</p></section>
+      <AssignmentAccess key={a.id} api={api} assignment={a} groupId={group.id} actorId={actorId} reloadAssignment={query.reload} />
+      <details className="assignment-management"><summary>Detalles técnicos y gestión</summary><div className="staff-stack mt-4"><p>Versión {a.configVersion} · Las condiciones y los destinatarios quedan fijados al guardar.</p>
+      {a.status === 'OPEN' && <AlertDialog><AlertDialogTrigger render={<Button variant="outline" className="w-fit" />}>Cancelar nuevos inicios</AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Cancelar nuevos inicios?</AlertDialogTitle><AlertDialogDescription>Se conservarán las sesiones, la evidencia y los destinatarios. No se podrán comenzar nuevas actividades de esta asignación.</AlertDialogDescription></AlertDialogHeader>{mutation.result && mutation.result.kind !== 'success' && <ActivityFailure result={mutation.result} />}<AlertDialogFooter><AlertDialogCancel disabled={mutation.pending}>Volver</AlertDialogCancel><Button onClick={() => void cancel()} disabled={mutation.pending}>{mutation.pending ? 'Cancelando…' : 'Cancelar nuevos inicios'}</Button></AlertDialogFooter></AlertDialogContent></AlertDialog>}
+      </div></details>
     </>}
   </div>;
 }
