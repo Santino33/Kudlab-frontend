@@ -13,7 +13,7 @@
 
 - Las specs frontend describen la experiencia de interfaz: actores, recorrido, estados/errores y criterios de aceptación. **No duplican la lógica de negocio**; enlazan las reglas canónicas del backend. Usar [la plantilla](docs/specs/TEMPLATE.md).
 - Mantener [el inventario de Usuarios](docs/agent-context/modules/usuarios/capabilities.md) y las fuentes de cada feature. No afirmar que una capacidad está lista para el piloto solo porque exista código.
-- En esta base no se implementan pantallas, autenticación ni llamadas API. Académico, Tareas, Evolución y Seguimiento están fuera de esta iteración.
+- La exclusión de pantallas/API correspondía a la inicialización histórica. J-02 ya integra asignación y consulta docente; el responsable autorizó J-03 para gestión/distribución docente de códigos. La entrada pública y experiencia infantil viven exclusivamente en Kudlab Play, sin cuentas STUDENT ni ampliación de acceso ADMIN.
 - Los estudiantes no usan ni usarán la plataforma; pueden ser sujetos de registros pedagógicos, no destinatarios de la interfaz. Esta aclaración expresa del responsable prevalece sobre menciones antiguas de uso directo por estudiantes. Los roles de Usuarios son ADMIN y TEACHER; no redefinir sus permisos por esta aclaración.
 - Los permisos se verifican en servidor. Ocultar controles no autoriza operaciones; un JWT aislado no sustituye la sesión persistida actual.
 - No registrar secretos, contraseñas, tokens de un solo uso ni datos reales de menores. No introducir secretos backend en variables `VITE_*`.

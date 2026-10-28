@@ -202,3 +202,6 @@
 @media (forced-colors: active) {
   :focus-visible, [tabindex='-1']:focus { outline-color: Highlight; }
 }
+/* J-03 uses the existing staff spacing, control tokens and neutral feedback. */
+.access-code-row { display: grid; gap: 1rem; padding: 1.5rem; border: 1px solid var(--border); border-radius: 12px; }
+.access-copy-text { width: 100%; min-height: 10rem; padding: 1rem; border: 1px solid var(--foreground); border-radius: 8px; font: inherit; color: inherit; background: var(--background); }

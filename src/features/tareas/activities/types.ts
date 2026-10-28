@@ -13,7 +13,7 @@ export type AssignmentSummary = { id: string; taskId: string; title: string; pub
 export type Recipient = { id: string; studentId: string; studentDisplayName: string; studentCode: string; attemptsStarted: number; activeSessionId: string | null; canLaunch: boolean; unavailableReasons: string[] };
 export type Assignment = AssignmentSummary & { recipients: Recipient[] };
 export type Grant = { sessionId: string; grantId: string; launchGrant: string; expiresAt: string; runtimeOrigin: string };
-export type SessionSummary = { id: string; studentId: string; taskId: string; assignmentId: string; attemptNumber: number | null; launchMode: 'SUPERVISED'; configVersion: number; gameBuildId: string;
+export type SessionSummary = { id: string; studentId: string; taskId: string; assignmentId: string; attemptNumber: number | null; launchMode: 'SUPERVISED' | 'CODE'; configVersion: number; gameBuildId: string;
   executionStatus: keyof typeof executionLabels; processingStatus: keyof typeof processingLabels; preparedAt: string; startedAtServer: string | null; receivedAt: string | null; incidentCount: number; recordedTrialCount: number };
 export type Indicator = { metricCode: string; scope: string; status: 'CALCULATED' | 'NOT_AVAILABLE'; value: number | null; unit: '%' | 'ms'; numerator: number | null; denominator: number | null; sampleSize: number; unavailabilityReason: string | null };
 export type SessionDetail = SessionSummary & { declaredState: 'completed' | 'interrupted' | null; terminationReason: string | null; measuredDurationMs: number | null;
@@ -38,7 +38,7 @@ export function parseAssignment(v: unknown): Assignment | undefined {
   return v as Assignment;
 }
 export function parseSessionSummary(v: unknown): SessionSummary | undefined {
-  if (!object(v) || !isId(v.id) || !isId(v.studentId) || !isId(v.assignmentId) || v.taskId !== 'TG-01' || v.launchMode !== 'SUPERVISED' ||
+  if (!object(v) || !isId(v.id) || !isId(v.studentId) || !isId(v.assignmentId) || v.taskId !== 'TG-01' || !['SUPERVISED', 'CODE'].includes(String(v.launchMode)) ||
     !Object.hasOwn(executionLabels, String(v.executionStatus)) || !Object.hasOwn(processingLabels, String(v.processingStatus)) ||
     !count(v.configVersion) || !v.configVersion || !text(v.gameBuildId) || !date(v.preparedAt) || v.startedAtServer !== null && !date(v.startedAtServer) ||
     v.receivedAt !== null && !date(v.receivedAt) || v.attemptNumber !== null && (!count(v.attemptNumber) || v.attemptNumber < 1 || v.attemptNumber > 10) || !count(v.incidentCount) || !count(v.recordedTrialCount)) return;
@@ -66,3 +66,19 @@ export const assignmentPath = (groupId: string, assignmentId?: string) => `/acad
 export const studentTasksPath = (groupId: string, studentId: string, sessionId?: string) => `/academico/cursos/${encodeURIComponent(groupId)}/estudiantes/${encodeURIComponent(studentId)}/tareas${sessionId ? '/' + encodeURIComponent(sessionId) : ''}`;
 // Both IDs are public correlation, not authorization. Reload retains the same operation.
 export const executionPath = (path: string) => `${path}?operationId=${crypto.randomUUID()}&bridgeId=${crypto.randomUUID()}`;
+export type CodeMetadata = { id: string; recipientId: string; scope: 'PLAY_AND_SUBMIT' | 'SUBMIT_ONLY'; sessionId: string | null; status: 'ACTIVE' | 'REVOKED' | 'REPLACED' | 'EXPIRED'; createdAt: string; expiresAt: string; lastClaimedAt: string | null; canReveal: boolean; unavailableReasons: string[] };
+export type RevealedCode = { codeId: string; code: string; scope: CodeMetadata['scope']; expiresAt: string };
+export function parseCode(v: unknown): CodeMetadata | undefined {
+  if (!object(v) || !isId(v.id) || !isId(v.recipientId) || !['PLAY_AND_SUBMIT', 'SUBMIT_ONLY'].includes(String(v.scope)) || !(v.scope === 'PLAY_AND_SUBMIT' ? v.sessionId === null : isId(v.sessionId)) || !['ACTIVE', 'REVOKED', 'REPLACED', 'EXPIRED'].includes(String(v.status)) || !date(v.createdAt) || !date(v.expiresAt) || v.lastClaimedAt !== null && !date(v.lastClaimedAt) || typeof v.canReveal !== 'boolean' || !Array.isArray(v.unavailableReasons) || !v.unavailableReasons.every(x => typeof x === 'string')) return;
+  return v as CodeMetadata;
+}
+export function parseRevealedCode(v: unknown): RevealedCode | undefined {
+  if (!object(v) || !isId(v.codeId) || typeof v.code !== 'string' || !/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{5}$/.test(v.code) || !['PLAY_AND_SUBMIT', 'SUBMIT_ONLY'].includes(String(v.scope)) || !date(v.expiresAt)) return;
+  return v as RevealedCode;
+}
+export function accessMessage(value: RevealedCode, title: string, playOrigin: string): string {
+  const url = new URL(playOrigin);
+  if (url.origin !== playOrigin || url.username || url.password || url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname))) throw new Error('INVALID_PLAY_ORIGIN');
+  const recovery = value.scope === 'SUBMIT_ONLY';
+  return `${recovery ? 'Para enviar una actividad pendiente, no volver a jugar' : 'Tienes una actividad'}: ${title}.\nAbre ${playOrigin}${recovery ? '/pendientes' : '/'} e ingresa este código: ${value.code}.\nVigente hasta ${new Date(value.expiresAt).toLocaleString('es-CO', { timeZoneName: 'short' })}. No compartas el código.\nSi falta enviar, vuelve al mismo sitio y perfil del navegador donde realizaste la actividad.`;
+}
