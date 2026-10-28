@@ -74,6 +74,7 @@ export function AssignmentAccess({ api, assignment, groupId, actorId }: { api: A
   const [page, setPage] = useState(0), [show, setShow] = useState(true), [values, setValues] = useState<Record<string, string>>({}), [failed, setFailed] = useState(false), [projecting, setProjecting] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null), flight = useRef<AbortController | undefined>(undefined);
   const reveal = useReveal(api, assignment.title), mutation = useMutation<Assignment>();
+  const preparation = useRef<string[] | undefined>(undefined);
   const codes = query.result?.kind === 'success' ? query.result.data : undefined;
   const people = assignment.recipients.slice(page * 30, (page + 1) * 30);
   const current = (recipientId: string) => codes?.find(c => c.recipientId === recipientId && c.scope === 'PLAY_AND_SUBMIT' && c.status === 'ACTIVE');
@@ -103,8 +104,9 @@ export function AssignmentAccess({ api, assignment, groupId, actorId }: { api: A
   useEffect(() => { if (projecting) dialog.current?.showModal(); else dialog.current?.close(); }, [projecting]);
   async function generate() {
     hide(); reveal.hide();
-    const result = await mutation.run(signal => prepareCodes(api, assignment, batch => operationId(`access-prepare:${actorId}:${assignment.id}:${batch}`), signal));
-    if (result?.kind === 'success') { query.reload(); setShow(true); }
+    preparation.current ??= Array.from({ length: Math.ceil(assignment.recipients.length / 100) }, () => crypto.randomUUID());
+    const result = await mutation.run(signal => prepareCodes(api, assignment, batch => preparation.current![batch]!, signal));
+    if (result?.kind === 'success') { preparation.current = undefined; query.reload(); setShow(true); }
   }
   function changePage(value: number) { flight.current?.abort(); setValues({}); reveal.hide(); setPage(value); setShow(true); }
   const codeText = (r: Assignment['recipients'][number]) => {
