@@ -1,5 +1,5 @@
 import type { AuthController } from '../auth/controller.ts';
-import type { HttpResult, UserError, UserField } from '../features/usuarios/types.ts';
+import type { HttpErrorCode, HttpResult, UserField } from '../features/usuarios/types.ts';
 
 export function validateApiOrigin(value: string | undefined): string {
   if (!value) throw new Error('Configura el origen público de la API.');
@@ -12,8 +12,8 @@ export function validateApiOrigin(value: string | undefined): string {
   return url.origin;
 }
 
-const errorCodes: UserError['code'][] = ['INVALID_INPUT', 'UNAUTHENTICATED', 'FORBIDDEN', 'NOT_FOUND',
-  'CONFLICT', 'LAST_ADMIN', 'VERIFICATION_EXPIRED', 'UNAVAILABLE', 'DELIVERY_FAILED', 'DELIVERY_STATUS_UNKNOWN'];
+const errorCodes: HttpErrorCode[] = ['INVALID_INPUT', 'UNAUTHENTICATED', 'FORBIDDEN', 'NOT_FOUND',
+  'CONFLICT', 'LAST_ADMIN', 'VERIFICATION_EXPIRED', 'UNAVAILABLE', 'DELIVERY_FAILED', 'DELIVERY_STATUS_UNKNOWN', 'PARTICIPATION_BLOCKED'];
 const fieldReasons: Record<UserField, string> = {
   name: 'Ingrese un nombre completo no vacío', email: 'Ingrese un correo institucional válido terminado en .edu.co',
   role: 'Seleccione el rol Docente', password: 'Use al menos 8 caracteres, una mayúscula, una minúscula y un número',
@@ -26,6 +26,7 @@ export function createHttpClient(origin: string, access: Pick<AuthController, 'g
     async request<T, Field extends string = UserField>(path: string, options: {
       method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'; body?: unknown; bodyAbsent?: boolean; signal: AbortSignal;
       decodeFields?(data: unknown): { field: Field; reason: string }[];
+      localForbiddenCodes?: readonly 'PARTICIPATION_BLOCKED'[];
       decode(data: unknown, status: number): T | undefined;
     }): Promise<HttpResult<T, Field>> {
       const generation = access.getGeneration();
@@ -58,13 +59,15 @@ export function createHttpClient(origin: string, access: Pick<AuthController, 'g
           access.notify({ generation, category: 'unavailable' });
           return { kind: 'unavailable', uncertain: mutation };
         }
-        const category = response.status === 401 ? 'unauthenticated' : response.status === 403 ? 'forbidden' :
+        const code = typeof data === 'object' && data !== null && 'code' in data &&
+          errorCodes.includes(data.code as HttpErrorCode) ? data.code as HttpErrorCode : undefined;
+        const localRejection = response.status === 403 && code === 'PARTICIPATION_BLOCKED' &&
+          response.headers.get('content-type')?.toLowerCase().includes('application/json') && options.localForbiddenCodes?.includes(code);
+        const category = response.status === 401 ? 'unauthenticated' : response.status === 403 && !localRejection ? 'forbidden' :
           response.status >= 500 ? 'unavailable' : undefined;
-        const uncertain = mutation && (response.status === 401 || response.status === 403 || response.status >= 500 || response.status < 400);
+        const uncertain = mutation && (response.status === 401 || response.status === 403 && !localRejection || response.status >= 500 || response.status < 400);
         if (uncertain) onUncertain();
         if (category) access.notify({ generation, category });
-        const code = typeof data === 'object' && data !== null && 'code' in data &&
-          errorCodes.includes(data.code as UserError['code']) ? data.code as UserError['code'] : undefined;
         // Only documented, fixed field reasons may reach presentation, never arbitrary response text.
         const fields = typeof data === 'object' && data !== null && 'fields' in data && Array.isArray(data.fields) ?
           data.fields.flatMap((item): { field: UserField; reason: string }[] => {

@@ -22,6 +22,10 @@ export function ActivityLink({ href, children, primary = false }: { href: string
   return <a href={href} onClick={navigate} className={cn(buttonVariants({ variant: primary ? 'default' : 'outline' }), 'w-fit max-w-full whitespace-normal text-left [overflow-wrap:anywhere]')}>{children}</a>;
 }
 export function ActivityFailure({ result, retry }: { result?: HttpResult<unknown, string>; retry?(): void }) {
+  if (result?.kind === 'error' && result.status === 403 && result.code === 'PARTICIPATION_BLOCKED') return <Notice focus focusKey={result} title="Participación no habilitada">
+    <p>Uno o más estudiantes no están habilitados para esta operación. Revisa su estado en el curso. Tu sesión sigue disponible; no es una pérdida de acceso del profesor.</p>
+    {retry && <Button variant="outline" className="mt-4" onClick={retry}>Consultar estado actual</Button>}
+  </Notice>;
   return <Notice title={result?.kind === 'error' && result.status === 404 ? 'No encontramos el recurso o ya no tienes acceso' : 'No pudimos confirmar la operación'}>
     <p>{result?.kind === 'error' && result.status === 409 ? 'El estado actual no permite esta operación. Actualiza la asignación para revisar disponibilidad, participación e intentos.' : result?.kind === 'error' && result.status === 400 ? 'Revisa los datos y la configuración. No se ha confirmado la operación.' : 'Una respuesta perdida no demuestra que el cambio se haya deshecho. Conservamos la misma solicitud al reintentar.'}</p>
     {retry && <Button variant="outline" className="mt-4" onClick={retry}>Reintentar la misma solicitud</Button>}
@@ -62,6 +66,7 @@ function AssignmentForm({ api, studentsApi, tasksApi, group, actorId }: { api: A
   const submitting = useRef(false);
   const task = taskQuery.result?.kind === 'success' ? taskQuery.result.data : undefined;
   const students = studentQuery.result?.kind === 'success' ? studentQuery.result.data.items : undefined;
+  const selectedIds = selected.filter(id => students?.some(s => s.id === id && s.isActive));
   async function send(input: AssignmentInput) {
     const result = created ? { kind: 'success' as const, data: created } : await mutation.run(signal => api.create(input, signal));
     if (result?.kind === 'success') {
@@ -73,13 +78,16 @@ function AssignmentForm({ api, studentsApi, tasksApi, group, actorId }: { api: A
         sessionStorage.removeItem(key);
       } catch { setError('La asignación ya está creada. No pudimos conservar el progreso de sus códigos; habilita el almacenamiento y vuelve a continuar.'); return; }
       go(assignmentPath(group.id, result.data.id));
-    } else if (result?.kind === 'error' && [400, 409].includes(result.status)) { sessionStorage.removeItem(key); submitting.current = false; setFrozen(undefined); }
+    } else if (result?.kind === 'error' && ([400, 409].includes(result.status) || result.status === 403 && result.code === 'PARTICIPATION_BLOCKED')) {
+      sessionStorage.removeItem(key); submitting.current = false; setFrozen(undefined);
+      if (result.code === 'PARTICIPATION_BLOCKED') studentQuery.reload();
+    }
   }
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (submitting.current || mutation.pending || frozen || !task?.publishedVersion) return;
     const values = new FormData(event.currentTarget), start = new Date(String(values.get('startsAt'))), end = new Date(String(values.get('endsAt'))), maxAttempts = Number(values.get('maxAttempts'));
-    if (!selected.length || !Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end || !Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 10) { setError('Selecciona estudiantes, un periodo válido y entre 1 y 10 intentos.'); return; }
-    const input: AssignmentInput = { requestId: crypto.randomUUID(), taskId: 'TG-01', publishedVersionId: task.publishedVersion.id, groupId: group.id, studentIds: selected, startsAt: start.toISOString(), endsAt: end.toISOString(), maxAttempts };
+    if (!selectedIds.length || !Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end || !Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 10) { setError('Selecciona estudiantes activos, un periodo válido y entre 1 y 10 intentos.'); return; }
+    const input: AssignmentInput = { requestId: crypto.randomUUID(), taskId: 'TG-01', publishedVersionId: task.publishedVersion.id, groupId: group.id, studentIds: selectedIds, startsAt: start.toISOString(), endsAt: end.toISOString(), maxAttempts };
     submitting.current = true;
     try { sessionStorage.setItem(key, JSON.stringify(input)); } catch { submitting.current = false; setError('No podemos conservar la solicitud para reconciliarla. Habilita el almacenamiento de este sitio antes de guardar.'); return; }
     setError(''); setFrozen(input); void send(input);
@@ -89,15 +97,16 @@ function AssignmentForm({ api, studentsApi, tasksApi, group, actorId }: { api: A
     {frozen ? <Notice title={created ? 'Asignación creada' : mutation.pending ? 'Creando asignación…' : 'Hay una creación por confirmar'}><p>{frozen.studentIds.length} destinatarios · {date(frozen.startsAt)} – {date(frozen.endsAt)} · {frozen.maxAttempts} intentos. Conservamos la misma solicitud, sin duplicar la asignación.</p><Button className="mt-4" disabled={mutation.pending} onClick={() => void send(frozen)}>{mutation.pending ? 'Creando asignación…' : created ? 'Continuar con los códigos' : 'Comprobar creación'}</Button></Notice> : !task || !students ? (!studentQuery.result || !taskQuery.result ? <Loading text="Preparando formulario" /> : <ActivityFailure retry={() => { studentQuery.reload(); taskQuery.reload(); }} />) : <form onSubmit={submit} className="auth-form">
       <p>{task.pedagogicalNotice}</p>{!task.assignable && <Notice title="Actividad no disponible"><ul>{task.unavailableReasons.map(r => <li key={r}>{r === 'METHODOLOGY_PENDING' ? 'Método pendiente de aprobación' : r === 'TASK_DISABLED' ? 'Tarea deshabilitada' : 'Configuración o integración pendiente'}</li>)}</ul></Notice>}
       <fieldset className="staff-stack" disabled={mutation.pending || !task.assignable}><legend className="font-semibold mb-3">Estudiantes destinatarios</legend>
-        <Button type="button" variant="outline" className="w-fit" onClick={() => setSelected(students.map(s => s.id))}>Seleccionar todos los actuales</Button>
-        {students.map(s => <label key={s.id} className="activity-choice"><input type="checkbox" checked={selected.includes(s.id)} onChange={e => setSelected(old => e.target.checked ? [...old, s.id] : old.filter(id => id !== s.id))} /><span>{s.firstName} {s.lastName} · {s.studentCode}{!s.isActive && ' · Inactivo'}</span></label>)}
+        <Button type="button" variant="outline" className="w-fit" disabled={!students.some(s => s.isActive)} onClick={() => setSelected(students.filter(s => s.isActive).map(s => s.id))}>Seleccionar todos los actuales</Button>
+        {students.map(s => <label key={s.id} className="activity-choice"><input type="checkbox" disabled={!s.isActive} checked={selectedIds.includes(s.id)} onChange={e => setSelected(old => e.target.checked ? [...old, s.id] : old.filter(id => id !== s.id))} /><span>{s.firstName} {s.lastName} · {s.studentCode}{!s.isActive && ' · Inactivo: no puede recibir tareas'}</span></label>)}
         {!students.length && <p>Este curso no tiene estudiantes.</p>}
-        <p>{selected.length} destinatarios seleccionados. Incorporar estudiantes al curso después no cambiará esta lista.</p>
+        {!!students.length && !students.some(s => s.isActive) && <p>No hay estudiantes activos para asignar esta actividad.</p>}
+        <p>{selectedIds.length} destinatarios seleccionados. Incorporar estudiantes al curso después no cambiará esta lista. El servidor vuelve a comprobar la participación al guardar.</p>
         <div className="auth-field"><Label htmlFor="assignment-start">Disponible desde</Label><Input id="assignment-start" name="startsAt" type="datetime-local" required /></div>
         <div className="auth-field"><Label htmlFor="assignment-end">Disponible hasta</Label><Input id="assignment-end" name="endsAt" type="datetime-local" required /></div>
         <p>Zona horaria: {Intl.DateTimeFormat().resolvedOptions().timeZone}. El servidor comprobará la vigencia.</p>
         <div className="auth-field"><Label htmlFor="assignment-attempts">Máximo de intentos</Label><Input id="assignment-attempts" name="maxAttempts" type="number" min={1} max={10} step={1} required aria-describedby="assignment-attempts-help" /><p id="assignment-attempts-help">Entre 1 y 10. Abrir instrucciones no consume; comenzar con confirmación del servidor sí.</p></div>
-      </fieldset><p>Al guardar se preparan los códigos de los estudiantes seleccionados. Podrás mostrarlos en clase.</p><Button disabled={!task.assignable || !students.length || mutation.pending} type="submit">Guardar asignación y códigos</Button>
+      </fieldset><p>Al guardar se preparan los códigos de los estudiantes seleccionados. Podrás mostrarlos en clase.</p><Button disabled={!task.assignable || !selectedIds.length || mutation.pending} type="submit">Guardar asignación y códigos</Button>
     </form>}
     {error && <p role="alert">{error}</p>}{mutation.result && mutation.result.kind !== 'success' && <ActivityFailure result={mutation.result} />}
   </section>;

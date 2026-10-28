@@ -36,3 +36,30 @@ test('direct assignment, session, execution and recovery routes preserve explici
   assert.equal(resolveRoute(`/academico/cursos/${id}/asignaciones/${other}/destinatarios/${id}/ejecucion`, '').kind, 'supervisedExecution');
   assert.equal(resolveRoute(`/academico/cursos/${id}/estudiantes/${other}/tareas/${id}/recuperacion`, '').kind, 'submissionRecovery');
 });
+test('documented participation rejection stays local, certain and safe; real access denials remain global', async () => {
+  for (const [status, code, local] of [[403, 'PARTICIPATION_BLOCKED', true], [403, 'FORBIDDEN', false], [403, 'UNKNOWN', false], [401, 'PARTICIPATION_BLOCKED', false], [503, 'UNAVAILABLE', false]]) {
+    const denials = [], writes = [], calls = [];
+    const http = createHttpClient('http://localhost:4300', { getGeneration: () => 1, notify: v => denials.push(v) }, async (url, init) => {
+      calls.push({ url, init }); return Response.json({ code, message: 'private response' }, { status });
+    }, () => writes.push('uncertain'));
+    const api = createActivitiesApi(http);
+    const result = await api.create({ requestId: id }, signal());
+    assert.equal(result.status, status); assert.equal(result.uncertain, !local);
+    assert.equal(denials.length, local ? 0 : 1); assert.equal(writes.length, local ? 0 : 1);
+    assert.equal(result.message, undefined); assert.equal(calls.length, 1);
+    if (local) assert.equal(result.code, 'PARTICIPATION_BLOCKED');
+    await http.request('/api/v1/students', { method: 'POST', signal: signal(), decode: () => undefined });
+    assert.equal(denials.length, local ? 1 : 2, 'Other callers retain fail-closed 403 handling');
+  }
+});
+test('non-JSON or obsolete participation responses cannot bypass access protection', async () => {
+  const denials = [];
+  let generation = 1, finish;
+  const api = createActivitiesApi(createHttpClient('http://localhost:4300', { getGeneration: () => generation, notify: v => denials.push(v) }, () => new Promise(resolve => { finish = resolve; })));
+  const pending = api.create({ requestId: id }, signal()); generation++;
+  finish(Response.json({ code: 'PARTICIPATION_BLOCKED' }, { status: 403 }));
+  assert.deepEqual(await pending, { kind: 'obsolete' }); assert.deepEqual(denials, []);
+  const invalid = api.create({ requestId: id }, signal());
+  finish(new Response(JSON.stringify({ code: 'PARTICIPATION_BLOCKED' }), { status: 403, headers: { 'Content-Type': 'text/plain' } }));
+  assert.equal((await invalid).uncertain, true); assert.equal(denials.length, 1);
+});

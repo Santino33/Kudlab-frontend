@@ -7,10 +7,11 @@ export type UserError = {
   fields?: { field: UserField; reason: string }[];
 };
 export type ProviderError = { status: number; code?: string; message?: string };
+export type HttpErrorCode = UserError['code'] | 'PARTICIPATION_BLOCKED';
 
 export type HttpResult<T, Field extends string = UserField> =
   | { kind: 'success'; data: T }
-  | { kind: 'error'; status: number; code?: UserError['code']; uncertain: boolean; fields?: { field: Field; reason: string }[] }
+  | { kind: 'error'; status: number; code?: HttpErrorCode; uncertain: boolean; fields?: { field: Field; reason: string }[] }
   | { kind: 'unavailable'; uncertain: boolean }
   | { kind: 'obsolete' };
 

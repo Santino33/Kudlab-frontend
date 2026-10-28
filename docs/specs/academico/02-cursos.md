@@ -1,5 +1,7 @@
 # Spec frontend: Mis cursos y estudiantes del curso
 
+**Actualización posterior:** [alta habilitada para Play en la vista de pruebas](03-estudiantes-play-pruebas.md). Las referencias inferiores a alta inactiva describen el contrato normal y la entrega original, no esa composición sintética autorizada.
+
 **Fecha:** 2026-10-26 (ejecuciones UTC 2026-10-27). **Estado:** implementado y verificado localmente con API/PostgreSQL aislados; no despliegue ni aceptación de piloto.
 
 ## Feature frontend

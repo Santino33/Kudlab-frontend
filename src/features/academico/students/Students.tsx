@@ -70,7 +70,7 @@ export function Students({ api, group, write, reviewed }: { api: StudentsApi; gr
 
 export function StudentRegistration() {
   return <div className="staff-stack max-w-lg"><Back /><Heading>Registrar estudiante</Heading>
-    <p>Se creará un registro académico inactivo. No se creará una cuenta de acceso.</p>
+    <p>Se creará un registro académico, no una cuenta de acceso. Su estado lo confirma el servidor.</p>
     <Notice title="Selecciona un curso"><p>Abre Mis cursos y selecciona el curso en el que vas a registrar al estudiante.</p></Notice>
     <Link href={groupsPath}>Ir a mis cursos</Link>
   </div>;

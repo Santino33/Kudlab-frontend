@@ -7,7 +7,7 @@ export function createActivitiesApi(http: HttpClient) {
   const request = <T>(path: string, signal: AbortSignal, decode: (value: unknown) => T | undefined, body?: unknown): Promise<HttpResult<T>> => {
     const resourceId = path.split('?')[0]!.split('/')[4], groupId = new URLSearchParams(path.split('?')[1]).get('groupId');
     if (resourceId && !isId(resourceId) || groupId && !isId(groupId)) return Promise.resolve({ kind: 'error', status: 404, code: 'NOT_FOUND', uncertain: false });
-    return http.request(path, { signal, decode, ...(body === undefined ? {} : { method: 'POST' as const, body }) });
+    return http.request(path, { signal, decode, localForbiddenCodes: ['PARTICIPATION_BLOCKED'], ...(body === undefined ? {} : { method: 'POST' as const, body }) });
   };
   const id = encodeURIComponent;
   const paging = (cursor?: string) => cursor ? `&cursor=${encodeURIComponent(cursor)}` : '';

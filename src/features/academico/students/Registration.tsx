@@ -35,7 +35,7 @@ export function Registration({ api, group, locked }: { api: StudentsApi; group: 
     }
   }
   return <div className="staff-stack max-w-lg"><CourseLink href={groupPath(group.id)}>Volver al curso</CourseLink><header className="workspace-page-heading"><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Registrar estudiante</h1><p>Curso: {group.name} · Grado {group.grade} · Año {group.schoolYear}</p></header>
-    <p>El estudiante se registrará como inactivo en este curso. No se creará una cuenta de acceso. Todos los campos son obligatorios.</p>
+    <p>No se creará una cuenta de acceso. En la vista de pruebas, los nuevos registros quedan activos para probar Play con datos ficticios. Todos los campos son obligatorios.</p>
     <form className="auth-form" onSubmit={submit} noValidate aria-busy={mutation.pending}>
       {failed > 0 && Object.keys(issues).length > 0 && <div role="alert" ref={summary} tabIndex={-1}><h2 className="font-semibold">Revisa los datos del estudiante</h2><ul>{Object.entries(issues).map(([field, reason]) => <li key={field}><a className="staff-link" href={`#student-${field}`}>{fieldLabels[field as StudentField]}: {reason}</a></li>)}</ul></div>}
       <StudentFields input={input} setInput={setInput} issues={issues} disabled={locked || mutation.pending || done || uncertain} />
