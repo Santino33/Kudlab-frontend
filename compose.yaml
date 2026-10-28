@@ -1,0 +1,86 @@
+name: kudlab-local
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: kudlab_local
+      POSTGRES_USER: kudlab
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Ejecutar npm run docker:setup}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U kudlab -d kudlab_local']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ${KUDLAB_BACKEND_DIR:?Indicar ruta del backend con docker:setup}
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgres://kudlab:${POSTGRES_PASSWORD}@postgres:5432/kudlab_local
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Ejecutar npm run docker:setup}
+      BETTER_AUTH_URL: http://localhost:${API_PORT:-4300}
+      SPA_ORIGIN: http://localhost:${FRONTEND_PORT:-5173}
+      GAME_RUNTIME_ORIGIN: http://127.0.0.1:${PLAY_PORT:-4178}
+      GAME_GRANT_KEYS: ${GAME_GRANT_KEYS:?Ejecutar npm run docker:setup}
+      GAME_ACTIVE_KEY_ID: local
+      GAME_CURSOR_KEY: ${GAME_CURSOR_KEY:?Ejecutar npm run docker:setup}
+      GAME_ACCESS_ENABLED: 'false'
+      INVITATION_BASE_URL: http://localhost:${FRONTEND_PORT:-5173}/accept
+      EMAIL_CHANGE_BASE_URL: http://localhost:${FRONTEND_PORT:-5173}/change-email
+      RESET_BASE_URL: http://localhost:${FRONTEND_PORT:-5173}/recuperar-acceso/confirmar
+      MAIL_MODE: smtp
+      MAIL_HOST: ${MAIL_HOST:-smtp.invalid}
+      MAIL_PORT: ${MAIL_PORT:-465}
+      MAIL_USER: ${MAIL_USER:-not-configured}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-not-configured}
+      MAIL_FROM: ${MAIL_FROM:-local@example.invalid}
+      BOOTSTRAP_ADMIN_NAME: Administrador local
+      BOOTSTRAP_ADMIN_EMAIL: admin@kudlab.example.edu.co
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?Ejecutar npm run docker:setup}
+    ports:
+      - '127.0.0.1:${API_PORT:-4300}:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      args:
+        VITE_API_ORIGIN: http://localhost:${API_PORT:-4300}
+        VITE_PLAY_ORIGIN: http://127.0.0.1:${PLAY_PORT:-4178}
+    environment:
+      API_ORIGIN: http://localhost:${API_PORT:-4300}
+      PLAY_ORIGIN: http://127.0.0.1:${PLAY_PORT:-4178}
+    ports:
+      - '127.0.0.1:${FRONTEND_PORT:-5173}:8080'
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  play:
+    build:
+      context: ${KUDLAB_PLAY_DIR:?Indicar ruta de Play con docker:setup}
+      args:
+        VITE_API_ORIGIN: http://localhost:${API_PORT:-4300}
+        VITE_TEACHER_ORIGIN: http://localhost:${FRONTEND_PORT:-5173}
+    environment:
+      API_ORIGIN: http://localhost:${API_PORT:-4300}
+      TEACHER_ORIGIN: http://localhost:${FRONTEND_PORT:-5173}
+    ports:
+      - '127.0.0.1:${PLAY_PORT:-4178}:8080'
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

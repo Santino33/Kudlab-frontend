@@ -1,5 +1,24 @@
 # Kudlab Frontend
 
+## Docker Desktop · ejecución local de los tres proyectos
+
+Desde este repositorio, con los cambios Docker también presentes en backend y Play:
+
+```bash
+npm run docker:setup -- /ruta/Kudlab-backend /ruta/Kudlab-play
+npm run docker:up
+npm run docker:status
+npm run docker:check
+```
+
+Docker Desktop muestra el grupo **`kudlab-local`** con backend, frontend, Play y
+PostgreSQL aislado. Frontend: **http://localhost:5173**, API/docs:
+**http://localhost:4300/docs**, Play: **http://127.0.0.1:4178**.
+La contraseña del administrador local está en `.env.docker` (ignorado, no compartir).
+`npm run docker:down` detiene el grupo **sin eliminar su base**.
+Correo no configurado y partidas bloqueadas por las restricciones del backend normal.
+[Configuración, MCP, fuentes y límites](docs/docker-local.md).
+
 **J-03:** gestión/distribución individual de códigos alfanuméricos de **5 caracteres**
 desde la asignación y acceso solo de recuperación desde la sesión. Exclusivo del
 personal: la entrada pública y `/pendientes` viven en **Kudlab Play**, no aquí.

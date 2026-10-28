@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+.git
+.env
+.env.*
+.opencode
+.agents
+.specify
+docs
+specs
+tests
+test-results
+playwright-report
+*.log

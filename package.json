@@ -15,7 +15,13 @@
     "test:tareas": "node --test tests/tareas/*.test.mjs",
     "test:estudiantes": "node --test tests/academico/*.test.mjs",
     "build": "npm run typecheck && vite build && node scripts/build-headers.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "docker:setup": "node scripts/setup-docker.mjs",
+    "docker:up": "docker --context desktop-linux compose --env-file .env.docker up --build -d --wait",
+    "docker:down": "docker --context desktop-linux compose --env-file .env.docker down",
+    "docker:status": "docker --context desktop-linux compose --env-file .env.docker ps",
+    "test:docker": "node --test tests/docker/*.test.mjs",
+    "docker:check": "node --test tests/docker/*.smoke.mjs"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",
