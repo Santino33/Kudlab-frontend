@@ -4,6 +4,7 @@
 desde la asignación y acceso solo de recuperación desde la sesión. Exclusivo del
 personal: la entrada pública y `/pendientes` viven en **Kudlab Play**, no aquí.
 Sin cuentas STUDENT ni habilitación con menores reales. [Contrato UI y fuentes](docs/specs/tareas/03-acceso-codigo.md).
+Refinamiento aprobado: guardar prepara los códigos y abre estudiantes/códigos, con proyección de aula y gestión secundaria. El acuse perdido se comprueba automáticamente en Play; no hay acción docente para reconciliarlo.
 La exclusión de códigos del párrafo J-02 siguiente describe aquella entrega anterior.
 
 **J-02:** asignaciones, inicio supervisado con Kudlab Play 1.1, consulta individual

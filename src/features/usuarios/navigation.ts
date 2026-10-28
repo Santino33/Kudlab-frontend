@@ -25,7 +25,7 @@ export const routeTitles: Record<Route['kind'], string> = {
   tasks: 'Tareas digitales', taskDetail: 'Ficha de tarea', students: 'Estudiantes',
   studentNew: 'Registrar estudiante', studentDetail: 'Ficha de estudiante', studentEdit: 'Editar estudiante',
   groups: 'Mis cursos', groupNew: 'Crear curso', groupDetail: 'Curso', groupEdit: 'Editar curso',
-  assignments: 'Asignaciones', assignmentDetail: 'Detalle de asignación', supervisedExecution: 'Actividad supervisada',
+  assignments: 'Asignaciones', assignmentDetail: 'Estudiantes y códigos', supervisedExecution: 'Actividad supervisada',
   studentActivities: 'Tareas del estudiante', sessionResults: 'Detalle de sesión', submissionRecovery: 'Recuperar envío',
 };
 
