@@ -9,15 +9,14 @@ const { assertTestDatabase } = await load('src/modules/academico/shared/particip
 assertTestDatabase();
 const { db, pool } = await load('src/db/client.ts');
 const { students } = await load('src/db/schema/academic.ts');
-const { authorizations, testGameApp, gameDependencies } = await load('tests/game-fixture.ts');
+const { previewGameApp, previewGameDependencies } = await load('tests/game-preview.ts');
 const require = createRequire(`${backend}/package.json`);
 const fixture = (await db.select().from(students)).filter(s => ['J02-FICTICIO-A', 'J03-FICTICIO-B'].includes(s.studentCode));
 if (fixture.length !== 2 || fixture.some(s => !s.isActive || s.firstName !== 'Participante' || !/^Sintético [AB]$/.test(s.lastName))) throw new Error('EXISTING_SYNTHETIC_FIXTURE_REQUIRED');
-for (const student of fixture) authorizations.set(student.id, new Date(Date.now() + 86400000));
 const { startProcessor } = await load('src/modules/evolucion/processor.ts');
 const { startAccessCleanup } = await load('src/modules/tareas/runtime/access-limit.ts');
-const stop = startProcessor(gameDependencies), stopCleanup = startAccessCleanup();
+const stop = startProcessor(previewGameDependencies), stopCleanup = startAccessCleanup();
 const { serve } = require('@hono/node-server');
-const server = serve({ fetch: testGameApp().fetch, port: Number(process.env.PORT), hostname: '127.0.0.1' });
+const server = serve({ fetch: previewGameApp().fetch, port: Number(process.env.PORT), hostname: '127.0.0.1' });
 process.on('SIGTERM', () => { stop(); stopCleanup(); server.close(); void pool.end(); });
 console.log('EXISTING_SYNTHETIC_PREVIEW_READY_NO_RESET');

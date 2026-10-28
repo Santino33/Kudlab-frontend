@@ -34,7 +34,7 @@ export function createStudentsApi(http: HttpClient, onWrite: (state: StudentWrit
       const body = { groupId: input.groupId, ...Object.fromEntries(studentFields.map((field) => [field, input[field].trim()])) };
       return write(undefined, () => http.request<Student, StudentField>(path, { method: 'POST', body, signal, decodeFields: decodeStudentFields, decode: (data, status) => {
         const student = status === 201 ? parseStudent(data) : undefined;
-        return student && !student.isActive && student.groupId === input.groupId && studentFields.every((field) => student[field] === body[field as keyof typeof body]) ? student : undefined;
+        return student && student.groupId === input.groupId && studentFields.every((field) => student[field] === body[field as keyof typeof body]) ? student : undefined;
       } }));
     },
     update(before: Student, changes: Partial<StudentInput>, signal: AbortSignal) {

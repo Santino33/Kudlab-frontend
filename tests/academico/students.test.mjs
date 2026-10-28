@@ -38,6 +38,14 @@ test('five exact routes, statuses, safe DTO and zero-byte deactivation', async (
     assert.equal(init.credentials, 'include'); assert.equal(init.cache, 'no-store'); assert.equal(init.redirect, 'error');
   }
 });
+test('creation accepts the server-confirmed active preview state without sending a state or consent field', async () => {
+  for (const isActive of [true, false]) {
+    const f = fixture(201, { ...student, isActive });
+    const result = await f.api.create({ ...student, isActive: true, consent: true }, signal());
+    assert.equal(result.kind, 'success'); assert.equal(result.data.isActive, isActive);
+    assert.deepEqual(Object.keys(JSON.parse(f.calls[0].init.body)).sort(), ['firstName', 'groupId', 'lastName', 'studentCode']);
+  }
+});
 test('malformed DTOs, wrong identity/state/values and wrong status cannot confirm mutations', async () => {
   for (const change of [{ id: 'wrong' }, { isActive: 1 }, { firstName: '' }, { extra: true }, { studentCode: 'x\0' }]) assert.equal(parseStudent({ ...student, ...change }), undefined);
   assert.deepEqual(parseStudents({ items: [] }), { items: [] });
