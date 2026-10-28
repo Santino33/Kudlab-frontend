@@ -1,5 +1,12 @@
 # Inventario de capacidades reales y pendientes
 
+**Invitación duplicada, 2026-10-28:** alta con 409 confirmado conserva campos editables;
+revisión paginada/filtrada dentro del formulario sin perder borrador ni repetir POST.
+Protecciones de edición, pendientes e incertidumbre conservadas. 195 pruebas de
+lógica/transporte, 7 escenarios Chrome, revisión visual/teclado y build correctos.
+[Diagnóstico, fuentes y límites](../../../../specs/001-gestionar-usuarios/evidence/invitation-conflict.md).
+Prueba UI con transporte ficticio; sin declarar despliegue ni piloto listo.
+
 **Cursos, actualización posterior 2026-10-26:** sidebar/inicio «Mis cursos» para ADMIN/TEACHER. ADMIN gestiona cursos/asigna responsable, no consulta registros estudiantiles; TEACHER registra/consulta/edita/inactiva en sus cursos. Transferencia confirmada conserva registros y cambia el ámbito actual. No modifica permisos de Usuarios ni ofrece activación. [Spec y evidencia real](../../../specs/academico/02-cursos.md): 175 pruebas frontend, 247 backend y recorridos reales locales; ramas aún por integrar, sin declarar piloto listo. Supera las menciones históricas de alta bloqueada siguientes.
 
 **Revisión integral de interfaz, 2026-10-26:** Inicio TEACHER enlaza a Estudiantes y Tareas ya implementados; ADMIN mantiene gestión de profesores y consulta de Tareas, sin permisos académicos nuevos. Navegación protegida compartida conserva avisos inciertos y separa estados por ID de cuenta. Pantallas agrupadas en `accounts/`, `recovery/`, `workspace/`. Las menciones históricas a TEACHER «solo identidad» no describen su inicio actual. [Hallazgos, fuentes y validación](../../../design/ui-flow-review.md). Alta de estudiantes y canjes continúan bloqueados; no se declara piloto listo.

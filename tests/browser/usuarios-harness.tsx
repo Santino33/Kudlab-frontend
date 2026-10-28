@@ -50,8 +50,11 @@ const businessFetch: typeof fetch = async (input, init) => {
   }
   if (scenario.get('business') === 'unavailable') throw new TypeError('Synthetic unavailable');
   if (init?.method !== 'GET') {
-    if (scenario.get('write') !== 'success') throw new TypeError('Synthetic uncertain write');
+    if (scenario.get('write') === 'pending') return new Promise<Response>(() => {});
+    if (!['success', 'conflict'].includes(scenario.get('write') ?? '')) throw new TypeError('Synthetic uncertain write');
     const payload = JSON.parse(String(init?.body));
+    if (scenario.get('write') === 'conflict' && accounts.some(account => account.email === payload.email))
+      return Response.json({ code: 'CONFLICT' }, { status: 409 });
     if (target.pathname === '/api/v1/accounts') {
       const created: Account = { id: 'synthetic-new', name: payload.name, email: payload.email, role: 'TEACHER', status: 'PENDIENTE', createdAt: '2026-10-26T14:00:00Z', deliveryStatus: 'ENVIADA' };
       accounts.push(created); return Response.json(created, { status: 201 });
