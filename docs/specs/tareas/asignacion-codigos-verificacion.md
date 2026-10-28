@@ -1,5 +1,7 @@
 # Crear asignación y preparar códigos · verificación
 
+**Corrección posterior de la vista previa:** el ensayo docente de este registro usaba 5185/4315, pero Play 4184 seguía con 4314. No combinar esos servicios para jugar. La pila integrada corregida es **5185/4315/4185**; ver [diagnóstico y regresión del historial](historial-estudiante-verificacion.md). La PR #14 de este flujo se publicó posteriormente y ya fue fusionada; el cierre local inferior conserva el estado histórico anterior a esa solicitud.
+
 ## Alcance y fuentes
 
 Petición del responsable y plan aprobado: corregir únicamente la creación/preparación y su pantalla. Base frontend `d784b27`, worktree `/tmp/opencode/kudlab-frontend-assignment-codes`, rama `fix/assignment-codes-flow`. Sin modificar Play, acuses, recuperación, CI, reglas de participación, APIs o dependencias. Fecha de revisión: 2026-10-27 (sesión local).
