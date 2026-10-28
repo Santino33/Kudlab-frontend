@@ -5,6 +5,7 @@ desde la asignación y acceso solo de recuperación desde la sesión. Exclusivo 
 personal: la entrada pública y `/pendientes` viven en **Kudlab Play**, no aquí.
 Sin cuentas STUDENT ni habilitación con menores reales. [Contrato UI y fuentes](docs/specs/tareas/03-acceso-codigo.md).
 Refinamiento aprobado: guardar prepara los códigos y abre estudiantes/códigos, con proyección de aula y gestión secundaria. El acuse perdido se comprueba automáticamente en Play; no hay acción docente para reconciliarlo.
+Vista previa local corregida: **Kudlab `http://localhost:5185` + Play `http://127.0.0.1:4185` + API `http://localhost:4315`**. No combinarla con Play 4184/API 4314: usan otra base y otros IDs, aunque los datos ficticios tengan los mismos nombres. [Configuración, regresión del historial individual y conservación de datos](docs/specs/tareas/historial-estudiante-verificacion.md).
 La exclusión de códigos del párrafo J-02 siguiente describe aquella entrega anterior.
 
 **J-02:** asignaciones, inicio supervisado con Kudlab Play 1.1, consulta individual
