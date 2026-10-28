@@ -48,6 +48,7 @@ Como profesor con rol ADMIN activo, quiero consultar cuentas e invitar a otro pr
 4. **Given** datos inválidos o correo ocupado, **When** intenta invitar, **Then** recibe indicaciones corregibles o conflicto y conserva el borrador no secreto.
 5. **Given** fallo de entrega o resultado incierto, **When** finaliza el intento, **Then** no se afirma que nada se guardó; se consulta estado autorizado antes de ofrecer otra acción.
 6. **Given** TEACHER o persona sin acceso, **When** intenta abrir gestión incluso por entrada directa, **Then** no obtiene datos de otras cuentas ni operaciones de gestión.
+7. **Given** alta rechazada con `409` confirmado, **When** ADMIN revisa profesores o corrige sus datos, **Then** consulta el listado paginado/filtrado dentro de la misma pantalla sin perder nombre/correo ni repetir el POST; puede reenviar explícitamente el formulario corregido. Esta recuperación no desbloquea resultados inciertos ni cambia la revisión exigida al editar una cuenta existente. [Corrección y evidencia 2026-10-28](evidence/invitation-conflict.md).
 
 ### User Story 3 - Aceptar y gestionar invitaciones (Priority: P1; entrada desde correo bloqueada)
 

@@ -11,6 +11,7 @@ import type { Account } from '../types.ts';
 import { useMutation, useQuery } from '../hooks';
 import { ActionLink, Delivery, InlineHelp, Loading, Notice, ResultError } from '../shared';
 import { navigate } from '../../../lib/navigation.ts';
+import { Accounts } from './Accounts';
 
 export function AccountForm({ api, accountId, locked = false }: { api: UsuariosApi; accountId?: string; locked?: boolean }) {
   const query = useQuery<Account | undefined>((signal) => accountId ? api.getAccount(accountId, signal) : Promise.resolve({ kind: 'success' as const, data: undefined }), accountId ?? 'new', true);
@@ -23,19 +24,22 @@ function Editor({ api, account, review, refreshing, locked }: { api: UsuariosApi
   const [name, setName] = useState(account?.name ?? '');
   const [email, setEmail] = useState(account?.email ?? '');
   const [issues, setIssues] = useState<{ name?: string; email?: string; form?: string }>({});
+  const [reviewing, setReviewing] = useState(false);
   const mutation = useMutation<Account>();
   const nameInput = useRef<HTMLInputElement>(null);
   const emailInput = useRef<HTMLInputElement>(null);
   const editing = Boolean(account);
+  const conflict = mutation.result?.kind === 'error' && mutation.result.status === 409;
+  const blocked = (editing && conflict) || Boolean(mutation.result && 'uncertain' in mutation.result && mutation.result.uncertain);
   useEffect(() => { if (document.visibilityState !== 'hidden') document.getElementById('auth-title')?.focus(); }, [account?.id]);
   useEffect(() => { if (mutation.result?.kind === 'success') document.getElementById('auth-title')?.focus(); }, [mutation.result]);
+  useEffect(() => { if (reviewing) document.getElementById('accounts-review-title')?.focus(); }, [reviewing]);
   const nameIssue = issues.name ?? (mutation.result?.kind === 'error' ? mutation.result.fields?.find((field) => field.field === 'name')?.reason : undefined);
   const emailIssue = issues.email ?? (mutation.result?.kind === 'error' ? mutation.result.fields?.find((field) => field.field === 'email')?.reason : undefined);
   const back = account ? `/usuarios/${encodeURIComponent(account.id)}` : '/usuarios';
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (locked || refreshing || mutation.pending || (mutation.result && 'uncertain' in mutation.result && mutation.result.uncertain) ||
-      (mutation.result?.kind === 'error' && mutation.result.status === 409)) return;
+    if (locked || refreshing || mutation.pending || blocked) return;
     const invalid = accountIssues(name, email);
     const changes = account ? editFields(account, name, email) : undefined;
     setIssues({ ...invalid, ...(changes && Object.keys(changes).length === 0 ? { form: 'Modifica al menos un dato antes de guardar.' } : {}) });
@@ -54,7 +58,6 @@ function Editor({ api, account, review, refreshing, locked }: { api: UsuariosApi
         <div className="staff-actions"><ActionLink href={`/usuarios/${encodeURIComponent(saved.id)}`} primary>Ver cuenta</ActionLink><ActionLink href="/usuarios">Volver a profesores</ActionLink></div>
       </CardContent></Card></div>;
   }
-  const blocked = mutation.result?.kind === 'error' && mutation.result.status === 409 || Boolean(mutation.result && 'uncertain' in mutation.result && mutation.result.uncertain);
   return <div className="staff-stack">
     <a className="staff-link w-fit" href={back} onClick={navigate}><ArrowLeft className="mr-2 size-4" aria-hidden="true" />{editing ? 'Volver a la cuenta' : 'Volver a profesores'}</a>
     <Card className="staff-form"><CardHeader>
@@ -65,9 +68,12 @@ function Editor({ api, account, review, refreshing, locked }: { api: UsuariosApi
         'El cambio de correo reemite la invitación. Su aceptación aún no está disponible.' :
         'La confirmación del nuevo correo aún no está disponible. El cambio no se completa desde aquí.'}</InlineHelp>
       {account && <div><p className="font-semibold">Correo vigente</p><p className="[overflow-wrap:anywhere]">{account.email}</p>{account.pendingEmail && <p className="mt-2 [overflow-wrap:anywhere]">Pendiente de confirmación: {account.pendingEmail}</p>}</div>}
-      {mutation.result && <ResultError result={mutation.result} retry={editing ? () => { review(); mutation.clear(); } : undefined} />}
+      {mutation.result && (!editing && conflict && !blocked ? <Notice title="Los datos entraron en conflicto" focus focusKey={mutation.result}>
+        <p>Revisa el correo institucional y corrige los datos antes de volver a invitar. Tu borrador se conserva; puedes consultar los profesores sin salir de este formulario.</p>
+      </Notice> : <ResultError result={mutation.result} retry={editing ? () => { review(); mutation.clear(); } : undefined} />)}
       {refreshing && <Loading text="Revisando el estado actual; tu borrador no se sobrescribirá" />}
-      {blocked && !editing && <ActionLink href="/usuarios">Revisar el listado antes de volver a invitar</ActionLink>}
+      {(conflict || blocked || reviewing) && !editing && <Button type="button" variant="outline" aria-expanded={reviewing} aria-controls="invitation-accounts-review" onClick={() => setReviewing(value => !value)}>
+        {reviewing ? 'Ocultar listado de profesores' : 'Revisar profesores sin salir'}</Button>}
       {Object.keys(issues).length > 0 && <Notice title="Revisa los datos">{Object.values(issues).join(' ')}</Notice>}
       <form className="auth-form" noValidate onSubmit={submit} aria-busy={mutation.pending}>
         <div className="auth-field"><Label htmlFor="account-name">Nombre completo</Label>
@@ -82,5 +88,9 @@ function Editor({ api, account, review, refreshing, locked }: { api: UsuariosApi
         {mutation.pending && <p role="status">Espera a que termine este intento. Salir no revierte una operación que ya haya llegado al servidor.</p>}
       </form>
     </CardContent><CardFooter>Los permisos, la disponibilidad del correo y las reglas de la cuenta se verifican en el servidor.</CardFooter></Card>
+    {reviewing && <section id="invitation-accounts-review" aria-labelledby="accounts-review-title" className="staff-stack">
+      <Accounts api={api} reviewOnly />
+      <Button type="button" variant="outline" className="w-fit" onClick={() => { setReviewing(false); emailInput.current?.focus(); }}>Volver al borrador</Button>
+    </section>}
   </div>;
 }
