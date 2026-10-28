@@ -205,3 +205,11 @@
 /* J-03 uses the existing staff spacing, control tokens and neutral feedback. */
 .access-code-row { display: grid; gap: 1rem; padding: 1.5rem; border: 1px solid var(--border); border-radius: 12px; }
 .access-copy-text { width: 100%; min-height: 10rem; padding: 1rem; border: 1px solid var(--foreground); border-radius: 8px; font: inherit; color: inherit; background: var(--background); }
+.classroom-roster { display: grid; gap: 1rem; }
+.classroom-identity { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+.classroom-code { font-size: 1.75rem; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.access-projector { position: fixed; inset: 0; margin: 0; width: 100%; max-width: none; height: 100%; max-height: none; padding: 2rem; border: 0; color: var(--foreground); background: var(--background); overflow-y: auto; }
+.projector-roster { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 1rem 1.5rem; }
+.projector-roster li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: .5rem; border-bottom: 1px solid var(--border); }
+.projector-roster li > span { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .projector-roster { grid-template-columns: minmax(0, 1fr); } .access-projector { padding: 1rem; } }

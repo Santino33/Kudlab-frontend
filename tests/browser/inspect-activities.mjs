@@ -13,6 +13,25 @@ Browser.launch = async (...args) => {
     return response.status;
   }, apiOrigin);
   if (status !== 200) { await browser.close(); throw new Error('SYNTHETIC_INSPECTOR_LOGIN_FAILED'); }
+  const newPage = browser.newPage.bind(browser);
+  browser.newPage = async (...args) => {
+    const page = await newPage(...args), goto = page.goto.bind(page);
+    page.goto = async (url, ...options) => {
+      const result = await goto(url, ...options);
+      if (url === target) await page.eval(async () => {
+        for (let n = 0; n < 75; n++) {
+          if (document.querySelector('.classroom-roster')) {
+            [...document.querySelectorAll('button')].find(b => b.textContent === 'Ocultar códigos')?.click();
+            return;
+          }
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        throw new Error('LOADED_CLASSROOM_REQUIRED');
+      });
+      return result;
+    };
+    return page;
+  };
   return browser;
 };
 process.argv = [process.argv[0], `${skill}/scripts/inspect.mjs`, target, '--app', '--out', process.env.KUDLAB_INSPECT_OUTPUT ?? '/tmp/opencode/j02-inspect'];
