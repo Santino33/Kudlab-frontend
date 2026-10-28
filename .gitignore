@@ -12,6 +12,7 @@ build/
 .env
 .env.*
 !.env.example
+!.env.docker.example
 *.local
 .DS_Store
 Thumbs.db
