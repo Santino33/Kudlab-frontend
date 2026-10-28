@@ -1,5 +1,11 @@
 # Kudlab Frontend
 
+**J-03:** gestión/distribución individual de códigos alfanuméricos de **5 caracteres**
+desde la asignación y acceso solo de recuperación desde la sesión. Exclusivo del
+personal: la entrada pública y `/pendientes` viven en **Kudlab Play**, no aquí.
+Sin cuentas STUDENT ni habilitación con menores reales. [Contrato UI y fuentes](docs/specs/tareas/03-acceso-codigo.md).
+La exclusión de códigos del párrafo J-02 siguiente describe aquella entrega anterior.
+
 **J-02:** asignaciones, inicio supervisado con Kudlab Play 1.1, consulta individual
 de sesiones/evidencia/indicadores y recuperación de envíos. Entrega técnica con
 datos ficticios y BD aislada, sin acceso por códigos ni habilitación con menores.

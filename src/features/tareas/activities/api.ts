@@ -1,5 +1,5 @@
 import type { HttpClient } from '../../../lib/http.ts';
-import { isId, object, parseAssignment, parseAssignmentSummary, parseGrant, parsePage, parseSession, parseSessionSummary, type Evidence } from './types.ts';
+import { isId, object, parseAssignment, parseAssignmentSummary, parseGrant, parsePage, parseSession, parseSessionSummary, parseCode, parseRevealedCode, type Evidence } from './types.ts';
 import type { HttpResult } from '../../usuarios/types.ts';
 
 export type AssignmentInput = { requestId: string; taskId: 'TG-01'; publishedVersionId: string; groupId: string; studentIds: string[]; startsAt: string; endsAt: string; maxAttempts: number };
@@ -12,6 +12,16 @@ export function createActivitiesApi(http: HttpClient) {
   const id = encodeURIComponent;
   const paging = (cursor?: string) => cursor ? `&cursor=${encodeURIComponent(cursor)}` : '';
   return {
+    codes: (assignmentId: string, signal: AbortSignal, cursor?: string) => request(`/api/v1/task-assignments/${id(assignmentId)}/access-codes?limit=100${paging(cursor)}`, signal, v => parsePage(v, parseCode)),
+    generateCodes: (assignmentId: string, requestId: string, recipientIds: string[], signal: AbortSignal) => request(`/api/v1/task-assignments/${id(assignmentId)}/access-codes`, signal, v => {
+      if (!object(v) || !Array.isArray(v.items) || !Number.isInteger(v.createdCount) || !Number.isInteger(v.reusedCount)) return;
+      const items = v.items.map(parseCode); if (items.some(c => !c || !recipientIds.includes(c.recipientId)) || new Set(items.map(c => c!.id)).size !== recipientIds.length || new Set(items.map(c => c!.recipientId)).size !== recipientIds.length || Number(v.createdCount) < 0 || Number(v.reusedCount) < 0 || Number(v.createdCount) + Number(v.reusedCount) !== items.length) return;
+      return { items: items.map(c => c!), createdCount: Number(v.createdCount), reusedCount: Number(v.reusedCount) };
+    }, { requestId, recipientIds }),
+    revealCode: (codeId: string, signal: AbortSignal) => request(`/api/v1/task-access-codes/${id(codeId)}/reveal`, signal, v => { const c = parseRevealedCode(v); return c?.codeId === codeId ? c : undefined; }, {}),
+    replaceCode: (codeId: string, requestId: string, signal: AbortSignal) => request(`/api/v1/task-access-codes/${id(codeId)}/replace`, signal, parseCode, { requestId }),
+    revokeCode: (codeId: string, requestId: string, signal: AbortSignal) => request(`/api/v1/task-access-codes/${id(codeId)}/revoke`, signal, v => { const c = parseCode(v); return c?.id === codeId ? c : undefined; }, { requestId }),
+    recoveryCode: (sessionId: string, requestId: string, reconcileReceipt: boolean, signal: AbortSignal) => request(`/api/v1/task-sessions/${id(sessionId)}/access-recovery-codes`, signal, v => { const c = parseCode(v); return c?.sessionId === sessionId && c.scope === 'SUBMIT_ONLY' ? c : undefined; }, { requestId, reconcileReceipt }),
     create: (input: AssignmentInput, signal: AbortSignal) => request('/api/v1/task-assignments', signal, parseAssignment, input),
     assignments: (groupId: string, signal: AbortSignal, cursor?: string) => request(`/api/v1/task-assignments?groupId=${id(groupId)}${paging(cursor)}`, signal, v => { const page = parsePage(v, parseAssignmentSummary); return page?.items.every(a => a.groupId === groupId) ? page : undefined; }),
     assignment: (assignmentId: string, signal: AbortSignal) => request(`/api/v1/task-assignments/${id(assignmentId)}`, signal, v => { const a = parseAssignment(v); return a?.id === assignmentId ? a : undefined; }),
