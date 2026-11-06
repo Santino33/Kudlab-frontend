@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
 // Optional zero-dependency driver, same CDP tool as the existing design checks.
-const { Browser } = await import(process.env.KUDLAB_CDP_DRIVER ?? '../../.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs');
+const { Browser } = await import(process.env.KUDLAB_CDP_DRIVER ?? './vendor/cdp.mjs');
 const browser = await Browser.launch();
 const output = process.env.KUDLAB_BROWSER_OUTPUT ?? '/tmp/opencode/estudiantes-evidence';
 mkdirSync(output, { recursive: true });

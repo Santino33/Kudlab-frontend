@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
-const { Browser } = await import(process.env.KUDLAB_CDP_DRIVER ?? '../../.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs');
+const { Browser } = await import(process.env.KUDLAB_CDP_DRIVER ?? './vendor/cdp.mjs');
 
 const origin = process.env.RECOVERY_PREVIEW_ORIGIN ?? 'http://localhost:5188';
 const fixture = '/tests/browser/usuarios-harness.html?path=';

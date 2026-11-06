@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
-const { Browser } = await import(process.env.KUDLAB_CDP_DRIVER ?? '../../.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs');
+const { Browser } = await import(process.env.KUDLAB_CDP_DRIVER ?? './vendor/cdp.mjs');
 // Explicit disposable fixture only. Never run this against a school/shared environment.
 const origin = process.env.KUDLAB_COURSES_ORIGIN;
 const api = process.env.KUDLAB_COURSES_API;
