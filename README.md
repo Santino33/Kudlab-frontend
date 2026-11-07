@@ -19,6 +19,42 @@ La contraseña del administrador local está en `.env.docker` (ignorado, no comp
 Correo no configurado y partidas bloqueadas por las restricciones del backend normal.
 [Configuración, MCP, fuentes y límites](docs/docker-local.md).
 
+### TG-01 con datos ficticios
+
+Con aislamiento comprobado y autorización del operador, el setup admite:
+
+```bash
+# Instalación nueva, exclusivamente con datos sintéticos:
+npm run docker:setup -- /ruta/Kudlab-backend /ruta/Kudlab-play --synthetic-local --confirm-synthetic-data
+# Configuración existente: agregar solo claves/ajustes faltantes:
+npm run docker:setup -- --extend-synthetic-local --confirm-synthetic-data
+```
+
+La confirmación declara que la BD solo contiene datos ficticios; el nombre local
+por sí solo no lo demuestra. El segundo comando conserva rutas, puertos, secretos
+y permisos privados. Si encuentra ajustes explícitamente desactivados, claves
+inválidas o compartidas, se detiene para revisión sin rotarlos ni sobrescribirlos.
+Sin opt-in, Compose mantiene desactivados el modo sintético y los códigos.
+
+El backend valida development, BD local autorizada y orígenes loopback. Tras
+autorizar migraciones/arranque y comprobar el entorno, preparar TG-01 mediante
+`npm run game:prepare-local` dentro del backend configurado (o `docker --context
+desktop-linux compose --env-file .env.docker exec backend npm run game:prepare-local`).
+Es una operación explícita/idempotente, ajena al arranque. La regla metodológica
+permanece PROPOSED; no habilita uso real. Nuevos estudiantes activos pueden recibir
+asignaciones; inactivarlos bloquea nuevas operaciones. No se modifican los antiguos.
+
+Para reiniciar servicios ya preparados sin borrar datos: `docker --context
+desktop-linux compose --env-file .env.docker restart`. Cambios de código requieren
+reconstrucción autorizada. No eliminar volúmenes ni datos del navegador. Desactivar
+`KUDLAB_LOCAL_SYNTHETIC_ENABLED` restaura la política normal conservando evidencia.
+SMTP y cuentas docentes siguen requiriendo preparación del operador; el setup no
+crea docentes ni simula consentimiento. `docker:check` comprueba solo humo técnico.
+
+El detalle docente consulta la configuración histórica, ensayos, duración observada,
+tiempo de respuesta y motivos/incidencias. No recalcula indicadores ni suma una página
+como total; los datos ausentes siguen diferenciados de cero.
+
 **J-03:** gestión/distribución individual de códigos alfanuméricos de **5 caracteres**
 desde la asignación y acceso solo de recuperación desde la sesión. Exclusivo del
 personal: la entrada pública y `/pendientes` viven en **Kudlab Play**, no aquí.
