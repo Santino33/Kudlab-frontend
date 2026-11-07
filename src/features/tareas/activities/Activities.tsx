@@ -67,8 +67,6 @@ function AssignmentForm({ api, studentsApi, tasksApi, group, actorId }: { api: A
   const mutation = useMutation<Assignment>();
   const [created, setCreated] = useState<Assignment>();
   const submitting = useRef(false);
-  // No server response (network failure): say so explicitly instead of a generic message.
-  const lostConnection = Boolean(frozen && !created && !mutation.pending && mutation.result?.kind === 'unavailable');
   const task = taskQuery.result?.kind === 'success' ? taskQuery.result.data : undefined;
   const students = studentQuery.result?.kind === 'success' ? studentQuery.result.data.items : undefined;
   const selectedIds = selected.filter(id => students?.some(s => s.id === id && s.isActive));
@@ -99,7 +97,7 @@ function AssignmentForm({ api, studentsApi, tasksApi, group, actorId }: { api: A
   }
   return <section className="staff-stack activity-form" aria-labelledby="assignment-form-title"><h2 id="assignment-form-title" className="staff-section-title">Asignar Lluvia de estrellas</h2>
     <p>Los destinatarios quedan fijados al guardar. El límite de intentos lo decide el profesor; no es un umbral científico.</p>
-    {frozen ? <Notice title={created ? 'Asignación creada' : mutation.pending ? 'Creando asignación…' : 'Hay una creación por confirmar'}><p>{frozen.studentIds.length} destinatarios · {date(frozen.startsAt)} – {date(frozen.endsAt)} · {frozen.maxAttempts} intentos. Conservamos la misma solicitud, sin duplicar la asignación.</p>{lostConnection && <p role="alert" className="mt-2 font-semibold">{navigator.onLine ? 'No pudimos comunicarnos con el servidor. Revisa tu conexión a internet.' : 'Se perdió la conexión a internet.'} Cuando vuelva la conexión, pulsa «Comprobar creación»: no se creará otra asignación.</p>}<Button className="mt-4" disabled={mutation.pending} onClick={() => void send(frozen)}>{mutation.pending ? 'Creando asignación…' : created ? 'Continuar con los códigos' : 'Comprobar creación'}</Button></Notice> : !task || !students ? (!studentQuery.result || !taskQuery.result ? <Loading text="Preparando formulario" /> : <ActivityFailure retry={() => { studentQuery.reload(); taskQuery.reload(); }} />) : <form onSubmit={submit} className="auth-form">
+    {frozen ? <Notice title={created ? 'Asignación creada' : mutation.pending ? 'Creando asignación…' : 'Hay una creación por confirmar'}><p>{frozen.studentIds.length} destinatarios · {date(frozen.startsAt)} – {date(frozen.endsAt)} · {frozen.maxAttempts} intentos. Conservamos la misma solicitud, sin duplicar la asignación.</p><Button className="mt-4" disabled={mutation.pending} onClick={() => void send(frozen)}>{mutation.pending ? 'Creando asignación…' : created ? 'Continuar con los códigos' : 'Comprobar creación'}</Button></Notice> : !task || !students ? (!studentQuery.result || !taskQuery.result ? <Loading text="Preparando formulario" /> : <ActivityFailure retry={() => { studentQuery.reload(); taskQuery.reload(); }} />) : <form onSubmit={submit} className="auth-form">
       <p>{task.pedagogicalNotice}</p>{!task.assignable && <Notice title="Actividad no disponible"><ul>{task.unavailableReasons.map(r => <li key={r}>{r === 'METHODOLOGY_PENDING' ? 'Método pendiente de aprobación' : r === 'TASK_DISABLED' ? 'Tarea deshabilitada' : 'Configuración o integración pendiente'}</li>)}</ul></Notice>}
       <fieldset className="staff-stack" disabled={mutation.pending || !task.assignable}><legend className="font-semibold mb-3">Estudiantes destinatarios</legend>
         <Button type="button" variant="outline" className="w-fit" disabled={!students.some(s => s.isActive)} onClick={() => setSelected(students.filter(s => s.isActive).map(s => s.id))}>Seleccionar todos los actuales</Button>
@@ -113,7 +111,7 @@ function AssignmentForm({ api, studentsApi, tasksApi, group, actorId }: { api: A
         <div className="auth-field"><Label htmlFor="assignment-attempts">Máximo de intentos</Label><Input id="assignment-attempts" name="maxAttempts" type="number" min={1} max={10} step={1} required aria-describedby="assignment-attempts-help" /><p id="assignment-attempts-help">Entre 1 y 10. Abrir instrucciones no consume; comenzar con confirmación del servidor sí.</p></div>
       </fieldset><p>Al guardar se preparan los códigos de los estudiantes seleccionados. Podrás mostrarlos en clase.</p><Button disabled={!task.assignable || !selectedIds.length || mutation.pending} type="submit">Guardar asignación y códigos</Button>
     </form>}
-    {error && <p role="alert">{error}</p>}{mutation.result && mutation.result.kind !== 'success' && !lostConnection && <ActivityFailure result={mutation.result} />}
+    {error && <p role="alert">{error}</p>}{mutation.result && mutation.result.kind !== 'success' && <ActivityFailure result={mutation.result} />}
   </section>;
 }
 export function AssignmentDetail({ api, group, assignmentId, actorId }: { api: ActivitiesApi; group: Group; assignmentId: string; actorId: string }) {
