@@ -14,8 +14,9 @@ import type { Group } from '../../academico/groups/types.ts';
 import { groupPath, go } from '../../academico/groups/navigation.ts';
 import { navigate } from '../../../lib/navigation.ts';
 import type { ActivitiesApi, AssignmentInput } from './api.ts';
-import { assignmentPath, studentTasksPath, executionPath, executionLabels, processingLabels, metricLabels, unavailableLabels, trialTimes, incidentLabels, categoryLabels, closureLabels, responseDeviceLabels, type Assignment, type AssignmentSummary, type SessionDetail, type TrialEvidence, type IncidentEvidence } from './types.ts';
-import { contextLabels, contextValue, terminationLabels, milliseconds } from './evidence-presentation.ts';
+import { CircleHelp } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { assignmentPath, studentTasksPath, executionPath, executionLabels, processingLabels, metricLabels, unavailableLabels, type Assignment, type AssignmentSummary, type SessionDetail } from './types.ts';
 import { AssignmentAccess, RecoveryAccess } from './AccessCodes';
 import { newPreparation, preparationKey, readPreparation, savePreparation } from './code-preparation';
 
@@ -174,7 +175,7 @@ export function SessionResults({ api, group, studentId, sessionId, actorId }: { 
   }
   return <div className="staff-stack"><ActivityLink href={studentTasksPath(group.id, studentId)}>Volver a sesiones</ActivityLink><ActivityHeading>Detalle de sesión</ActivityHeading>
     {!query.result ? <Loading text="Consultando sesión" /> : !s ? <ActivityFailure result={query.result} retry={query.reload} /> : <>
-      <section className="staff-stack"><h2 className="staff-section-title">Estado de la actividad</h2><p>{executionLabels[s.executionStatus]}</p><p role="status">{processingLabels[s.processingStatus]}</p><dl className="account-facts"><div><dt>Intento</dt><dd>{s.attemptNumber ?? 'Sin consumir'}</dd></div><div><dt>Inicio autorizado</dt><dd>{date(s.startedAtServer)}</dd></div><div><dt>Recepción confirmada</dt><dd>{date(s.receivedAt)}</dd></div><div><dt>Duración medida</dt><dd>{s.measuredDurationMs === null ? '—' : `${(s.measuredDurationMs / 1000).toFixed(1)} s`}</dd></div><div><dt>Configuración</dt><dd>Versión {s.configVersion} · {s.gameBuildId}</dd></div><div><dt>Ensayos registrados</dt><dd>{s.recordedTrialCount}</dd></div></dl>
+      <section className="staff-stack" aria-labelledby="session-summary-title"><h2 id="session-summary-title" className="staff-section-title">Resumen de la sesión</h2><dl className="account-facts"><div><dt>Estado de la actividad</dt><dd>{executionLabels[s.executionStatus]}</dd></div><div><dt>Estado de los resultados</dt><dd role="status">{processingLabels[s.processingStatus]}</dd></div><div><dt>Intento</dt><dd>{s.attemptNumber ?? 'Sin consumir'}</dd></div><div><dt>Inicio autorizado</dt><dd>{date(s.startedAtServer)}</dd></div><div><dt>Recepción confirmada</dt><dd>{date(s.receivedAt)}</dd></div><div><dt>Duración medida</dt><dd>{s.measuredDurationMs === null ? '—' : `${(s.measuredDurationMs / 1000).toFixed(1)} s`}</dd></div><div><dt>Configuración</dt><dd>Versión {s.configVersion} · {s.gameBuildId}</dd></div><div><dt>Ensayos registrados</dt><dd>{s.recordedTrialCount}</dd></div></dl>
         {s.executionStatus === 'INTERRUPTED' && <p>Datos parciales. No se presenta como una ejecución completa ni comparable.</p>}
         <p>Apoyo pedagógico, no diagnóstico. Esta entrega técnica usa datos ficticios; no acredita validación metodológica.</p>
       </section>
@@ -182,41 +183,25 @@ export function SessionResults({ api, group, studentId, sessionId, actorId }: { 
       {mutation.result && mutation.result.kind !== 'success' && <ActivityFailure result={mutation.result} retry={() => void retry()} />}
       <IndicatorResults session={s} />
       {s.attemptNumber !== null && !s.receipt && <details><summary>Resolver un envío pendiente</summary><RecoveryAccess api={api} sessionId={sessionId} actorId={actorId} /></details>}
-      <section className="staff-stack"><h2 className="staff-section-title">Incidencias y evidencia</h2>{!s.receipt ? <p>Sin evidencia recibida. No equivale a una sesión sin incidencias.</p> : <><p>{s.incidentCount === 0 ? 'Sesión sin incidencias registradas.' : `${s.incidentCount} incidencias registradas.`} Los fallos técnicos no son errores del estudiante.</p><EvidenceList api={api} sessionId={sessionId} kind="incidents" /><EvidenceList api={api} sessionId={sessionId} kind="trials" /></>}</section>
-      <details><summary>Configuración y dispositivo de esta sesión</summary><div className="staff-stack mt-4"><p>Condiciones históricas de ejecución, sin niveles de dificultad. Las unidades lógicas no son píxeles físicos.</p><dl className="account-facts"><div><dt>Cierre declarado</dt><dd>{s.terminationReason === null ? 'Sin cierre recibido' : terminationLabels[s.terminationReason]}</dd></div><div><dt>Configuración histórica (hash)</dt><dd className="break-all">{s.configurationHash}</dd></div><div><dt>Versión publicada</dt><dd className="break-all">{s.publishedVersionId}</dd></div></dl><dl className="account-facts">{Object.entries(s.configuration).map(([key, v]) => <div key={key}><dt>{contextLabels[key]}</dt><dd>{contextValue(v)}</dd></div>)}</dl>{s.device ? <dl className="account-facts">{Object.entries(s.device).map(([key, v]) => <div key={key}><dt>{contextLabels[key]}</dt><dd>{contextValue(v)}</dd></div>)}</dl> : <p>Dispositivo no recibido.</p>}</div></details>
     </>}
   </div>;
 }
 function IndicatorResults({ session }: { session: SessionDetail }) {
   const c = session.calculation;
-  return <section className="staff-stack"><h2 className="staff-section-title">Indicadores descriptivos</h2>{!c || c.status !== 'SUCCEEDED' ? <p>No hay indicadores disponibles todavía. {processingLabels[session.processingStatus]}</p> : <>
+  return <section className="staff-stack" aria-labelledby="session-results-title"><h2 id="session-results-title" className="staff-section-title">Resultados por sesión y partes</h2>{!c || c.status !== 'SUCCEEDED' ? <p>No hay indicadores disponibles todavía. {processingLabels[session.processingStatus]}</p> : <>
     <p>Ficha {c.ruleCode} · Versión {c.ruleVersion}. Ensayos observados: {c.summary.observed ?? '—'}; incluidos: {c.summary.included ?? '—'}; excluidos: {c.summary.excluded ?? '—'}.</p>
-    <p>Los valores ausentes no se sustituyen por cero. Porcentajes con 2 decimales y tiempos con 1 decimal.</p>
-    <ActivityTable label="Indicadores por sesión y segmento"><TableCaption>Resultados por sesión y segmentos</TableCaption><TableHeader><TableRow><TableHead>Indicador</TableHead><TableHead>Ámbito</TableHead><TableHead className="text-right">Valor</TableHead><TableHead className="text-right">Muestra / denominador</TableHead><TableHead>Disponibilidad</TableHead></TableRow></TableHeader><TableBody>{c.indicators.map(i => <TableRow key={`${i.metricCode}:${i.scope}`}><TableCell>{metricLabels[i.metricCode]}</TableCell><TableCell className="whitespace-nowrap">{i.scope === 'SESSION' ? 'Sesión' : `Segmento ${i.scope.slice(-1)}`}</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{i.value === null ? '—' : `${i.value.toFixed(i.unit === '%' ? 2 : 1)} ${i.unit}`}</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{i.sampleSize} / {i.denominator ?? '—'}</TableCell><TableCell>{i.unavailabilityReason ? unavailableLabels[i.unavailabilityReason] : 'Calculado'}</TableCell></TableRow>)}</TableBody></ActivityTable>
+    <p>Si un resultado falta, se muestra «—» con el motivo; no se cambia por cero. Usa el símbolo de ayuda de cada columna para saber qué significa.</p>
+    <ActivityTable label="Indicadores por sesión y segmento"><TableCaption>Resultados de toda la actividad y de cada parte</TableCaption><TableHeader><TableRow>{indicatorColumns.map(c => <TableHead key={c.label} scope="col" className={c.numeric ? 'text-right' : undefined}><ColumnHelp label={c.label} help={c.help} /></TableHead>)}</TableRow></TableHeader><TableBody>{c.indicators.map(i => <TableRow key={`${i.metricCode}:${i.scope}`}><TableCell>{metricLabels[i.metricCode]}</TableCell><TableCell className="whitespace-nowrap">{i.scope === 'SESSION' ? 'Toda la actividad' : `Parte ${i.scope.slice(-1)}`}</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{i.value === null ? '—' : `${i.value.toFixed(i.unit === '%' ? 2 : 1)} ${i.unit}`}</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{i.sampleSize} / {i.denominator ?? '—'}</TableCell><TableCell>{i.unavailabilityReason ? unavailableLabels[i.unavailabilityReason] : 'Calculado'}</TableCell></TableRow>)}</TableBody></ActivityTable>
   </>}</section>;
 }
-function EvidenceList({ api, sessionId, kind }: { api: ActivitiesApi; sessionId: string; kind: 'trials' | 'incidents' }) {
-  const [open, setOpen] = useState(false);
-  return <details onToggle={e => setOpen(e.currentTarget.open)}><summary>{kind === 'trials' ? 'Ver ensayos y decisiones de cálculo' : 'Ver incidencias'}</summary>{open && <EvidencePage key={`${sessionId}:${kind}`} api={api} sessionId={sessionId} kind={kind} />}</details>;
-}
-function EvidencePage({ api, sessionId, kind }: { api: ActivitiesApi; sessionId: string; kind: 'trials' | 'incidents' }) {
-  const [cursor, setCursor] = useState<string>();
-  const query = useQuery(signal => api.evidence(sessionId, kind, signal, cursor), `${sessionId}:${kind}:${cursor ?? ''}`);
-  return <div className="staff-stack mt-4">{!query.result ? <Loading text="Consultando evidencia" /> : query.result.kind !== 'success' ? <ActivityFailure result={query.result} retry={query.reload} /> : <>
-    <p>Marcas en el reloj monotónico del juego; no son horas del día. Los conteos de esta página no representan el total de la sesión.</p>
-    {!query.result.data.items.length ? <p>{!cursor && !query.result.data.nextCursor ? kind === 'incidents' ? 'Sin incidencias registradas.' : 'Sin ensayos registrados.' : 'Página sin registros.'}</p> :
-    <ActivityTable compactFirst label={kind === 'trials' ? 'Evidencia de ensayos' : 'Evidencia de incidencias'}><TableHeader><TableRow>{(kind === 'trials' ? ['Ensayo / segmento', 'Estímulo y resultado declarado', 'Tiempos observados', 'Decisión de cálculo'] : ['Secuencia', 'Tipo / categoría', 'Marcas temporales', 'Referencia temporal']).map((t, n) => <TableHead scope="col" className={n === 0 || n === 2 ? 'text-right' : undefined} key={t}>{t}</TableHead>)}</TableRow></TableHeader><TableBody>{query.result.data.items.map(v => 'trial' in v ? <TrialRow key={v.trial} trial={v} /> : <IncidentRow key={v.sequence} incident={v} />)}</TableBody></ActivityTable>}
-    <Next cursor={query.result.data.nextCursor} next={setCursor} />{cursor && <Button variant="outline" className="w-fit" onClick={() => setCursor(undefined)}>Primera página</Button>}</>}
-  </div>;
-}
-function TrialRow({ trial: t }: { trial: TrialEvidence }) {
-  const times = trialTimes(t), d = t.calculationDecision;
-  const results = { hit: 'Acierto', miss: 'Omisión', false_alarm: 'Comisión', correct_rejection: 'Rechazo correcto', not_evaluated: 'No evaluado' };
-  return <TableRow><TableCell className="text-right tabular-nums whitespace-nowrap">{t.trial}<p>{t.segment === null ? 'Sin segmento' : `Segmento ${t.segment}`}</p></TableCell>
-    <TableCell>{t.stimulus === 'star' ? 'Estrella · objetivo' : 'Luna · distractor'}<p>{results[t.result]}</p><details><summary>Contexto del ensayo {t.trial}</summary><dl><dt>Creación</dt><dd>{milliseconds(t.spawnedAtMs)}</dd><dt>Ventana natural completa</dt><dd>{t.responseWindowCompleted ? 'Sí' : 'No'}</dd><dt>Dispositivo de respuesta</dt><dd>{t.responseDevice === null ? 'Sin respuesta' : responseDeviceLabels[t.responseDevice]}</dd><dt>Geometría (unidades lógicas)</dt><dd>Carril {t.geometry.lane}; centro X {t.geometry.x}; tamaño {t.geometry.size}</dd></dl></details></TableCell>
-    <TableCell className="text-right tabular-nums"><dl><dt>Presentación</dt><dd>{milliseconds(t.presentedAtMs)}</dd><dt>Respuesta</dt><dd>{milliseconds(t.respondedAtMs)}</dd><dt>Cierre · {closureLabels[t.closureReason]}</dt><dd>{milliseconds(t.closedAtMs)}</dd><dt>Duración observada</dt><dd>{milliseconds(times.durationMs)}</dd><dt>Tiempo de respuesta individual</dt><dd>{milliseconds(times.reactionTimeMs)}</dd></dl></TableCell>
-    <TableCell className="max-w-sm break-words">{d === null ? 'Todavía sin decisión de cálculo.' : <>{d.included ? 'Incluido en conteo.' : 'Excluido del conteo.'}<p>{d.rtIncluded ? 'Tiempo de respuesta incluido en indicadores.' : 'Tiempo de respuesta no incluido en indicadores.'}</p>{d.reason && <p>{d.reason === 'NOT_EVALUATED' ? 'No evaluado.' : unavailableLabels[d.reason]}</p>}</>}<p>La duración observada va desde presentación hasta cierre; no equivale a ventana natural completa ni acredita validez de medición.</p></TableCell></TableRow>;
-}
-function IncidentRow({ incident: i }: { incident: IncidentEvidence }) {
-  return <TableRow><TableCell className="text-right tabular-nums">{i.sequence}</TableCell><TableCell>{incidentLabels[i.type]}<p>{categoryLabels[i.category]}</p></TableCell><TableCell className="text-right tabular-nums">{i.atMs === null ? <><p>Sin marca monotónica</p><p>Registro del cliente: {date(i.recordedAtClient)}</p></> : <dl><dt>Inicio</dt><dd>{milliseconds(i.atMs)}</dd><dt>Fin</dt><dd>{milliseconds(i.endedAtMs)}</dd></dl>}</TableCell><TableCell className="max-w-sm break-words">{i.clockId === null ? 'Marca de fecha del cliente tras recuperación; no comparable con el reloj previo.' : <>Reloj monotónico<p className="break-all">{i.clockId}</p>{i.recordedAtClient && <p>Registro del cliente: {date(i.recordedAtClient)}</p>}</>}</TableCell></TableRow>;
+const indicatorColumns = [
+  { label: 'Indicador', help: 'Qué se está midiendo, por ejemplo, aciertos o tiempo de respuesta.' },
+  { label: 'Parte de la actividad', help: 'Indica si el resultado es de toda la actividad o de una de sus partes.' },
+  { label: 'Resultado', help: 'Resultado obtenido. % significa porcentaje; ms, milésimas de segundo.', numeric: true },
+  { label: 'Datos usados / total', help: 'Primero: datos usados. Después: total para calcular el porcentaje. «—» significa que no aplica.', numeric: true },
+  { label: 'Estado del resultado', help: 'Dice si se pudo calcular el resultado o por qué falta.' },
+];
+/** Column help (shadcn Popover): hover, keyboard (Enter/Space) and touch; Escape or outside click closes it, focus is not trapped. */
+function ColumnHelp({ label, help }: { label: string; help: string }) {
+  return <span className="column-heading">{label}<Popover><PopoverTrigger openOnHover delay={200} closeDelay={150} className="column-help" aria-label={`Qué significa «${label}»`}><CircleHelp aria-hidden="true" className="size-5" /></PopoverTrigger><PopoverContent side="top">{help}</PopoverContent></Popover></span>;
 }

@@ -264,3 +264,8 @@
 .projector-roster li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: .5rem; border-bottom: 1px solid var(--border); }
 .projector-roster li > span { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 640px) { .projector-roster { grid-template-columns: minmax(0, 1fr); } .access-projector { padding: 1rem; } }
+
+/* Column help in result tables (shadcn Popover trigger). */
+.column-heading { display: inline-flex; align-items: center; gap: .25rem; white-space: nowrap; }
+.column-help { display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; min-height: 2rem; border: 1px solid transparent; border-radius: .5rem; color: var(--foreground); cursor: help; }
+.column-help:hover, .column-help[data-popup-open] { border-color: var(--foreground); }

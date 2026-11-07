@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseTrial, parseIncident, parseSession, trialTimes, validConfiguration } from '../../src/features/tareas/activities/types.ts';
-import { milliseconds } from '../../src/features/tareas/activities/evidence-presentation.ts';
 import { createActivitiesApi } from '../../src/features/tareas/activities/api.ts';
 import { createHttpClient } from '../../src/lib/http.ts';
 
@@ -24,7 +23,6 @@ const session = { id, studentId: id, taskId: 'TG-01', assignmentId: id, attemptN
 
 test('CA-08: preserves zero and observed duration for response, natural exit, cutoff and never presented', () => {
   assert.deepEqual(trialTimes(parseTrial(trial)), { durationMs: 0, reactionTimeMs: 0 });
-  assert.equal(milliseconds(0), '0 ms'); assert.equal(milliseconds(null), 'No disponible');
   for (const closureReason of ['window_elapsed', 'session_cutoff', 'interruption', 'never_presented']) {
     const never = closureReason === 'never_presented';
     const value = { ...trial, respondedAtMs: null, responseDevice: null, presentedAtMs: never ? null : 100,
