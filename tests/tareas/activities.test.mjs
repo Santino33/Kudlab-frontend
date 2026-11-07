@@ -76,3 +76,8 @@ test('student assignments: only the requested student, once each, newest first; 
   assert.deepEqual((await fixture({ items: [], nextCursor: null }).api.studentAssignments(id, signal())).data, { items: [], nextCursor: null });
   const bad = fixture(valid); assert.equal((await bad.api.studentAssignments('../x', signal())).status, 404); assert.equal(bad.calls.length, 0);
 });
+test('CA-07: the teacher frontend has no launch-grant client; old start URLs still resolve so they can show a closed notice', () => {
+  const { api } = fixture(assignment);
+  assert.equal('launch' in api, false); assert.equal(typeof api.recover, 'function');
+  assert.equal(resolveRoute(`/academico/cursos/${id}/asignaciones/${other}/destinatarios/${id}/ejecucion`, '').kind, 'supervisedExecution');
+});

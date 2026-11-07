@@ -26,7 +26,6 @@ export function createActivitiesApi(http: HttpClient) {
     assignments: (groupId: string, signal: AbortSignal, cursor?: string) => request(`/api/v1/task-assignments?groupId=${id(groupId)}${paging(cursor)}`, signal, v => { const page = parsePage(v, parseAssignmentSummary); return page?.items.every(a => a.groupId === groupId) ? page : undefined; }),
     assignment: (assignmentId: string, signal: AbortSignal) => request(`/api/v1/task-assignments/${id(assignmentId)}`, signal, v => { const a = parseAssignment(v); return a?.id === assignmentId ? a : undefined; }),
     cancel: (assignmentId: string, requestId: string, signal: AbortSignal) => request(`/api/v1/task-assignments/${id(assignmentId)}/cancel`, signal, parseAssignment, { requestId }),
-    launch: (recipientId: string, requestId: string, signal: AbortSignal) => request(`/api/v1/task-assignment-recipients/${id(recipientId)}/launch-grants`, signal, parseGrant, { requestId }),
     recover: (sessionId: string, submissionId: string, requestId: string, signal: AbortSignal) => request(`/api/v1/task-sessions/${id(sessionId)}/recovery-grants`, signal, parseGrant, { requestId, submissionId }),
     studentAssignments: (studentId: string, signal: AbortSignal, cursor?: string) => request(`/api/v1/students/${id(studentId)}/task-assignments?limit=25${paging(cursor)}`, signal, v => {
       const page = parsePage(v, parseStudentAssignment);
