@@ -10,6 +10,7 @@ export const unavailableLabels: Record<string, string> = {
 export const metricLabels: Record<string, string> = { accuracy_pct: 'Precisión', omission_rate_pct: 'Omisión', commission_rate_pct: 'Comisión', median_reaction_time_ms: 'Mediana del tiempo de respuesta', rt_sd_ms: 'Desviación del tiempo de respuesta', rt_cv_pct: 'Variabilidad relativa del tiempo de respuesta' };
 export type Page<T> = { items: T[]; nextCursor: string | null };
 export type AssignmentSummary = { id: string; taskId: string; title: string; publishedVersionId: string; configVersion: number; groupId: string; startsAt: string; endsAt: string; maxAttempts: number; status: 'OPEN' | 'CANCELLED'; availability: string; recipientCount: number; createdAt: string };
+export type StudentAssignment = AssignmentSummary & { studentId: string; recipientId: string; attemptsStarted: number };
 export type Recipient = { id: string; studentId: string; studentDisplayName: string; studentCode: string; attemptsStarted: number; activeSessionId: string | null; canLaunch: boolean; unavailableReasons: string[] };
 export type Assignment = AssignmentSummary & { recipients: Recipient[] };
 export type Grant = { sessionId: string; grantId: string; launchGrant: string; expiresAt: string; runtimeOrigin: string };
@@ -86,6 +87,10 @@ export function parseAssignmentSummary(v: unknown): AssignmentSummary | undefine
   if (!object(v) || !isId(v.id) || v.taskId !== 'TG-01' || !text(v.title) || !isId(v.publishedVersionId) || !count(v.configVersion) || !v.configVersion || !isId(v.groupId) ||
     !date(v.startsAt) || !date(v.endsAt) || !date(v.createdAt) || !count(v.maxAttempts) || v.maxAttempts < 1 || v.maxAttempts > 10 || !['OPEN', 'CANCELLED'].includes(String(v.status)) || !['FUTURE', 'CURRENT', 'EXPIRED', 'CANCELLED'].includes(String(v.availability)) || !count(v.recipientCount)) return;
   return v as AssignmentSummary;
+}
+export function parseStudentAssignment(v: unknown): StudentAssignment | undefined {
+  if (!parseAssignmentSummary(v) || !object(v) || !isId(v.studentId) || !isId(v.recipientId) || !count(v.attemptsStarted) || 'recipients' in v) return;
+  return v as StudentAssignment;
 }
 export function parseAssignment(v: unknown): Assignment | undefined {
   if (!parseAssignmentSummary(v) || !object(v) || !Array.isArray(v.recipients) || !v.recipients.every(r => object(r) && isId(r.id) && isId(r.studentId) && text(r.studentDisplayName) && text(r.studentCode) && count(r.attemptsStarted) && (r.activeSessionId === null || isId(r.activeSessionId)) && typeof r.canLaunch === 'boolean' && Array.isArray(r.unavailableReasons) && r.unavailableReasons.every(x => typeof x === 'string' && Object.hasOwn(unavailableLabels, x)))) return;

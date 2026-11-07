@@ -63,3 +63,16 @@ test('non-JSON or obsolete participation responses cannot bypass access protecti
   finish(new Response(JSON.stringify({ code: 'PARTICIPATION_BLOCKED' }), { status: 403, headers: { 'Content-Type': 'text/plain' } }));
   assert.equal((await invalid).uncertain, true); assert.equal(denials.length, 1);
 });
+test('student assignments: only the requested student, once each, newest first; errors are never an empty list', async () => {
+  const third = '10000000-0000-4000-8000-000000000003', recipient = '10000000-0000-4000-8000-000000000004';
+  const { recipients: _, ...summary } = assignment;
+  const row = (assignmentId, createdAt, studentId = id) => ({ ...summary, id: assignmentId, createdAt, recipientCount: 2, studentId, recipientId: recipient, attemptsStarted: 1 });
+  const valid = { items: [row(third, '2026-10-27T12:00:00.000Z'), row(other, '2026-10-27T11:00:00.000Z'), row(id, '2026-10-27T11:00:00.000Z')], nextCursor: 'next.cursor' };
+  const ok = fixture(valid), page = await ok.api.studentAssignments(id, signal(), 'a/b+c');
+  assert.equal(page.kind, 'success'); assert.deepEqual(page.data.items.map(a => a.id), [third, other, id]);
+  assert.equal(ok.calls[0].url, `http://localhost:4300/api/v1/students/${id}/task-assignments?limit=25&cursor=a%2Fb%2Bc`);
+  for (const items of [[row(other, '2026-10-27T11:00:00.000Z', other)], [row(other, '2026-10-27T11:00:00.000Z'), row(other, '2026-10-27T11:00:00.000Z')], [row(other, '2026-10-27T11:00:00.000Z'), row(third, '2026-10-27T12:00:00.000Z')], [row(id, '2026-10-27T11:00:00.000Z'), row(other, '2026-10-27T11:00:00.000Z')], [{ ...row(other, '2026-10-27T11:00:00.000Z'), recipients: [] }], [{ ...row(other, '2026-10-27T11:00:00.000Z'), attemptsStarted: -1 }]])
+    assert.equal((await fixture({ items, nextCursor: null }).api.studentAssignments(id, signal())).kind, 'unavailable');
+  assert.deepEqual((await fixture({ items: [], nextCursor: null }).api.studentAssignments(id, signal())).data, { items: [], nextCursor: null });
+  const bad = fixture(valid); assert.equal((await bad.api.studentAssignments('../x', signal())).status, 404); assert.equal(bad.calls.length, 0);
+});

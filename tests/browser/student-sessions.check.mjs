@@ -77,7 +77,7 @@ try {
   assert.equal(teacher.url(), expectedUrl);
   await teacher.getByRole('link', { name: 'Volver a la ficha', exact: true }).click();
   const fromStudent = teacher.waitForResponse(r => new URL(r.url()).pathname === `/api/v1/students/${student.id}/task-sessions`);
-  await teacher.getByRole('link', { name: 'Tareas digitales y sesiones', exact: true }).click();
+  await teacher.getByRole('link', { name: 'Ver sesiones del estudiante', exact: true }).click();
   const studentItems = (await (await fromStudent).json()).items;
   assert.equal(teacher.url(), expectedUrl);
   assert.deepEqual(studentItems.map(s => s.id), assignmentItems.map(s => s.id));
