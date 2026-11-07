@@ -1,8 +1,18 @@
-# Local agent skills
-.agents/skills/
-.opencode/skills/*
-!.opencode/skills/ponytail/
-skills-lock.json
+# Personal agent tooling and planning are local, never application dependencies.
+/AGENTS.md
+/CLAUDE.md
+/.claude
+/.agents
+/.opencode
+/.specify
+/.mcp.json
+/opencode.json
+/opencode.jsonc
+/skills-lock.json
+/specs
+/docs/agent-context
+/docs/design
+/docs/specs
 .taste-skill/
 
 node_modules/

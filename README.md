@@ -1,8 +1,26 @@
 # Kudlab Frontend
 
-## Docker Desktop · ejecución local de los tres proyectos
+Plataforma docente del piloto Kudlab: React, TypeScript, Tailwind CSS y Vite, con npm. ADMIN y TEACHER son roles del personal; no hay cuentas STUDENT. La experiencia infantil y el acceso público por código pertenecen a Kudlab Play.
 
-Desde este repositorio, con los cambios Docker también presentes en backend y Play:
+El producto apoya seguimiento pedagógico; no produce diagnósticos clínicos ni sustituye evaluación curricular. Las builds y pruebas con datos sintéticos no habilitan uso con menores reales.
+
+## Requisitos e instalación
+
+- Node.js 24 (`>=24 <25`) y npm.
+- Para integración, backend compatible y entorno autorizado. Las pruebas lógicas y build no requieren API ni PostgreSQL.
+
+```bash
+npm ci
+npm run dev
+```
+
+Configurar `VITE_API_ORIGIN` según [.env.example](.env.example). Perfil habitual: frontend `http://localhost:5173`, API `http://localhost:3000`. La API debe permitir el origen exacto y cookies de sesión; no hay proxy implícito a otro puerto. Sin origen válido no se envían solicitudes; sin sesión comprobada no se muestra contenido protegido.
+
+Ver [operación, seguridad y límites](docs/operations.md). No usar una base compartida ni suponer que el puerto identifica la revisión de un servicio.
+
+## Docker Desktop: los tres proyectos
+
+Con los Dockerfile correspondientes presentes en backend y Play:
 
 ```bash
 npm run docker:setup -- /ruta/Kudlab-backend /ruta/Kudlab-play
@@ -11,13 +29,9 @@ npm run docker:status
 npm run docker:check
 ```
 
-Docker Desktop muestra el grupo **`kudlab-local`** con backend, frontend, Play y
-PostgreSQL aislado. Frontend: **http://localhost:5173**, API/docs:
-**http://localhost:4300/docs**, Play: **http://127.0.0.1:4178**.
-La contraseña del administrador local está en `.env.docker` (ignorado, no compartir).
-`npm run docker:down` detiene el grupo **sin eliminar su base**.
-Correo no configurado y partidas bloqueadas por las restricciones del backend normal.
-[Configuración, MCP, fuentes y límites](docs/docker-local.md).
+El grupo `kudlab-local` incluye API, frontend, Play y PostgreSQL aislado. Frontend: `http://localhost:5173`; API/docs: `http://localhost:4300/docs`; Play: `http://127.0.0.1:4178`. La configuración y contraseña inicial están en `.env.docker`, ignorado y privado. `npm run docker:down` detiene el grupo sin eliminar su base.
+
+El correo queda pendiente hasta configurar SMTP y las partidas siguen bloqueadas por las restricciones normales del backend. [Guía de operación y persistencia](docs/docker-local.md).
 
 ### TG-01 con datos ficticios
 
@@ -51,58 +65,20 @@ reconstrucción autorizada. No eliminar volúmenes ni datos del navegador. Desac
 SMTP y cuentas docentes siguen requiriendo preparación del operador; el setup no
 crea docentes ni simula consentimiento. `docker:check` comprueba solo humo técnico.
 
-El detalle docente consulta la configuración histórica, ensayos, duración observada,
-tiempo de respuesta y motivos/incidencias. No recalcula indicadores ni suma una página
-como total; los datos ausentes siguen diferenciados de cero.
+El detalle docente muestra el resumen de la sesión y los resultados por sesión y
+partes, con una ayuda breve por columna. No recalcula indicadores; los datos ausentes
+siguen diferenciados de cero. La ficha del estudiante lista sus asignaciones
+(individuales y colectivas). La actividad se juega solo en Kudlab Play por código:
+este frontend no la ejecuta y solo conserva la recuperación de un envío histórico.
 
-**J-03:** gestión/distribución individual de códigos alfanuméricos de **5 caracteres**
-desde la asignación y acceso solo de recuperación desde la sesión. Exclusivo del
-personal: la entrada pública y `/pendientes` viven en **Kudlab Play**, no aquí.
-Sin cuentas STUDENT ni habilitación con menores reales. [Contrato UI y fuentes](docs/specs/tareas/03-acceso-codigo.md).
-Refinamiento aprobado: guardar prepara los códigos y abre estudiantes/códigos, con proyección de aula y gestión secundaria. El acuse perdido se comprueba automáticamente en Play; no hay acción docente para reconciliarlo.
-Vista previa local corregida: **Kudlab `http://localhost:5185` + Play `http://127.0.0.1:4185` + API `http://localhost:4315`**. No combinarla con Play 4184/API 4314: usan otra base y otros IDs, aunque los datos ficticios tengan los mismos nombres. [Configuración, regresión del historial individual y conservación de datos](docs/specs/tareas/historial-estudiante-verificacion.md).
-La exclusión de códigos del párrafo J-02 siguiente describe aquella entrega anterior.
+## Capacidades y límites
 
-**J-02:** asignaciones, inicio supervisado con Kudlab Play 1.1, consulta individual
-de sesiones/evidencia/indicadores y recuperación de envíos. Entrega técnica con
-datos ficticios y BD aislada, sin acceso por códigos ni habilitación con menores.
-Requiere el backend J-02 y Play de la misma entrega. [Contrato UI, fuentes y límites](docs/specs/tareas/02-integracion-play.md).
-Las exclusiones históricas de ejecución que siguen describen las iteraciones anteriores.
+- Usuarios: acceso, sesión, cierre, gestión docente de cuentas e invitaciones, edición y recuperación. La aceptación de invitación/cambio de correo y otros flujos deben comprobarse contra la API y alcance implementados; no se habilitan por documentarlos.
+- Cursos/estudiantes: ADMIN gestiona cursos y asigna profesor; TEACHER opera los registros de sus cursos según autorización del servidor. ADMIN no recibe acceso implícito a datos estudiantiles.
+- Tareas: catálogo, asignaciones, integración supervisada con Play, consulta individual de sesiones/evidencia e indicadores y recuperación de envíos.
+- Códigos: gestión/distribución individual de cinco caracteres alfanuméricos; la entrada pública y `/pendientes` viven en Play. El acuse perdido se comprueba allí, no con una acción docente adicional.
 
-Base de la SPA de Kudlab con React, TypeScript, Tailwind CSS y Vite, gestionada con npm. Kudlab es un piloto de apoyo al seguimiento pedagógico; no produce diagnósticos clínicos ni sustituye la evaluación curricular. El producto y las reglas de negocio se consultan en el backend, no se redefinen aquí.
-
-**Estado:** dashboard por rol y pantallas de Usuarios implementados: listado,
-invitación, detalle, edición, recuperación y confirmaciones de acceso, además de
-la autenticación heredada. ADMIN gestiona profesores; TEACHER no tiene gestión.
-La validación todavía no está cerrada ni habilita despliegue/piloto: ver
-[evidencia y pendientes](specs/001-autenticacion-personal/validation.md).
-
-## Requisitos e instalación
-
-**Cursos en esta rama:** sidebar e inicio usan «Mis cursos». ADMIN crea/edita/elimina cursos vacíos y asigna profesor; TEACHER gestiona estudiantes dentro de sus cursos, incluido registro. Requiere la rama backend `feat/cursos-y-estudiantes`, no solo su `main` base. Transferencia con confirmación; ADMIN sin acceso a registros estudiantiles. [Contrato, fuentes, pruebas y límites](docs/specs/academico/02-cursos.md).
-
-**Vertical 01 en esta rama:** catálogo `/tareas` y ficha `/tareas/:taskId`
-conectados a API/persistencia reales para ADMIN y TEACHER activos. TG-01 no se
-presenta como integrada ni asignable; no hay ejecución ni segundo juego ficticio.
-Requiere el PR backend de la misma feature, que incluye P-01/P-02 en `518e88b`.
-Las menciones históricas inferiores de Tareas excluida/arreglos sin commit no
-describen esta rama. Ver [spec, pruebas y límites](docs/specs/tareas/01-catalogo-y-ficha.md).
-
-- Node.js 24 (`>=24 <25`) y npm.
-- Tipos, pruebas Node y build no requieren backend. Para integrar se necesita el
-  backend corregido descrito abajo y una base exclusiva; no usar bases compartidas.
-
-```bash
-npm ci
-npm run dev
-```
-
-Configurar localmente `VITE_API_ORIGIN` siguiendo [.env.example](.env.example)
-y abrir `http://localhost:5173`. El perfil aprobado usa API `http://localhost:3000`,
-Fetch con cookies y CORS/trustedOrigins para la SPA exacta; no hay proxy a 3001.
-Sin origen válido no se hacen solicitudes y se muestra un error de configuración.
-Sin API se muestra acceso no comprobado, no un login operativo. No arrancar backend
-contra una base compartida ni asumir que el puerto identifica la revisión correcta.
+Las API, orígenes y versiones de los tres servicios deben ser coherentes. No mezclar perfiles locales con puertos/bases diferentes. El servidor mantiene la autoridad sobre rol, ámbito, participación y estado; ocultar controles no autoriza operaciones.
 
 ## Verificación y compilación
 
@@ -112,97 +88,24 @@ npm run test:auth
 npm run test:usuarios
 npm run test:tareas
 npm run test:estudiantes
+npm run test:docker
+npm run test:browser-driver
 npm run build
 npm run preview
 ```
 
-`npm test` solo comprueba tipos, incluido el harness. `test:auth` usa Node 24/node:test
-para lógica pura con fetch/reloj inyectados; no sustituye DOM, lector de pantalla o API.
-`build` verifica tipos y genera `dist/`; `preview` no es servidor productivo ni del harness.
-Recetas de navegador, integración y límites en [quickstart](specs/001-autenticacion-personal/quickstart.md).
+`npm test` solo comprueba tipos, incluidos los harnesses TSX. Las suites Node prueban lógica con transporte/reloj/datos sintéticos; no sustituyen API real, DOM ni accesibilidad manual. `test:browser-driver` comprueba imports y un navegador real cuando existe; no instala skills. Ver [recorridos de navegador](tests/browser/README.md).
+
+`build` genera `dist/`; `preview` no es servidor productivo ni aplica por sí mismo las cabeceras del hosting. Los harnesses de `tests/browser/` no se incluyen en el artefacto productivo. La preparación para entrega requiere comprobar URLs reales, HTTPS, cookies/CORS, cabeceras y pruebas de aceptación en el entorno final.
 
 ## Estructura
 
-- `src/main.tsx`: frontera Vite/StrictMode; `src/App.tsx`: destinos finitos y AuthRoot único.
-- `src/auth/`: estado, transporte fetch, controlador por raíz y presentación nativa.
-- `tests/auth/`: pruebas Node; `tests/browser/auth-harness.html`: fixture manual con
-  AuthRoot real y fetch sin red, solo Vite desarrollo y fuera del build productivo.
-- `src/styles.css`: entrada Tailwind; `vite.config.ts` y `tsconfig.json`: configuración mínima.
-- `src/features/usuarios/`: dashboard, pantallas, operaciones, tipos y rutas; `src/lib/http.ts`: transporte de negocio generacional.
-- Organización actual: `usuarios/accounts/` agrupa gestión de cuentas; `usuarios/recovery/`, recuperación; `usuarios/workspace/`, marco e inicio por rol. `src/lib/navigation.ts` conserva la raíz autenticada al navegar entre destinos protegidos.
-- [Revisión integral de interfaz y flujos](docs/design/ui-flow-review.md): hallazgos, cambios, fuentes y límites de la validación con datos ficticios.
-- [AGENTS.md](AGENTS.md): reglas obligatorias para agentes.
-- [Índice de contexto](docs/agent-context/INDEX.md): cómo consultar el backend canónico.
-- [Manual de diseño para agentes](docs/design/agent-design-manual.md): base visual aprobada, colores confirmados y decisiones pendientes.
-- [Usuarios](docs/agent-context/modules/usuarios/module-summary.md): recorridos documentados e inventario real de capacidades.
-- [Plantilla de spec frontend](docs/specs/TEMPLATE.md): experiencia de interfaz y trazabilidad, no lógica de negocio duplicada.
+- `src/main.tsx`, `src/App.tsx`: entrada SPA y raíz autenticada.
+- `src/auth/`: estado, transporte de sesión y presentación de acceso.
+- `src/features/`: áreas docentes de Usuarios, Académico y Tareas.
+- `src/lib/`: navegación y transporte de negocio con control de generaciones.
+- `tests/`: regresión lógica, harnesses de navegador y verificación Docker.
+- `scripts/`: cabeceras de build y preparación de composición local.
+- `docs/`: guías técnicas independientes del entorno personal de desarrollo.
 
-## Backend y límites
-
-`[RUTA_LOCAL_DEL_BACKEND]` representa `/home/santino/Universidad/TrabajoCampo/Kudlab-backend`. El índice explica los enlaces locales y cómo adaptarlos en otra máquina. No se copian las fuentes del producto a este repositorio.
-
-Autenticación usa cookie HttpOnly, origen público explícito y `credentials: include`.
-Envía `rememberMe: false` sin selector y cierre JSON `{}`; después de login comprueba
-la sesión antes de mostrar datos. Sin tokens/identidad en almacenamiento web,
-JWT, polling ni secretos `VITE_*`. HTTPS/topología/cookies siguen como gate operativo.
-SMTP y bootstrap son backend. Invitación/cambio de correo no se canjean;
-recuperación implementada con envío explícito y token efímero.
-
-Esta iteración excluye Académico, Tareas, Evolución y Seguimiento. No contempla login de estudiantes. Documentar una capacidad backend no aprueba su inclusión en el piloto ni implementa su interfaz.
-
-## Flujo SDD con Spec-Kit
-
-Spec-Kit 1.0.13 está inicializado para OpenCode con scripts Bash. La configuración y las plantillas están en `.specify/`; los diez comandos locales están en `.opencode/commands/`. No requiere dependencias npm adicionales. Si los comandos no aparecen, volver a abrir el proyecto en OpenCode desde el worktree correspondiente.
-
-Orden de trabajo:
-
-1. `/speckit.constitution`: mantener los principios del frontend respetando `AGENTS.md` y las fuentes backend. La constitución 1.0.0 fue ratificada explícitamente el 2026-10-25; futuras enmiendas requieren revisión y aprobación.
-2. `/speckit.specify <feature>`: especificar la experiencia de interfaz, citando contexto,
-   spec/contrato y código backend comprobado. Los artefactos viven bajo `specs/`;
-   [autenticación del personal](specs/001-autenticacion-personal/spec.md) tiene spec,
-   plan, tareas e implementación local con aceptación aún pendiente.
-3. `/speckit.clarify` si quedan ambigüedades; después `/speckit.plan` y `/speckit.tasks`.
-4. `/speckit.analyze` para revisar consistencia antes de `/speckit.implement`, una vez aprobado el alcance correspondiente.
-
-`docs/agent-context/` conserva contexto y recorridos candidatos; `docs/specs/TEMPLATE.md` es una guía de trazabilidad frontend, no reemplaza las plantillas de Spec-Kit ni implica que ya existan specs ejecutadas. No iniciar una feature desde los ejemplos genéricos de las plantillas sin consultar primero `AGENTS.md`. La inicialización no define decisiones de producto, no crea pantallas ni implementa autenticación.
-
-La integración requiere las [correcciones backend P-01/P-02](specs/001-autenticacion-personal/backend-fixes.md),
-todavía locales y sin merge a main. No apuntar a main sin revisar esos cambios.
-Implementación y casillas reales en [tasks](specs/001-autenticacion-personal/tasks.md);
-faltan validaciones detalladas en el informe, no se declara piloto listo.
-
-## Implementación incremental de Usuarios
-
-En `feat/gestionar-usuarios` se incorporó `main@664cc5c` mediante merge `e45b05d`,
-conservando autenticación, componentes gráficos, pruebas y constitución. Ver
-[plan](specs/001-gestionar-usuarios/plan.md), [tareas](specs/001-gestionar-usuarios/tasks.md)
-y [preparación verificada](specs/001-gestionar-usuarios/revalidacion-plan.md#preparación-del-worktree-para-desarrollo).
-Dashboard extensible mediante descriptores tipados en `src/features/usuarios/dashboard.ts`,
-sin agregar router ni dependencias. 44/57 tareas completadas; validación manual integral pendiente.
-Ver [pantallas y evidencia](specs/001-gestionar-usuarios/evidence/screens-implementation.md).
-Verificación actual: 66 pruebas auth + 70 Usuarios, tipos y build correctos.
-Revisión local en ejecución: SPA `http://localhost:5187/`, API `http://localhost:3002`,
-base desechable y correo capturado; no reemplaza el perfil aprobado 5173/3000.
-
-Revisión visual posterior en `feat/design-usuarios`: navegación móvil plegable,
-dashboard sin tarjetas decorativas repetidas y listado móvil legible. `/sesion`
-retirada por decisión del responsable; el inicio resuelve ADMIN/TEACHER desde la
-sesión confirmada. Skills instaladas localmente en el worktree, no globalmente.
-Ver [comparación y comprobaciones](specs/001-gestionar-usuarios/evidence/design-review.md).
-
-Corrección posterior: el sidebar artesanal fue sustituido por la composición
-oficial shadcn/Base UI, adaptada al manual, con borde izquierdo en `0px` y Sheet
-móvil. Ver [fuentes y comprobaciones](specs/001-gestionar-usuarios/evidence/sidebar-review.md).
-
-Recuperación refinada: solicitud, confirmación neutra, nueva contraseña con
-mostrar/ocultar, validación, enlace no utilizable, errores e incertidumbre y retorno
-al acceso. [Prueba SMTP real autorizada y límites](specs/001-gestionar-usuarios/evidence/recovery-review.md).
-Vista de este ensayo: `http://localhost:5188/recuperar-acceso`, API SMTP 3004 y
-base desechable **separada**; no reemplaza los servicios previos 5187/3002 ni el
-perfil aprobado 5173/3000. Un envío aceptado no confirma recepción en el buzón.
-Ver [reconstrucción autorizada y conexión real](specs/001-gestionar-usuarios/evidence/backend-restored.md):
-P-01/P-02 disponibles en worktree backend separado, 154/154 pruebas y validación
-SPA/API parcial; T018 aún pendiente de completar. No usar backend main como sustituto:
-los arreglos siguen locales y sin merge.
-Se mantienen canjes de invitación/correo bloqueados y ascensos, auditoría visible y
-reactivación diferidos. No se declara esta entrega completa ni lista para piloto.
+Las herramientas personales y documentos de planificación no son dependencias de ejecución, compilación o pruebas ni se distribuyen con este repositorio.

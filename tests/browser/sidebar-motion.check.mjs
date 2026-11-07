@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-const { Browser } = await import(process.env.KUDLAB_CDP_DRIVER ?? '../../.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs');
+const { Browser } = await import(process.env.KUDLAB_CDP_DRIVER ?? './vendor/cdp.mjs');
 const origin = process.env.KUDLAB_TEST_ORIGIN ?? 'http://localhost:5210';
 const browser = await Browser.launch();
 try {
