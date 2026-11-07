@@ -33,6 +33,44 @@ El grupo `kudlab-local` incluye API, frontend, Play y PostgreSQL aislado. Fronte
 
 El correo queda pendiente hasta configurar SMTP y las partidas siguen bloqueadas por las restricciones normales del backend. [Guía de operación y persistencia](docs/docker-local.md).
 
+### TG-01 con datos ficticios
+
+Con aislamiento comprobado y autorización del operador, el setup admite:
+
+```bash
+# Instalación nueva, exclusivamente con datos sintéticos:
+npm run docker:setup -- /ruta/Kudlab-backend /ruta/Kudlab-play --synthetic-local --confirm-synthetic-data
+# Configuración existente: agregar solo claves/ajustes faltantes:
+npm run docker:setup -- --extend-synthetic-local --confirm-synthetic-data
+```
+
+La confirmación declara que la BD solo contiene datos ficticios; el nombre local
+por sí solo no lo demuestra. El segundo comando conserva rutas, puertos, secretos
+y permisos privados. Si encuentra ajustes explícitamente desactivados, claves
+inválidas o compartidas, se detiene para revisión sin rotarlos ni sobrescribirlos.
+Sin opt-in, Compose mantiene desactivados el modo sintético y los códigos.
+
+El backend valida development, BD local autorizada y orígenes loopback. Tras
+autorizar migraciones/arranque y comprobar el entorno, preparar TG-01 mediante
+`npm run game:prepare-local` dentro del backend configurado (o `docker --context
+desktop-linux compose --env-file .env.docker exec backend npm run game:prepare-local`).
+Es una operación explícita/idempotente, ajena al arranque. La regla metodológica
+permanece PROPOSED; no habilita uso real. Nuevos estudiantes activos pueden recibir
+asignaciones; inactivarlos bloquea nuevas operaciones. No se modifican los antiguos.
+
+Para reiniciar servicios ya preparados sin borrar datos: `docker --context
+desktop-linux compose --env-file .env.docker restart`. Cambios de código requieren
+reconstrucción autorizada. No eliminar volúmenes ni datos del navegador. Desactivar
+`KUDLAB_LOCAL_SYNTHETIC_ENABLED` restaura la política normal conservando evidencia.
+SMTP y cuentas docentes siguen requiriendo preparación del operador; el setup no
+crea docentes ni simula consentimiento. `docker:check` comprueba solo humo técnico.
+
+El detalle docente muestra el resumen de la sesión y los resultados por sesión y
+partes, con una ayuda breve por columna. No recalcula indicadores; los datos ausentes
+siguen diferenciados de cero. La ficha del estudiante lista sus asignaciones
+(individuales y colectivas). La actividad se juega solo en Kudlab Play por código:
+este frontend no la ejecuta y solo conserva la recuperación de un envío histórico.
+
 ## Capacidades y límites
 
 - Usuarios: acceso, sesión, cierre, gestión docente de cuentas e invitaciones, edición y recuperación. La aceptación de invitación/cambio de correo y otros flujos deben comprobarse contra la API y alcance implementados; no se habilitan por documentarlos.

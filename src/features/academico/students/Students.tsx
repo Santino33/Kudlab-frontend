@@ -16,7 +16,9 @@ import type { Student, StudentField, StudentInput } from './types.ts';
 import type { Group } from '../groups/types.ts';
 import { CourseBack } from '../groups/Groups';
 import { groupPath, groupStudentPath, groupsPath } from '../groups/navigation.ts';
-import { assignmentPath, studentTasksPath } from '../../tareas/activities/types.ts';
+import { assignmentPath } from '../../tareas/activities/types.ts';
+import type { ActivitiesApi } from '../../tareas/activities/api.ts';
+import { StudentAssignments } from '../../tareas/activities/Activities';
 
 export const studentsPath = '/academico/estudiantes';
 export const detailPath = (id: string, groupId?: string) => groupId ? groupStudentPath(groupId, id) : `${studentsPath}/${encodeURIComponent(id)}`;
@@ -76,7 +78,7 @@ export function StudentRegistration() {
   </div>;
 }
 
-export function StudentDetail({ api, studentId, write, reviewed, group }: { api: StudentsApi; studentId: string; write?: StudentWrite; reviewed(): void; group?: Group }) {
+export function StudentDetail({ api, activities, studentId, write, reviewed, group }: { api: StudentsApi; activities: ActivitiesApi; studentId: string; write?: StudentWrite; reviewed(): void; group?: Group }) {
   const query = useQuery((signal) => api.detail(studentId, signal), studentId);
   const student = !query.fetching && query.result?.kind === 'success' ? query.result.data : undefined;
   const [notice, setNotice] = useState(() => window.history.state?.studentNotice === 'updated' ? 'Datos actualizados' : window.history.state?.studentNotice === 'created' ? 'Estudiante registrado' : '');
@@ -88,12 +90,12 @@ export function StudentDetail({ api, studentId, write, reviewed, group }: { api:
     {student ? <>
       <header className="staff-heading"><Heading>{student.firstName} {student.lastName}</Heading><Link href={`${detailPath(student.id, group?.id)}/editar`} primary>Editar estudiante</Link></header>
       <p role="status">{notice}</p><Facts student={student} group={group} />
-      <Link href={studentTasksPath(student.groupId, student.id)}>Tareas digitales y sesiones</Link>
       {write?.phase === 'uncertain' && write.id === student.id && <Notice title="Hay un guardado sin confirmar">
         <p>Vuelve a consultar el registro y revisa sus datos antes de guardar de nuevo. La consulta muestra el estado actual, pero no confirma quién hizo el cambio. El borrador se retiró al volver a comprobar tu acceso.</p>
         <Button variant="outline" className="mt-4" onClick={check} disabled={query.fetching}>Comprobar estado actual</Button>
         {checking && !query.fetching && <div className="staff-stack mt-4"><p role="status">Estado confirmado por lectura: {student.isActive ? 'activo' : 'inactivo'}. Revisa también el código y los nombres antes de decidir otro guardado.</p><Button variant="outline" onClick={() => { reviewed(); setChecking(false); }}>Ya revisé el registro</Button></div>}
       </Notice>}
+      <StudentAssignments key={student.id} api={activities} student={student} />
       {student.isActive ? <Deactivate api={api} student={student} locked={Boolean(write)} onSuccess={() => { setNotice('Estudiante inactivado'); query.reload(); }} review={check} /> : <p>Este registro está inactivo. La edición sigue permitida; esta pantalla no permite reactivarlo.</p>}
     </> : <><Heading>Ficha de estudiante</Heading>{query.fetching || !query.result ? <Loading text="Consultando estudiante" /> : <Failure result={query.result} retry={query.reload} />}</>}
   </div>;

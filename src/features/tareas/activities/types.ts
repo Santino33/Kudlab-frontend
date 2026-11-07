@@ -10,6 +10,7 @@ export const unavailableLabels: Record<string, string> = {
 export const metricLabels: Record<string, string> = { accuracy_pct: 'Precisión', omission_rate_pct: 'Omisión', commission_rate_pct: 'Comisión', median_reaction_time_ms: 'Mediana del tiempo de respuesta', rt_sd_ms: 'Desviación del tiempo de respuesta', rt_cv_pct: 'Variabilidad relativa del tiempo de respuesta' };
 export type Page<T> = { items: T[]; nextCursor: string | null };
 export type AssignmentSummary = { id: string; taskId: string; title: string; publishedVersionId: string; configVersion: number; groupId: string; startsAt: string; endsAt: string; maxAttempts: number; status: 'OPEN' | 'CANCELLED'; availability: string; recipientCount: number; createdAt: string };
+export type StudentAssignment = AssignmentSummary & { studentId: string; recipientId: string; attemptsStarted: number };
 export type Recipient = { id: string; studentId: string; studentDisplayName: string; studentCode: string; attemptsStarted: number; activeSessionId: string | null; canLaunch: boolean; unavailableReasons: string[] };
 export type Assignment = AssignmentSummary & { recipients: Recipient[] };
 export type Grant = { sessionId: string; grantId: string; launchGrant: string; expiresAt: string; runtimeOrigin: string };
@@ -20,17 +21,76 @@ export type SessionDetail = SessionSummary & { declaredState: 'completed' | 'int
   publishedVersionId: string; configurationHash: string; configuration: Record<string, unknown>; device: Record<string, unknown> | null;
   receipt: { submissionId: string; receivedAt: string; evidenceHash: string } | null;
   calculation: { runId: string; ruleCode: string; ruleVersion: number; status: string; calculatedAt: string | null; summary: { observed: number; included: number; excluded: number } | Record<string, never>; indicators: Indicator[] } | null };
-export type Evidence = Record<string, unknown> & { trial?: number; sequence?: number };
+export type TrialEvidence = { trial: number; stimulus: 'star' | 'moon'; spawnedAtMs: number; presentedAtMs: number | null; respondedAtMs: number | null; closedAtMs: number;
+  result: 'hit' | 'false_alarm' | 'miss' | 'correct_rejection' | 'not_evaluated'; segment: 1 | 2 | 3 | null;
+  closureReason: 'response' | 'window_elapsed' | 'session_cutoff' | 'interruption' | 'never_presented'; responseWindowCompleted: boolean; responseDevice: 'mouse' | 'touch' | 'pen' | null;
+  geometry: { lane: number; x: number; size: number }; calculationDecision: { trial: number; included: boolean; rtIncluded: boolean; reason: 'TECHNICAL_EXCLUSION' | 'NOT_EVALUATED' | null } | null };
+export const incidentLabels = { focus_lost: 'Pérdida de foco', visibility_lost: 'Vista oculta', script_error: 'Error de ejecución', audio_unavailable: 'Audio no disponible', network_lost: 'Pérdida de conexión', network_restored: 'Conexión restablecida', storage_failure: 'Fallo de almacenamiento', frame_gap: 'Intervalo excesivo entre fotogramas', layout_changed: 'Cambio del área de juego', recovered_after_reload: 'Recuperación tras recarga', resource_error: 'Error de recurso', evidence_limit: 'Límite de evidencia' };
+export const categoryLabels = { EXECUTION_INTERRUPTED: 'Ejecución interrumpida', CONTEXT_ONLY: 'Solo contexto', MEASUREMENT_AFFECTED: 'Medición afectada' };
+export const closureLabels = { response: 'Respuesta', window_elapsed: 'Ventana natural finalizada', session_cutoff: 'Fin de sesión', interruption: 'Interrupción', never_presented: 'No presentado' };
+export const responseDeviceLabels = { mouse: 'Ratón', touch: 'Pantalla táctil', pen: 'Lápiz' };
+export type IncidentEvidence = { sequence: number; type: keyof typeof incidentLabels; category: keyof typeof categoryLabels; clockId: string | null; atMs: number | null; endedAtMs: number | null; recordedAtClient: string | null };
+export type Evidence = TrialEvidence | IncidentEvidence;
 export const object = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
 const text = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
 export const isId = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
 const date = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d\d-\d\dT.*Z$/.test(v) && Number.isFinite(Date.parse(v));
 const count = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) >= 0;
 const numeric = (v: unknown) => v === null || typeof v === 'number' && Number.isFinite(v) && v >= 0;
+const time = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+const positive = (v: unknown): v is number => time(v) && v > 0;
+export function parseTrial(v: unknown): TrialEvidence | undefined {
+  if (!object(v) || !count(v.trial) || !v.trial || !['star', 'moon'].includes(String(v.stimulus)) || !time(v.spawnedAtMs) || !time(v.closedAtMs) || !numeric(v.presentedAtMs) || !numeric(v.respondedAtMs) ||
+    !['hit', 'false_alarm', 'miss', 'correct_rejection', 'not_evaluated'].includes(String(v.result)) || ![null, 1, 2, 3].includes(v.segment as number | null) ||
+    !Object.hasOwn(closureLabels, String(v.closureReason)) || typeof v.responseWindowCompleted !== 'boolean' || ![null, 'mouse', 'touch', 'pen'].includes(v.responseDevice as string | null) ||
+    !object(v.geometry) || !count(v.geometry.lane) || v.geometry.lane < 1 || v.geometry.lane > 6 || typeof v.geometry.x !== 'number' || !Number.isFinite(v.geometry.x) || !time(v.geometry.size) || v.geometry.size < 75 || v.geometry.size > 105) return;
+  const t = v as TrialEvidence;
+  if (t.spawnedAtMs > t.closedAtMs || t.responseWindowCompleted !== (t.closureReason === 'window_elapsed')) return;
+  if (t.presentedAtMs === null) {
+    if (t.segment !== null || t.respondedAtMs !== null || t.closureReason !== 'never_presented') return;
+  } else if (t.presentedAtMs < t.spawnedAtMs || t.presentedAtMs > t.closedAtMs || t.segment === null) return;
+  if (t.respondedAtMs !== null) {
+    if (t.presentedAtMs === null || t.respondedAtMs < t.presentedAtMs || t.respondedAtMs !== t.closedAtMs || t.closureReason !== 'response' || t.responseDevice === null || t.result !== (t.stimulus === 'star' ? 'hit' : 'false_alarm')) return;
+  } else if (t.responseDevice !== null || t.closureReason === 'response' || t.result !== (t.closureReason === 'window_elapsed' ? t.stimulus === 'star' ? 'miss' : 'correct_rejection' : 'not_evaluated')) return;
+  const d = v.calculationDecision;
+  if (d !== null && (!object(d) || d.trial !== t.trial || typeof d.included !== 'boolean' || typeof d.rtIncluded !== 'boolean' ||
+    ![null, 'TECHNICAL_EXCLUSION', 'NOT_EVALUATED'].includes(d.reason as string | null) || d.rtIncluded && (!d.included || t.result !== 'hit') || d.included && d.reason !== null || !d.included && d.reason === null)) return;
+  return t;
+}
+export function parseIncident(v: unknown): IncidentEvidence | undefined {
+  if (!object(v) || !count(v.sequence) || !v.sequence || !Object.hasOwn(incidentLabels, String(v.type)) || !Object.hasOwn(categoryLabels, String(v.category)) ||
+    v.clockId !== null && !isId(v.clockId) || !numeric(v.atMs) || !numeric(v.endedAtMs) || v.recordedAtClient !== null && !date(v.recordedAtClient)) return;
+  const i = v as IncidentEvidence;
+  if (i.type === 'recovered_after_reload') {
+    if (i.clockId !== null || i.atMs !== null || i.endedAtMs !== null || i.recordedAtClient === null) return;
+  } else if (i.clockId === null || i.atMs === null || i.endedAtMs !== null && i.endedAtMs < i.atMs) return;
+  return i;
+}
+export function trialTimes(t: TrialEvidence) {
+  return { durationMs: t.presentedAtMs === null ? null : t.closedAtMs - t.presentedAtMs,
+    reactionTimeMs: t.presentedAtMs === null || t.respondedAtMs === null ? null : t.respondedAtMs - t.presentedAtMs };
+}
+export function validConfiguration(v: unknown): v is Record<string, unknown> {
+  if (!object(v)) return false;
+  const fixed = { durationMs: 120000, fallSpeedUnitsPerSecond: 210, starProbability: .7, minimumDistanceUnits: 180, positionAttempts: 30, presentationRule: 'FULLY_VISIBLE', maxFrameGapMs: 250, minimumStageScale: .6, inputProfile: 'POINTER_V1' };
+  if (!Object.entries(fixed).every(([key, value]) => v[key] === value) || !Array.isArray(v.segmentBoundariesMs) || v.segmentBoundariesMs.length !== 4 || !v.segmentBoundariesMs.every((n, i) => n === i * 40000) ||
+    !object(v.spawnIntervalMs) || v.spawnIntervalMs.min !== 1100 || v.spawnIntervalMs.max !== 1800 || !object(v.stimulusSizeUnits) || v.stimulusSizeUnits.min !== 75 || v.stimulusSizeUnits.max !== 105) return false;
+  const layout = v.layoutRule === 'VIEWPORT_FIT_V2' ? { layoutRule: 'VIEWPORT_FIT_V2', referenceWidthUnits: 480, minimumLaneWidthUnits: 120, maximumLanes: 6 } : { logicalWidth: 960, logicalHeight: 600, lanes: 6 };
+  return Object.entries(layout).every(([key, value]) => v[key] === value) && Object.keys(v).length === Object.keys(fixed).length + Object.keys(layout).length + 3 && Object.keys(v.spawnIntervalMs).length === 2 && Object.keys(v.stimulusSizeUnits).length === 2;
+}
+function validDevice(v: unknown, adaptive: boolean) {
+  if (!object(v) || !count(v.viewportWidth) || !v.viewportWidth || !count(v.viewportHeight) || !v.viewportHeight || !positive(v.stageScale) || v.stageScale < .6 || typeof v.touchCapable !== 'boolean') return false;
+  if (!adaptive) return Object.keys(v).length === 4;
+  return Object.keys(v).length === 6 && positive(v.stageWidthCss) && positive(v.stageHeightCss) && v.stageWidthCss >= 288 && v.stageHeightCss >= 240 && v.stageWidthCss <= v.viewportWidth && v.stageHeightCss <= v.viewportHeight && Math.abs(v.stageScale - Math.min(1, v.stageWidthCss / 480)) < 1e-9;
+}
 export function parseAssignmentSummary(v: unknown): AssignmentSummary | undefined {
   if (!object(v) || !isId(v.id) || v.taskId !== 'TG-01' || !text(v.title) || !isId(v.publishedVersionId) || !count(v.configVersion) || !v.configVersion || !isId(v.groupId) ||
     !date(v.startsAt) || !date(v.endsAt) || !date(v.createdAt) || !count(v.maxAttempts) || v.maxAttempts < 1 || v.maxAttempts > 10 || !['OPEN', 'CANCELLED'].includes(String(v.status)) || !['FUTURE', 'CURRENT', 'EXPIRED', 'CANCELLED'].includes(String(v.availability)) || !count(v.recipientCount)) return;
   return v as AssignmentSummary;
+}
+export function parseStudentAssignment(v: unknown): StudentAssignment | undefined {
+  if (!parseAssignmentSummary(v) || !object(v) || !isId(v.studentId) || !isId(v.recipientId) || !count(v.attemptsStarted) || 'recipients' in v) return;
+  return v as StudentAssignment;
 }
 export function parseAssignment(v: unknown): Assignment | undefined {
   if (!parseAssignmentSummary(v) || !object(v) || !Array.isArray(v.recipients) || !v.recipients.every(r => object(r) && isId(r.id) && isId(r.studentId) && text(r.studentDisplayName) && text(r.studentCode) && count(r.attemptsStarted) && (r.activeSessionId === null || isId(r.activeSessionId)) && typeof r.canLaunch === 'boolean' && Array.isArray(r.unavailableReasons) && r.unavailableReasons.every(x => typeof x === 'string' && Object.hasOwn(unavailableLabels, x)))) return;
@@ -45,10 +105,13 @@ export function parseSessionSummary(v: unknown): SessionSummary | undefined {
   return v as SessionSummary;
 }
 export function parseSession(v: unknown): SessionDetail | undefined {
-  if (!parseSessionSummary(v) || !object(v) || !isId(v.publishedVersionId) || typeof v.configurationHash !== 'string' || !/^[a-f0-9]{64}$/.test(v.configurationHash) || !object(v.configuration) || !numeric(v.measuredDurationMs) ||
-    ![null, 'completed', 'interrupted'].includes(v.declaredState as string | null) || v.terminationReason !== null && !text(v.terminationReason) || v.device !== null && !object(v.device)) return;
+  if (!parseSessionSummary(v) || !object(v) || !isId(v.publishedVersionId) || typeof v.configurationHash !== 'string' || !/^[a-f0-9]{64}$/.test(v.configurationHash) || !validConfiguration(v.configuration) || !numeric(v.measuredDurationMs) ||
+    ![null, 'completed', 'interrupted'].includes(v.declaredState as string | null) || v.terminationReason !== null && !['time_limit', 'user_exit', 'visibility_lost', 'script_error', 'storage_failure', 'frame_gap', 'layout_changed', 'recovered_after_reload', 'evidence_limit', 'resource_error'].includes(String(v.terminationReason))) return;
+  const adaptive = v.configuration.layoutRule === 'VIEWPORT_FIT_V2';
+  if (v.gameBuildId !== (adaptive ? 'tg01-viewport-rebuild-2' : 'tg01-reference-rebuild-1') || v.device !== null && !validDevice(v.device, adaptive)) return;
   if (v.receipt !== null && (!object(v.receipt) || !isId(v.receipt.submissionId) || !date(v.receipt.receivedAt) || typeof v.receipt.evidenceHash !== 'string' || !/^[a-f0-9]{64}$/.test(v.receipt.evidenceHash))) return;
   const c = v.calculation;
+  if (object(c) && object(c.summary) && Object.keys(c.summary).length && (!count(c.summary.observed) || !count(c.summary.included) || !count(c.summary.excluded) || c.summary.observed !== c.summary.included + c.summary.excluded)) return;
   if (c !== null && (!object(c) || !isId(c.runId) || c.ruleCode !== 'TG01-DESCRIPTIVE-1' || !count(c.ruleVersion) || !['PENDING', 'PROCESSING', 'SUCCEEDED', 'FAILED'].includes(String(c.status)) || c.calculatedAt !== null && !date(c.calculatedAt) || !object(c.summary) || !Array.isArray(c.indicators) || !c.indicators.every(i => object(i) && Object.hasOwn(metricLabels, String(i.metricCode)) && ['SESSION', 'SEGMENT_1', 'SEGMENT_2', 'SEGMENT_3'].includes(String(i.scope)) && ['%', 'ms'].includes(String(i.unit)) && count(i.sampleSize) && numeric(i.numerator) && numeric(i.denominator) &&
     (i.status === 'CALCULATED' && typeof i.value === 'number' && Number.isFinite(i.value) && i.unavailabilityReason === null || i.status === 'NOT_AVAILABLE' && i.value === null && typeof i.unavailabilityReason === 'string' && Object.hasOwn(unavailableLabels, i.unavailabilityReason))))) return;
   return v as SessionDetail;

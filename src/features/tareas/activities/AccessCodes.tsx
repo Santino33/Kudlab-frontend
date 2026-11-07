@@ -6,7 +6,7 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useMutation, useQuery } from '../../usuarios/hooks';
 import type { ActivitiesApi } from './api';
-import { accessMessage, assignmentPath, executionPath, studentTasksPath, unavailableLabels, type Assignment, type CodeMetadata, type RevealedCode } from './types';
+import { accessMessage, studentTasksPath, unavailableLabels, type Assignment, type CodeMetadata, type RevealedCode } from './types';
 import { ActivityFailure, ActivityLink, operationId } from './Activities';
 import { useCodePreparation } from './use-code-preparation';
 const date = (v: string) => new Date(v).toLocaleString('es-CO', { timeZoneName: 'short' });
@@ -143,9 +143,8 @@ export function AssignmentAccess({ api, assignment, groupId, actorId, reloadAssi
             {!open && reveal.revealed?.codeId === c?.id && reveal.manual && <div className="auth-field"><Label htmlFor={`copy-${r.id}`}>Texto para copia manual de {r.studentDisplayName}</Label><textarea id={`copy-${r.id}`} className="access-copy-text" value={reveal.manual} readOnly onFocus={e => e.currentTarget.select()} /></div>}
           </TableCell><TableCell><span className="mobile-cell-label">Intentos: </span>{r.attemptsStarted} de {assignment.maxAttempts}</TableCell>
           <TableCell><div className="classroom-row-actions"><Button variant="outline" disabled={!c?.canReveal || reveal.busy} aria-label={`Copiar código de ${r.studentDisplayName}`} onClick={() => { if (c) void reveal.reveal(c, 'code'); }}>Copiar</Button><Button variant="outline" disabled={preparation.pending} aria-expanded={open} aria-controls={`manage-${r.id}`} aria-label={`Gestionar acceso de ${r.studentDisplayName}`} onClick={() => setExpanded(open ? undefined : r.id)}>{open ? 'Cerrar' : 'Más'}</Button></div></TableCell></TableRow>
-        {open && <TableRow className="classroom-management"><TableCell colSpan={4}><div id={`manage-${r.id}`} className="staff-stack"><h3 className="font-semibold">Acceso de {r.studentDisplayName}</h3><div className="staff-actions"><ActivityLink href={studentTasksPath(groupId, r.studentId)}>Ver sesiones</ActivityLink>{r.canLaunch && <ActivityLink href={executionPath(`${assignmentPath(groupId, assignment.id)}/destinatarios/${r.id}/ejecucion`)}>Iniciar actividad supervisada</ActivityLink>}</div>
+        {open && <TableRow className="classroom-management"><TableCell colSpan={4}><div id={`manage-${r.id}`} className="staff-stack"><h3 className="font-semibold">Acceso de {r.studentDisplayName}</h3><div className="staff-actions"><ActivityLink href={studentTasksPath(groupId, r.studentId)}>Ver sesiones</ActivityLink></div>
           {c && <CodeControls api={api} c={c} name={r.studentDisplayName} actorId={actorId} reveal={{ ...reveal, hide: () => { hide(); reveal.hide(); } }} reload={refresh} />}
-          <details><summary>Historial de códigos</summary><ul>{codes.filter(code => code.recipientId === r.id).map(code => <li key={code.id}>{code.scope === 'SUBMIT_ONLY' ? 'Solo envío' : 'Actividad'} · {code.status === 'ACTIVE' ? 'Vigente' : code.status === 'REPLACED' ? 'Reemplazado' : code.status === 'REVOKED' ? 'Revocado' : 'Vencido'} · Hasta {date(code.expiresAt)}</li>)}</ul></details>
         </div></TableCell></TableRow>}
       </Fragment>; })}
     </TableBody></Table></div>

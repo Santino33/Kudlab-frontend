@@ -14,7 +14,9 @@ import type { Group } from '../../academico/groups/types.ts';
 import { groupPath, go } from '../../academico/groups/navigation.ts';
 import { navigate } from '../../../lib/navigation.ts';
 import type { ActivitiesApi, AssignmentInput } from './api.ts';
-import { object, assignmentPath, studentTasksPath, executionPath, executionLabels, processingLabels, metricLabels, unavailableLabels, type Assignment, type SessionDetail, type Evidence } from './types.ts';
+import { CircleHelp } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { assignmentPath, studentTasksPath, executionPath, executionLabels, processingLabels, metricLabels, unavailableLabels, type Assignment, type AssignmentSummary, type SessionDetail } from './types.ts';
 import { AssignmentAccess, RecoveryAccess } from './AccessCodes';
 import { newPreparation, preparationKey, readPreparation, savePreparation } from './code-preparation';
 
@@ -39,6 +41,7 @@ export function ActivityHeading({ children }: { children: ReactNode }) { return 
 export function ActivityTable({ children, label, compactFirst = false }: { children: ReactNode; label: string; compactFirst?: boolean }) {
   return <><p className="text-sm sm:hidden">Puedes desplazar la tabla horizontalmente para consultar todas sus columnas.</p><div className={cn('staff-table-region', compactFirst && 'activity-evidence')} role="region" aria-label={label} tabIndex={0}><Table>{children}</Table></div></>;
 }
+const availabilityLabel = (a: AssignmentSummary) => a.status === 'CANCELLED' ? 'Cancelada' : a.availability === 'CURRENT' ? 'Vigente' : a.availability === 'FUTURE' ? 'Próxima' : 'Vencida';
 function Next({ cursor, next }: { cursor: string | null; next(cursor: string): void }) { return cursor ? <Button variant="outline" className="w-fit" onClick={() => next(cursor)}>Página siguiente</Button> : null; }
 export function Assignments({ api, studentsApi, tasksApi, group, actorId }: { api: ActivitiesApi; studentsApi: StudentsApi; tasksApi: TasksApi; group: Group; actorId: string }) {
   const [cursor, setCursor] = useState<string>();
@@ -50,7 +53,7 @@ export function Assignments({ api, studentsApi, tasksApi, group, actorId }: { ap
     <p className="availability-note">Entrega técnica: solo participantes ficticios en una base aislada. Las tareas son apoyo pedagógico, no diagnóstico.</p>
     {creating && <AssignmentForm api={api} studentsApi={studentsApi} tasksApi={tasksApi} group={group} actorId={actorId} />}
     {!query.result ? <Loading text="Consultando asignaciones" /> : query.result.kind !== 'success' ? <ActivityFailure result={query.result} retry={query.reload} /> : !query.result.data.items.length ? <Notice title="Sin asignaciones"><p>No hay asignaciones en esta página. Puedes crear una actividad para destinatarios autorizados.</p></Notice> : <>
-      <ActivityTable label="Asignaciones del curso"><TableCaption>Fechas en {Intl.DateTimeFormat().resolvedOptions().timeZone}</TableCaption><TableHeader><TableRow><TableHead>Actividad</TableHead><TableHead>Disponibilidad</TableHead><TableHead className="text-right">Destinatarios</TableHead><TableHead>Detalle</TableHead></TableRow></TableHeader><TableBody>{query.result.data.items.map(a => <TableRow key={a.id}><TableCell>{a.title}<p className="text-sm">Versión {a.configVersion}</p></TableCell><TableCell>{date(a.startsAt)} – {date(a.endsAt)}<p>{a.status === 'CANCELLED' ? 'Cancelada' : a.availability === 'CURRENT' ? 'Vigente' : a.availability === 'FUTURE' ? 'Próxima' : 'Vencida'}</p></TableCell><TableCell className="text-right tabular-nums">{a.recipientCount}</TableCell><TableCell><a className="staff-link" href={assignmentPath(group.id, a.id)} onClick={navigate}>Ver asignación</a></TableCell></TableRow>)}</TableBody></ActivityTable>
+      <ActivityTable label="Asignaciones del curso"><TableCaption>Fechas en {Intl.DateTimeFormat().resolvedOptions().timeZone}</TableCaption><TableHeader><TableRow><TableHead>Actividad</TableHead><TableHead>Disponibilidad</TableHead><TableHead className="text-right">Destinatarios</TableHead><TableHead>Detalle</TableHead></TableRow></TableHeader><TableBody>{query.result.data.items.map(a => <TableRow key={a.id}><TableCell>{a.title}<p className="text-sm">Versión {a.configVersion}</p></TableCell><TableCell>{date(a.startsAt)} – {date(a.endsAt)}<p>{availabilityLabel(a)}</p></TableCell><TableCell className="text-right tabular-nums">{a.recipientCount}</TableCell><TableCell><a className="staff-link" href={assignmentPath(group.id, a.id)} onClick={navigate}>Ver asignación</a></TableCell></TableRow>)}</TableBody></ActivityTable>
       <Next cursor={query.result.data.nextCursor} next={setCursor} />
     </>}
     <div className="staff-actions"><Button variant="outline" onClick={query.reload}>Actualizar asignaciones</Button>{cursor && <Button variant="outline" onClick={() => setCursor(undefined)}>Primera página</Button>}</div>
@@ -146,6 +149,21 @@ export function StudentActivities({ api, studentsApi, group, studentId }: { api:
       <div className="staff-actions"><Button variant="outline" onClick={query.reload}>Actualizar sesiones</Button>{cursor && <Button variant="outline" onClick={() => setCursor(undefined)}>Primera página</Button>}</div></>}
   </div>;
 }
+/** Ficha del estudiante: asignaciones en las que es destinatario fijo (individuales o colectivas). */
+export function StudentAssignments({ api, student }: { api: ActivitiesApi; student: { id: string; groupId: string } }) {
+  const [cursor, setCursor] = useState<string>();
+  const query = useQuery(signal => api.studentAssignments(student.id, signal, cursor), `${student.id}:${cursor ?? ''}`);
+  return <section className="staff-stack" aria-labelledby="student-assignments-title"><h2 id="student-assignments-title" className="staff-section-title">Asignaciones</h2>
+    <p>Actividades asignadas a este estudiante, solo o junto con otros. Las más recientes aparecen primero.</p>
+    {!query.result ? <Loading text="Consultando asignaciones del estudiante" /> : query.result.kind !== 'success' ? <ActivityFailure result={query.result} retry={query.reload} /> : !query.result.data.items.length ?
+      <Notice title={cursor ? 'Página sin registros' : 'Sin asignaciones'}><p>{cursor ? 'No hay más asignaciones en esta página. Vuelve a la primera página.' : 'Este estudiante todavía no tiene asignaciones.'}</p></Notice> : <>
+      <ActivityTable label="Asignaciones del estudiante"><TableCaption>Fechas en {Intl.DateTimeFormat().resolvedOptions().timeZone}</TableCaption><TableHeader><TableRow><TableHead>Actividad</TableHead><TableHead>Asignada el</TableHead><TableHead>Disponibilidad</TableHead><TableHead className="text-right">Intentos usados</TableHead><TableHead>Detalle</TableHead></TableRow></TableHeader>
+        <TableBody>{query.result.data.items.map(a => <TableRow key={a.id}><TableCell>{a.title}<p className="text-sm">{a.recipientCount === 1 ? 'Solo este estudiante' : `Junto con ${a.recipientCount - 1} ${a.recipientCount === 2 ? 'estudiante más' : 'estudiantes más'}`}</p></TableCell><TableCell>{date(a.createdAt)}</TableCell><TableCell>{date(a.startsAt)} – {date(a.endsAt)}<p>{availabilityLabel(a)}</p></TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{a.attemptsStarted} de {a.maxAttempts}</TableCell><TableCell><a className="staff-link" href={assignmentPath(a.groupId, a.id)} onClick={navigate}>Ver asignación</a></TableCell></TableRow>)}</TableBody></ActivityTable>
+      <Next cursor={query.result.data.nextCursor} next={setCursor} />
+    </>}
+    <div className="staff-actions"><Button variant="outline" onClick={query.reload}>Actualizar asignaciones</Button>{cursor && <Button variant="outline" onClick={() => setCursor(undefined)}>Primera página</Button>}<ActivityLink href={studentTasksPath(student.groupId, student.id)}>Ver sesiones del estudiante</ActivityLink></div>
+  </section>;
+}
 export function SessionResults({ api, group, studentId, sessionId, actorId }: { api: ActivitiesApi; group: Group; studentId: string; sessionId: string; actorId: string }) {
   const query = useQuery(signal => api.session(sessionId, signal), sessionId), mutation = useMutation<{ sessionId: string; runId: string; processingStatus: 'PENDING' }>();
   const s = query.result?.kind === 'success' && query.result.data.studentId === studentId ? query.result.data : undefined;
@@ -157,7 +175,7 @@ export function SessionResults({ api, group, studentId, sessionId, actorId }: { 
   }
   return <div className="staff-stack"><ActivityLink href={studentTasksPath(group.id, studentId)}>Volver a sesiones</ActivityLink><ActivityHeading>Detalle de sesión</ActivityHeading>
     {!query.result ? <Loading text="Consultando sesión" /> : !s ? <ActivityFailure result={query.result} retry={query.reload} /> : <>
-      <section className="staff-stack"><h2 className="staff-section-title">Estado de la actividad</h2><p>{executionLabels[s.executionStatus]}</p><p role="status">{processingLabels[s.processingStatus]}</p><dl className="account-facts"><div><dt>Intento</dt><dd>{s.attemptNumber ?? 'Sin consumir'}</dd></div><div><dt>Inicio autorizado</dt><dd>{date(s.startedAtServer)}</dd></div><div><dt>Recepción confirmada</dt><dd>{date(s.receivedAt)}</dd></div><div><dt>Duración medida</dt><dd>{s.measuredDurationMs === null ? '—' : `${(s.measuredDurationMs / 1000).toFixed(1)} s`}</dd></div><div><dt>Configuración</dt><dd>Versión {s.configVersion} · {s.gameBuildId}</dd></div><div><dt>Ensayos registrados</dt><dd>{s.recordedTrialCount}</dd></div></dl>
+      <section className="staff-stack" aria-labelledby="session-summary-title"><h2 id="session-summary-title" className="staff-section-title">Resumen de la sesión</h2><dl className="account-facts"><div><dt>Estado de la actividad</dt><dd>{executionLabels[s.executionStatus]}</dd></div><div><dt>Estado de los resultados</dt><dd role="status">{processingLabels[s.processingStatus]}</dd></div><div><dt>Intento</dt><dd>{s.attemptNumber ?? 'Sin consumir'}</dd></div><div><dt>Inicio autorizado</dt><dd>{date(s.startedAtServer)}</dd></div><div><dt>Recepción confirmada</dt><dd>{date(s.receivedAt)}</dd></div><div><dt>Duración medida</dt><dd>{s.measuredDurationMs === null ? '—' : `${(s.measuredDurationMs / 1000).toFixed(1)} s`}</dd></div><div><dt>Ensayos registrados</dt><dd>{s.recordedTrialCount}</dd></div></dl>
         {s.executionStatus === 'INTERRUPTED' && <p>Datos parciales. No se presenta como una ejecución completa ni comparable.</p>}
         <p>Apoyo pedagógico, no diagnóstico. Esta entrega técnica usa datos ficticios; no acredita validación metodológica.</p>
       </section>
@@ -165,36 +183,25 @@ export function SessionResults({ api, group, studentId, sessionId, actorId }: { 
       {mutation.result && mutation.result.kind !== 'success' && <ActivityFailure result={mutation.result} retry={() => void retry()} />}
       <IndicatorResults session={s} />
       {s.attemptNumber !== null && !s.receipt && <details><summary>Resolver un envío pendiente</summary><RecoveryAccess api={api} sessionId={sessionId} actorId={actorId} /></details>}
-      <section className="staff-stack"><h2 className="staff-section-title">Incidencias y evidencia</h2><p>{s.incidentCount} incidencias registradas. Los fallos técnicos no son errores del estudiante.</p><EvidenceList api={api} sessionId={sessionId} kind="incidents" /><EvidenceList api={api} sessionId={sessionId} kind="trials" /></section>
-      <details><summary>Contexto técnico de aplicación</summary><dl className="account-facts"><div><dt>Cierre declarado</dt><dd>{s.terminationReason ?? 'Sin cierre recibido'}</dd></div><div><dt>Configuración histórica</dt><dd className="break-all">{s.configurationHash}</dd></div></dl>{s.device && <dl className="account-facts">{Object.entries(s.device).map(([key, v]) => <div key={key}><dt>{key}</dt><dd>{String(v)}</dd></div>)}</dl>}</details>
     </>}
   </div>;
 }
 function IndicatorResults({ session }: { session: SessionDetail }) {
   const c = session.calculation;
-  return <section className="staff-stack"><h2 className="staff-section-title">Indicadores descriptivos</h2>{!c || c.status !== 'SUCCEEDED' ? <p>No hay indicadores disponibles todavía. {processingLabels[session.processingStatus]}</p> : <>
-    <p>Ficha {c.ruleCode} · Versión {c.ruleVersion}. Ensayos observados: {c.summary.observed ?? '—'}; incluidos: {c.summary.included ?? '—'}; excluidos: {c.summary.excluded ?? '—'}.</p>
-    <p>Los valores ausentes no se sustituyen por cero. Porcentajes con 2 decimales y tiempos con 1 decimal.</p>
-    <ActivityTable label="Indicadores por sesión y segmento"><TableCaption>Resultados por sesión y segmentos</TableCaption><TableHeader><TableRow><TableHead>Indicador</TableHead><TableHead>Ámbito</TableHead><TableHead className="text-right">Valor</TableHead><TableHead className="text-right">Muestra / denominador</TableHead><TableHead>Disponibilidad</TableHead></TableRow></TableHeader><TableBody>{c.indicators.map(i => <TableRow key={`${i.metricCode}:${i.scope}`}><TableCell>{metricLabels[i.metricCode]}</TableCell><TableCell className="whitespace-nowrap">{i.scope === 'SESSION' ? 'Sesión' : `Segmento ${i.scope.slice(-1)}`}</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{i.value === null ? '—' : `${i.value.toFixed(i.unit === '%' ? 2 : 1)} ${i.unit}`}</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{i.sampleSize} / {i.denominator ?? '—'}</TableCell><TableCell>{i.unavailabilityReason ? unavailableLabels[i.unavailabilityReason] : 'Calculado'}</TableCell></TableRow>)}</TableBody></ActivityTable>
+  return <section className="staff-stack" aria-labelledby="session-results-title"><h2 id="session-results-title" className="staff-section-title">Resultados por sesión y partes</h2>{!c || c.status !== 'SUCCEEDED' ? <p>No hay indicadores disponibles todavía. {processingLabels[session.processingStatus]}</p> : <>
+    <p>Ensayos observados: {c.summary.observed ?? '—'}; incluidos: {c.summary.included ?? '—'}; excluidos: {c.summary.excluded ?? '—'}.</p>
+    <p>Si un resultado falta, se muestra «—» con el motivo; no se cambia por cero. Usa el símbolo de ayuda de cada columna para saber qué significa.</p>
+    <ActivityTable label="Indicadores por sesión y segmento"><TableCaption>Resultados de toda la actividad y de cada parte</TableCaption><TableHeader><TableRow>{indicatorColumns.map(c => <TableHead key={c.label} scope="col" className={c.numeric ? 'text-right' : undefined}><ColumnHelp label={c.label} help={c.help} /></TableHead>)}</TableRow></TableHeader><TableBody>{c.indicators.map(i => <TableRow key={`${i.metricCode}:${i.scope}`}><TableCell>{metricLabels[i.metricCode]}</TableCell><TableCell className="whitespace-nowrap">{i.scope === 'SESSION' ? 'Toda la actividad' : `Parte ${i.scope.slice(-1)}`}</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{i.value === null ? '—' : `${i.value.toFixed(i.unit === '%' ? 2 : 1)} ${i.unit}`}</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{i.sampleSize} / {i.denominator ?? '—'}</TableCell><TableCell>{i.unavailabilityReason ? unavailableLabels[i.unavailabilityReason] : 'Calculado'}</TableCell></TableRow>)}</TableBody></ActivityTable>
   </>}</section>;
 }
-function EvidenceList({ api, sessionId, kind }: { api: ActivitiesApi; sessionId: string; kind: 'trials' | 'incidents' }) {
-  const [open, setOpen] = useState(false);
-  return <details onToggle={e => setOpen(e.currentTarget.open)}><summary>{kind === 'trials' ? 'Ver ensayos y decisiones de cálculo' : 'Ver incidencias'}</summary>{open && <EvidencePage key={`${sessionId}:${kind}`} api={api} sessionId={sessionId} kind={kind} />}</details>;
-}
-function EvidencePage({ api, sessionId, kind }: { api: ActivitiesApi; sessionId: string; kind: 'trials' | 'incidents' }) {
-  const [cursor, setCursor] = useState<string>();
-  const query = useQuery(signal => api.evidence(sessionId, kind, signal, cursor), `${sessionId}:${kind}:${cursor ?? ''}`);
-  const cell = (v: unknown) => v === null || v === undefined ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v);
-  const label: Record<string, string> = { star: 'Estrella', moon: 'Luna', hit: 'Acierto', miss: 'Omisión', false_alarm: 'Comisión', correct_rejection: 'Rechazo correcto', not_evaluated: 'No evaluado',
-    network_lost: 'Pérdida de conexión', network_restored: 'Conexión restablecida', focus_lost: 'Pérdida de foco', visibility_lost: 'Vista oculta', recovered_after_reload: 'Recuperación tras recarga',
-    CONTEXT_ONLY: 'Contexto', MEASUREMENT_AFFECTED: 'Medición afectada', EXECUTION_INTERRUPTED: 'Ejecución interrumpida' };
-  const text = (v: unknown) => typeof v === 'string' ? label[v] ?? v : cell(v);
-  function decision(v: unknown) {
-    if (!object(v)) return 'Todavía sin decisión de cálculo';
-    return `${v.included ? 'Incluido en conteo.' : 'Excluido del conteo.'} ${v.rtIncluded ? 'Tiempo de respuesta válido.' : 'Sin tiempo de respuesta incluido.'}${typeof v.reason === 'string' ? ' ' + (unavailableLabels[v.reason] ?? (v.reason === 'NOT_EVALUATED' ? 'No evaluado.' : v.reason)) : ''}`;
-  }
-  return <div className="staff-stack mt-4">{!query.result ? <Loading text="Consultando evidencia" /> : query.result.kind !== 'success' ? <ActivityFailure result={query.result} retry={query.reload} /> : !query.result.data.items.length ? <p>Sin evidencia de este tipo en esta página.</p> : <>
-    <ActivityTable compactFirst label={kind === 'trials' ? 'Evidencia de ensayos' : 'Evidencia de incidencias'}><TableHeader><TableRow>{(kind === 'trials' ? ['Ensayo', 'Estímulo / resultado declarado', 'Presentación / respuesta / cierre (ms)', 'Decisión de cálculo'] : ['Secuencia', 'Tipo / categoría', 'Inicio / fin (ms)', 'Reloj']).map((t, n) => <TableHead className={n === 0 || n === 2 ? 'text-right' : undefined} key={t}>{t}</TableHead>)}</TableRow></TableHeader><TableBody>{query.result.data.items.map((v: Evidence) => <TableRow key={String(v.trial ?? v.sequence)}><TableCell className="text-right tabular-nums">{cell(v.trial ?? v.sequence)}</TableCell><TableCell>{text(v.stimulus ?? v.type)}<p>{text(v.result ?? v.category)}</p>{kind === 'trials' && <details><summary>Contexto del ensayo</summary><dl><dt>Creación (ms)</dt><dd>{cell(v.spawnedAtMs)}</dd><dt>Cierre</dt><dd>{cell(v.closureReason)}</dd><dt>Ventana natural completa</dt><dd>{v.responseWindowCompleted ? 'Sí' : 'No'}</dd><dt>Dispositivo de respuesta</dt><dd>{cell(v.responseDevice)}</dd><dt>Geometría efectiva</dt><dd>{cell(v.geometry)}</dd></dl></details>}</TableCell><TableCell className="text-right tabular-nums">{kind === 'trials' ? `${cell(v.presentedAtMs)} / ${cell(v.respondedAtMs)} / ${cell(v.closedAtMs)}` : `${cell(v.atMs)} / ${cell(v.endedAtMs)}`}</TableCell><TableCell className="max-w-sm break-words">{kind === 'trials' ? decision(v.calculationDecision) : cell(v.clockId)}</TableCell></TableRow>)}</TableBody></ActivityTable><Next cursor={query.result.data.nextCursor} next={setCursor} />{cursor && <Button variant="outline" className="w-fit" onClick={() => setCursor(undefined)}>Primera página</Button>}</>}
-  </div>;
+const indicatorColumns = [
+  { label: 'Indicador', help: 'Qué se está midiendo, por ejemplo, aciertos o tiempo de respuesta.' },
+  { label: 'Parte de la actividad', help: 'Indica si el resultado es de toda la actividad o de una de sus partes.' },
+  { label: 'Resultado', help: 'Resultado obtenido. % significa porcentaje; ms, milésimas de segundo.', numeric: true },
+  { label: 'Datos usados / total', help: 'Primero: datos usados. Después: total para calcular el porcentaje. «—» significa que no aplica.', numeric: true },
+  { label: 'Estado del resultado', help: 'Dice si se pudo calcular el resultado o por qué falta.' },
+];
+/** Column help (shadcn Popover): hover, keyboard (Enter/Space) and touch; Escape or outside click closes it, focus is not trapped. */
+function ColumnHelp({ label, help }: { label: string; help: string }) {
+  return <span className="column-heading">{label}<Popover><PopoverTrigger openOnHover delay={200} closeDelay={150} className="column-help" aria-label={`Qué significa «${label}»`}><CircleHelp aria-hidden="true" className="size-5" /></PopoverTrigger><PopoverContent side="top">{help}</PopoverContent></Popover></span>;
 }

@@ -1,5 +1,5 @@
 import type { HttpClient } from '../../../lib/http.ts';
-import { isId, object, parseAssignment, parseAssignmentSummary, parseGrant, parsePage, parseSession, parseSessionSummary, parseCode, parseRevealedCode, type Evidence } from './types.ts';
+import { isId, object, parseAssignment, parseAssignmentSummary, parseStudentAssignment, parseGrant, parsePage, parseSession, parseSessionSummary, parseCode, parseRevealedCode, parseTrial, parseIncident, type Evidence } from './types.ts';
 import type { HttpResult } from '../../usuarios/types.ts';
 
 export type AssignmentInput = { requestId: string; taskId: 'TG-01'; publishedVersionId: string; groupId: string; studentIds: string[]; startsAt: string; endsAt: string; maxAttempts: number };
@@ -26,11 +26,21 @@ export function createActivitiesApi(http: HttpClient) {
     assignments: (groupId: string, signal: AbortSignal, cursor?: string) => request(`/api/v1/task-assignments?groupId=${id(groupId)}${paging(cursor)}`, signal, v => { const page = parsePage(v, parseAssignmentSummary); return page?.items.every(a => a.groupId === groupId) ? page : undefined; }),
     assignment: (assignmentId: string, signal: AbortSignal) => request(`/api/v1/task-assignments/${id(assignmentId)}`, signal, v => { const a = parseAssignment(v); return a?.id === assignmentId ? a : undefined; }),
     cancel: (assignmentId: string, requestId: string, signal: AbortSignal) => request(`/api/v1/task-assignments/${id(assignmentId)}/cancel`, signal, parseAssignment, { requestId }),
-    launch: (recipientId: string, requestId: string, signal: AbortSignal) => request(`/api/v1/task-assignment-recipients/${id(recipientId)}/launch-grants`, signal, parseGrant, { requestId }),
     recover: (sessionId: string, submissionId: string, requestId: string, signal: AbortSignal) => request(`/api/v1/task-sessions/${id(sessionId)}/recovery-grants`, signal, parseGrant, { requestId, submissionId }),
+    studentAssignments: (studentId: string, signal: AbortSignal, cursor?: string) => request(`/api/v1/students/${id(studentId)}/task-assignments?limit=25${paging(cursor)}`, signal, v => {
+      const page = parsePage(v, parseStudentAssignment);
+      // Only rows of the requested student, once each, newest first (createdAt DESC, id DESC).
+      if (!page?.items.every((a, i, all) => a.studentId === studentId && (i === 0 || all[i - 1]!.createdAt > a.createdAt || all[i - 1]!.createdAt === a.createdAt && all[i - 1]!.id > a.id))) return;
+      return new Set(page.items.map(a => a.id)).size === page.items.length ? page : undefined;
+    }),
     sessions: (studentId: string, signal: AbortSignal, cursor?: string) => request(`/api/v1/students/${id(studentId)}/task-sessions?limit=25${paging(cursor)}`, signal, v => { const page = parsePage(v, parseSessionSummary); return page?.items.every(s => s.studentId === studentId) ? page : undefined; }),
     session: (sessionId: string, signal: AbortSignal) => request(`/api/v1/task-sessions/${id(sessionId)}`, signal, v => { const s = parseSession(v); return s?.id === sessionId ? s : undefined; }),
-    evidence: (sessionId: string, kind: 'trials' | 'incidents', signal: AbortSignal, cursor?: string) => request(`/api/v1/task-sessions/${id(sessionId)}/evidence?kind=${kind}${paging(cursor)}`, signal, v => parsePage<Evidence>(v, x => object(x) && Number.isInteger(x[kind === 'trials' ? 'trial' : 'sequence']) ? x : undefined)),
+    evidence: (sessionId: string, kind: 'trials' | 'incidents', signal: AbortSignal, cursor?: string) => request(`/api/v1/task-sessions/${id(sessionId)}/evidence?kind=${kind}${paging(cursor)}`, signal, v => {
+      const page = parsePage<Evidence>(v, kind === 'trials' ? parseTrial : parseIncident);
+      if (!page) return;
+      const positions = page.items.map(x => 'trial' in x ? x.trial : x.sequence);
+      return positions.every((n, i) => i === 0 || n > positions[i - 1]!) ? page : undefined;
+    }),
     retry: (sessionId: string, requestId: string, signal: AbortSignal) => request(`/api/v1/task-sessions/${id(sessionId)}/processing-retries`, signal, v => object(v) && v.sessionId === sessionId && isId(v.runId) && v.processingStatus === 'PENDING' ? { sessionId, runId: v.runId, processingStatus: 'PENDING' as const } : undefined, { requestId }),
   };
 }

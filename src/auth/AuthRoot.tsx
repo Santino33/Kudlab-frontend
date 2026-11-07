@@ -11,6 +11,8 @@ import { StaffLayout } from '@/components/StaffLayout';
 import type { AuthController } from './controller.ts';
 import type { Identity } from './state.ts';
 
+const subscribeOnline = (notify: () => void) => { window.addEventListener('online', notify); window.addEventListener('offline', notify); return () => { window.removeEventListener('online', notify); window.removeEventListener('offline', notify); }; };
+
 const errorMessages = {
   input: 'Corrige los datos de acceso.',
   credentials: 'El correo o la contraseña no son correctos. Revisa los datos e inténtalo de nuevo.',
@@ -85,7 +87,9 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, onSus
     controller.signIn(email, passwordInput.current!.value);
   }
 
-  const heading = state.kind === 'authenticated' ? 'Acceso confirmado' :
+  // A failed access check while the browser is offline is a lost connection, not a session problem: say so.
+  const offline = !useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true) && state.kind === 'checkUnavailable';
+  const heading = offline ? 'Se perdió la conexión a internet' : state.kind === 'authenticated' ? 'Acceso confirmado' :
     state.kind === 'checking' ? 'Comprobando acceso' :
     state.kind === 'checkUnavailable' ? 'No pudimos comprobar tu acceso' :
     state.kind === 'signingOut' ? 'Cerrando sesión' :
@@ -93,7 +97,8 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, onSus
   const error = Object.values(invalid).join(' ') ||
     (state.kind === 'signedOut' && state.error ? errorMessages[state.error] : undefined);
   const signingIn = state.kind === 'signingIn';
-  const description = state.kind === 'authenticated' ? 'Esta es tu sesión actual en Kudlab.' :
+  const description = offline ? 'Sin internet no podemos comprobar tu acceso ni confirmar lo que estabas guardando. Cuando vuelva la conexión, pulsa Reintentar y revisa si hay una operación por confirmar.' :
+    state.kind === 'authenticated' ? 'Esta es tu sesión actual en Kudlab.' :
     state.kind === 'checking' ? 'Estamos verificando tu sesión antes de continuar.' :
     state.kind === 'checkUnavailable' ? 'No se puede confirmar si tienes una sesión activa. Reintenta para comprobar tu acceso.' :
     state.kind === 'signingOut' ? 'Estamos cerrando únicamente tu sesión actual.' :
