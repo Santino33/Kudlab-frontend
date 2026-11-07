@@ -25,7 +25,9 @@ const session = { id, studentId, taskId: 'TG-01', assignmentId: groupId, attempt
   configuration: context.config, declaredState: envelope.state, terminationReason: envelope.terminationReason, measuredDurationMs: 7000, device: envelope.device,
   receipt: { receiptId: groupId, sessionId: id, submissionId: envelope.submissionId, receivedAt: context.serverTime, evidenceHash: 'a'.repeat(64), processingStatusAtReceipt: 'PENDING' }, calculation };
 const removed = ['Incidencias y evidencia', 'Sesión sin incidencias registradas', 'Los fallos técnicos no son errores del estudiante', 'Ver incidencias', 'Ver ensayos y decisiones de cálculo',
-  'Configuración y dispositivo de esta sesión', 'Condiciones históricas de ejecución, sin niveles de dificultad', 'Las unidades lógicas no son píxeles físicos'];
+  'Configuración y dispositivo de esta sesión', 'Condiciones históricas de ejecución, sin niveles de dificultad', 'Las unidades lógicas no son píxeles físicos',
+  // Development data not relevant to the teacher.
+  'TG01-DESCRIPTIVE-1', 'Ficha TG01', context.gameBuildId];
 const columns = ['Indicador', 'Parte de la actividad', 'Resultado', 'Datos usados / total', 'Estado del resultado'];
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, hasTouch: true });
@@ -59,6 +61,7 @@ try {
   for (const text of removed) await expect(page.getByText(text, { exact: false })).toHaveCount(0);
   assert.equal(await page.locator('summary').count(), 0, 'No collapsible evidence/configuration panels remain');
   // Zero is a value; absence keeps «—» and its reason.
+  await expect(page.getByText('Ensayos observados: 2; incluidos: 1; excluidos: 1.', { exact: false })).toBeVisible();
   await expect(table.getByText('0.00 %', { exact: true })).toBeVisible();
   await expect(table.getByText('412.5 ms', { exact: true })).toBeVisible();
   await expect(table.getByText('Parte 2', { exact: true })).toBeVisible();
