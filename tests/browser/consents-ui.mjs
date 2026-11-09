@@ -8,7 +8,8 @@ assert.equal(new URL(origin).hostname, 'localhost'); assert.equal(new URL(api).h
 const output = process.env.TASTE_SKILL_TMP ?? '/tmp/opencode/consent-ui-mock'; await mkdir(output, { recursive: true }); process.env.TASTE_SKILL_TMP = output;
 const id = '00000000-0000-4000-8000-000000000001', group = '00000000-0000-4000-8000-000000000002';
 let student = { id, groupId: group, studentCode: 'SYNTHETIC', firstName: 'Persona', lastName: 'Ficticia', isActive: false };
-let historyCalls = 0, writes = 0;
+let historyCalls = 0, writes = 0, recovered = false, lookups = 0;
+const record = { id, signedOn: '2026-01-01', receivedOn: '2026-01-01', mediaType: 'image/png', byteSize: 1, sha256: 'a'.repeat(64) };
 const browser = await Browser.launch(), page = await browser.newPage();
 async function wait(predicate) { await page.eval(async source => { const fn = (0, eval)(`(${source})`); for (let i = 0; i < 200; i++) { if (fn()) return; await new Promise(r => setTimeout(r, 20)); } throw new Error('UI condition absent'); }, predicate.toString()); }
 try {
@@ -19,9 +20,14 @@ try {
     if (event.request.method === 'OPTIONS') data = {};
     else if (path.endsWith('/get-session')) data = { user: { id, email: 'ficticio@example.edu.co', name: 'Docente ficticio', role: 'TEACHER' }, session: { id: 'mock', expiresAt: '2099-01-01T00:00:00.000Z' } };
     else if (path.endsWith('/consents/history')) { historyCalls++; status = 404; data = { code: 'NOT_FOUND' }; }
-    else if (path.includes('/operations/')) { status = 404; data = { code: 'NOT_FOUND' }; }
+    else if (path.includes('/operations/')) {
+      lookups++;
+      if (recovered) data = { requestId: id, status: 'COMMITTED', acknowledgement: { requestId: id, eventId: id, recordId: id, version: 1, confirmedAt: '2026-01-01T00:00:00.000Z', repeated: true },
+        attempt: { expectedVersion: 0, signedOn: record.signedOn, receivedOn: record.receivedOn, mediaType: record.mediaType, byteSize: record.byteSize, sha256: record.sha256 }, rejectionCode: null };
+      else { status = 404; data = { code: 'NOT_FOUND' }; }
+    }
     else if (path.endsWith('/consents') && event.request.method === 'POST') { writes++; status = 503; data = { code: 'UNAVAILABLE' }; }
-    else if (path.endsWith('/consents')) data = { student, consent: { state: 'NONE', version: 0, currentRecord: null }, evaluatedAt: '2026-01-01T00:00:00.000Z' };
+    else if (path.endsWith('/consents')) data = { student, consent: recovered ? { state: 'CURRENT', version: 1, currentRecord: record } : { state: 'NONE', version: 0, currentRecord: null }, evaluatedAt: '2026-01-01T00:00:00.000Z' };
     else if (path.endsWith('/task-assignments')) data = { items: [], nextCursor: null };
     else { status = 404; data = { code: 'NOT_FOUND' }; }
     await page.send('Fetch.fulfillRequest', { requestId: event.requestId, responseCode: status, responseHeaders: [
@@ -48,5 +54,12 @@ try {
   await wait(() => !document.body.textContent.includes('Archivo retenido: synthetic.png') && Boolean(document.getElementById('consent-file')));
   assert.equal(await page.eval(() => document.getElementById('consent-signedOn').value), '');
   assert.equal(await page.eval(() => sessionStorage.getItem('kudlab.consent-operation')), null);
-  console.log(JSON.stringify({ ok: true, backendRequests: 0, checks: ['history 404 bounded', 'duplicate submit blocked', 'changed group purges File/dates/handle'] }));
+  recovered = true;
+  await page.eval(id => sessionStorage.setItem('kudlab.consent-operation', JSON.stringify({ actorId: id, studentId: id, requestId: id })), id);
+  await page.goto(`${origin}/academico/estudiantes/${id}`, { settleMs: 100 });
+  await wait(() => document.body.textContent.includes('Consentimiento registrado.'));
+  assert.equal(await page.eval(() => sessionStorage.getItem('kudlab.consent-operation')), null);
+  assert.equal(await page.eval(() => document.getElementById('consent-file').files.length), 0);
+  assert.equal(lookups, 1); assert.equal(writes, 1);
+  console.log(JSON.stringify({ ok: true, backendRequests: 0, checks: ['history 404 bounded', 'duplicate submit blocked', 'changed group purges File/dates/handle', 'full reload reconciles minimal handle after fresh scope without POST replay'] }));
 } finally { await browser.close(); }
