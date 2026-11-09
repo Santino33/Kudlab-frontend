@@ -24,6 +24,7 @@ import { groupPath, groupStudentPath, groupsPath } from '../groups/navigation.ts
 import { assignmentPath } from '../../tareas/activities/types.ts';
 import type { ActivitiesApi } from '../../tareas/activities/api.ts';
 import { StudentAssignments } from '../../tareas/activities/Activities';
+import { StudentIndicatorsLink } from '../../indicadores/StudentIndicatorsLink';
 
 export const studentsPath = '/academico/estudiantes';
 export const detailPath = (id: string, groupId?: string) => groupId ? groupStudentPath(groupId, id) : `${studentsPath}/${encodeURIComponent(id)}`;
@@ -144,6 +145,7 @@ export function StudentDetail({ api, readApi, activities, consents, drafts, acto
       {lease && <StudentConsent key={`${apiOrigin}:${actorId}:${student.id}:${student.groupId}`} api={consents} studentId={studentId} actorId={actorId} snapshot={snapshot} refresh={refresh} lease={lease} recheck={query.reload}
         onChange={change => { if (activeSequence === sequence.current && lease.valid() && change.studentId === studentId) query.reload(); }} />}
       <StudentAssignments key={student.id} api={activities} student={student} refresh={refresh} />
+      <StudentIndicatorsLink student={student} />
       {student.isActive ? <Deactivate api={api} student={student} locked={Boolean(write) || refresh.status !== 'ready'} onSuccess={() => { setNotice('Estudiante inactivado'); query.reload(); }} review={check} /> : <p>Este registro está inactivo. Un nuevo consentimiento confirmado permite reactivarlo.</p>}
     </> : <><Heading>Ficha de estudiante</Heading>{query.fetching || !failure ? <Loading text="Consultando estudiante" /> : <Failure result={failure} retry={query.reload} />}</>}
   </div>;
