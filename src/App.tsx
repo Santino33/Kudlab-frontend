@@ -1,4 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createConsentsApi, consentAccess } from './features/academico/consents/api.ts';
+import { createStudentDraftHost } from './features/academico/students/student-drafts.ts';
+import type { StudentDraftHost } from './features/academico/students/student-drafts.ts';
+import { operationHandle } from './features/academico/consents/operation-handle.ts';
 import { createTasksApi } from './features/tareas/api.ts';
 import { createStudentsApi } from './features/academico/students/api.ts';
 import { createGroupsApi } from './features/academico/groups/api.ts';
@@ -50,8 +54,17 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
 }) {
   const [entry] = useState(() => initialEntry ?? { route: resolveRoute(pathname, search), recovery: { read: () => undefined, clear() {} } });
   const [route, setRoute] = useState(entry.route);
+  const drafts = useRef<StudentDraftHost | undefined>(undefined);
+  const draftOrigin = useRef(apiOrigin);
+  if (draftOrigin.current !== apiOrigin) { drafts.current?.discard(); operationHandle(sessionStorage).clear(); draftOrigin.current = apiOrigin; }
+  const selection = (r: typeof route) => r.kind === 'studentDetail' ? `${r.studentId}:${'groupId' in r ? r.groupId ?? '' : ''}` : '';
+  const selected = useRef(selection(route));
   useEffect(() => {
-    const changed = () => setRoute(resolveRoute(window.location.pathname, window.location.search));
+    const changed = () => {
+      const next = resolveRoute(window.location.pathname, window.location.search), key = selection(next);
+      if (key !== selected.current) { drafts.current?.discard(); operationHandle(sessionStorage).clear(); selected.current = key; }
+      setRoute(next);
+    };
     window.addEventListener('popstate', changed);
     return () => window.removeEventListener('popstate', changed);
   }, []);
@@ -67,11 +80,36 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
     try { return createAuthController(createAuthClient(apiOrigin ?? '', (url, init) => fetcher(url, init))); }
     catch { return undefined; }
   });
+  if (controller && !drafts.current) drafts.current = createStudentDraftHost(controller);
+  const suspendDrafts = useCallback(() => drafts.current?.suspend(), []);
+  useEffect(() => {
+    if (!controller) return;
+    const sync = () => {
+      drafts.current?.sync();
+      const state = controller.getSnapshot();
+      if (['signedOut', 'signingIn', 'signingOut', 'signOutUnconfirmed'].includes(state.kind) ||
+        state.kind === 'authenticated' && (state.denied || state.user.role !== 'TEACHER') ||
+        (state.kind === 'checking' || state.kind === 'checkUnavailable') && state.context === 'denied') operationHandle(sessionStorage).clear();
+    };
+    sync(); return controller.subscribe(sync);
+  }, [controller]);
   const apis = useMemo(() => {
     if (!controller || !apiOrigin) return;
     try {
       const studentHttp = createHttpClient(apiOrigin, controller, fetcher, () => setStudentWrite(state => state ? { ...state, phase: 'uncertain' } : state));
+      const readHttp = createHttpClient(apiOrigin, consentAccess(controller), fetcher);
+      const groupRead = createGroupsApi(readHttp);
       return {
+       consents: createConsentsApi(apiOrigin, controller, fetcher),
+       academicRead: createStudentsApi(readHttp),
+       groupsRead: { ...groupRead, async detail(...args: Parameters<typeof groupRead.detail>) {
+         const captured = drafts.current?.capture();
+         const result = await groupRead.detail(...args);
+         const current = drafts.current?.capture();
+         if (captured?.epoch === current?.epoch && captured?.generation === current?.generation &&
+           result.kind === 'error' && [401, 403, 404].includes(result.status)) { drafts.current?.discard(); operationHandle(sessionStorage).clear(); }
+         return result;
+       } },
       accounts: createUsuariosApi(createHttpClient(apiOrigin, controller, fetcher, () => setUncertain(true))),
       tasks: createTasksApi(createHttpClient(apiOrigin, controller, fetcher)),
       activities: createActivitiesApi(createHttpClient(apiOrigin, controller, fetcher)),
@@ -102,7 +140,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
   const courses = ['groups', 'groupNew', 'groupDetail', 'groupEdit'].includes(route.kind);
   const activities = ['assignments', 'assignmentDetail', 'supervisedExecution', 'studentActivities', 'sessionResults', 'submissionRecovery'].includes(route.kind);
   const selectedGroup = 'groupId' in route ? route.groupId : undefined;
-  return <AuthRoot controller={controller} notice={uncertain ? <Notice title="Hay una operación sin confirmar">
+  return <AuthRoot controller={controller} onSuspend={suspendDrafts} notice={uncertain ? <Notice title="Hay una operación sin confirmar">
     <p>No la repitas sin revisar el estado actual de la cuenta. El fallo no demuestra que se haya deshecho.</p>
     <Button variant="outline" className="mt-4" onClick={() => setUncertain(false)}>Ya revisé el estado actual</Button>
   </Notice> : undefined} renderAuthenticated={
@@ -115,10 +153,10 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
         route.kind === 'groupNew' ? <GroupForm api={apis.groups} locked={Boolean(groupWrite)} /> :
         route.kind === 'groupEdit' ? <GroupContent api={apis.groups} groupId={route.groupId}>{group => <GroupForm api={apis.groups} before={group} locked={Boolean(groupWrite)} />}</GroupContent> :
         route.kind === 'groupDetail' ? <GroupContent api={apis.groups} groupId={route.groupId}>{group => user.role === 'ADMIN' ? <GroupAdministration group={group} api={apis.groups} locked={Boolean(groupWrite)} /> : <Students group={group} api={apis.studentsForGroup(group.id)} write={studentWrite} reviewed={() => setStudentWrite(undefined)} />}</GroupContent> :
-        students && selectedGroup ? <GroupContent api={apis.groups} groupId={selectedGroup}>{group => route.kind === 'studentNew' ? <Registration group={group} api={apis.studentsForGroup(group.id)} locked={Boolean(studentWrite)} /> : route.kind === 'studentDetail' ? <StudentDetail group={group} api={apis.studentsForGroup(group.id)} activities={apis.activities} studentId={route.studentId} write={studentWrite} reviewed={() => setStudentWrite(undefined)} /> : route.kind === 'studentEdit' ? <StudentEdit group={group} api={apis.studentsForGroup(group.id)} studentId={route.studentId} locked={Boolean(studentWrite)} /> : <Students group={group} api={apis.studentsForGroup(group.id)} />}</GroupContent> :
+        students && selectedGroup ? <GroupContent api={route.kind === 'studentDetail' ? apis.groupsRead : apis.groups} groupId={selectedGroup}>{group => route.kind === 'studentNew' ? <Registration group={group} api={apis.studentsForGroup(group.id)} locked={Boolean(studentWrite)} /> : route.kind === 'studentDetail' ? <StudentDetail group={group} api={apis.studentsForGroup(group.id)} readApi={apis.academicRead} consents={apis.consents} drafts={drafts.current!} actorId={user.id} apiOrigin={apiOrigin!} activities={apis.activities} studentId={route.studentId} write={studentWrite} reviewed={() => setStudentWrite(undefined)} /> : route.kind === 'studentEdit' ? <StudentEdit group={group} api={apis.studentsForGroup(group.id)} studentId={route.studentId} locked={Boolean(studentWrite)} /> : <Students group={group} api={apis.studentsForGroup(group.id)} />}</GroupContent> :
         route.kind === 'students' ? <Students api={apis.students} /> :
         route.kind === 'studentNew' ? <StudentRegistration /> :
-        route.kind === 'studentDetail' ? <StudentDetail api={apis.students} activities={apis.activities} studentId={route.studentId} write={studentWrite} reviewed={() => setStudentWrite(undefined)} /> :
+        route.kind === 'studentDetail' ? <StudentDetail api={apis.students} readApi={apis.academicRead} consents={apis.consents} drafts={drafts.current!} actorId={user.id} apiOrigin={apiOrigin!} activities={apis.activities} studentId={route.studentId} write={studentWrite} reviewed={() => setStudentWrite(undefined)} /> :
         route.kind === 'studentEdit' ? <StudentEdit api={apis.students} studentId={route.studentId} locked={Boolean(studentWrite)} /> :
         route.kind === 'tasks' ? <Catalog api={apis.tasks} /> :
         route.kind === 'taskDetail' ? <TaskDetail api={apis.tasks} taskId={route.taskId} /> :
