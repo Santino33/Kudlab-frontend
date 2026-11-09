@@ -22,7 +22,7 @@ try {
     else if (path.endsWith('/consents/history')) { historyCalls++; status = 404; data = { code: 'NOT_FOUND' }; }
     else if (path.includes('/operations/')) {
       lookups++;
-      if (recovered) data = { requestId: id, status: 'COMMITTED', acknowledgement: { requestId: id, eventId: id, recordId: id, version: 1, confirmedAt: '2026-01-01T00:00:00.000Z', repeated: true },
+      if (recovered) data = { requestId: id, action: 'REGISTER', status: 'COMMITTED', acknowledgement: { requestId: id, eventId: id, recordId: id, version: 1, confirmedAt: '2026-01-01T00:00:00.000Z', repeated: true },
         attempt: { expectedVersion: 0, signedOn: record.signedOn, receivedOn: record.receivedOn, mediaType: record.mediaType, byteSize: record.byteSize, sha256: record.sha256 }, rejectionCode: null };
       else { status = 404; data = { code: 'NOT_FOUND' }; }
     }

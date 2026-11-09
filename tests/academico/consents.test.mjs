@@ -4,9 +4,34 @@ import { createHttpClient } from '../../src/lib/http.ts';
 import { createConsentsApi } from '../../src/features/academico/consents/api.ts';
 import { createStudentDraftHost } from '../../src/features/academico/students/student-drafts.ts';
 import { operationHandle } from '../../src/features/academico/consents/operation-handle.ts';
+import { parseOperation, parseHistory } from '../../src/features/academico/consents/types.ts';
 
 const id = '00000000-0000-4000-8000-000000000001';
 const signal = () => new AbortController().signal;
+test('revocation sends JSON and validates acknowledgement identity/version; malformed success remains uncertain', async () => {
+  const body = { requestId: id, expectedVersion: 1, recordId: id, reason: 'Comunicación ficticia' };
+  const acknowledgement = { requestId: id, eventId: id, recordId: id, version: 2, confirmedAt: '2026-11-09T12:00:00.000Z', repeated: false };
+  const record = { id, signedOn: '2026-01-01', receivedOn: '2026-01-01', mediaType: 'image/png', byteSize: 1, sha256: 'a'.repeat(64) };
+  const snapshot = { student: { id, groupId: id, studentCode: 'TEST', firstName: 'Persona', lastName: 'Ficticia', isActive: true },
+    consent: { state: 'REVOKED', version: 2, currentRecord: record }, evaluatedAt: acknowledgement.confirmedAt };
+  let response = { acknowledgement, snapshot };
+  const api = createConsentsApi('http://localhost:3000', { getGeneration: () => 1, notify() {} }, async (url, init) => {
+    assert.equal(new URL(url).pathname, `/api/v1/students/${id}/consents/revocations`);
+    assert.deepEqual(JSON.parse(init.body), body); assert.equal(init.headers['Content-Type'], 'application/json');
+    return Response.json(response);
+  });
+  assert.equal((await api.revoke(id, body, signal())).kind, 'success');
+  response = { ...response, acknowledgement: { ...acknowledgement, version: 3 } };
+  const invalid = await api.revoke(id, body, signal()); assert.equal(invalid.kind, 'unavailable'); assert.equal(invalid.uncertain, true);
+  const operation = { requestId: id, action: 'REVOKE', status: 'COMMITTED', acknowledgement: { ...acknowledgement, repeated: true },
+    attempt: { expectedVersion: 1, signedOn: null, receivedOn: null, mediaType: null, byteSize: null, sha256: null }, rejectionCode: null };
+  assert.equal(parseOperation(operation).action, 'REVOKE');
+  assert.equal(parseOperation({ ...operation, status: 'PENDING', acknowledgement: null }), undefined);
+  assert.equal(parseOperation({ ...operation, action: 'REGISTER' }), undefined);
+  const event = { id, type: 'REVOKE', version: 2, record, previousRecordId: null, author: { id, name: 'Docente ficticio' }, occurredAt: acknowledgement.confirmedAt, reason: body.reason };
+  assert.equal(parseHistory({ items: [event], nextCursor: null }).items[0].reason, body.reason);
+  assert.equal(parseHistory({ items: [{ ...event, reason: null }], nextCursor: null }), undefined);
+});
 test('FormData leaves boundary to browser and rejects incompatible bodies before sending', async () => {
   const calls = [], access = { getGeneration: () => 1, notify() {} };
   const http = createHttpClient('http://localhost:3000', access, async (url, init) => { calls.push({ url, init }); return Response.json({ ok: true }); });

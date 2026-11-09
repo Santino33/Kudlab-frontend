@@ -2,7 +2,7 @@ import type { AuthController } from '../../../auth/controller.ts';
 import { createHttpClient } from '../../../lib/http.ts';
 import type { HttpResult } from '../../usuarios/types.ts';
 import { decodeConsentFields, parseAck, parseHistory, parseOperation, parseSnapshot } from './types.ts';
-import type { ConsentField, ConsentMetadata } from './types.ts';
+import type { ConsentField, ConsentMetadata, ConsentRevocation } from './types.ts';
 
 export function consentAccess(access: Pick<AuthController, 'getGeneration' | 'notify'>) {
   return { getGeneration: () => access.getGeneration(), notify: (event: Parameters<AuthController['notify']>[0]) => {
@@ -38,6 +38,14 @@ export function createConsentsApi(origin: string, access: Pick<AuthController, '
           if (acknowledgement?.requestId === metadata.requestId && snapshot?.student.id === id && acknowledgement.repeated === (status === 200)) return { acknowledgement, snapshot };
         } }));
     },
+    revoke: (id: string, body: ConsentRevocation, signal: AbortSignal) => run(signal, 15000, s => http.request(`${path(id)}/revocations`, {
+      method: 'POST', body, signal: s, decodeFields: decodeConsentFields, decode: (v, status) => {
+        if (status !== 200 || !v || typeof v !== 'object' || !('acknowledgement' in v) || !('snapshot' in v)) return;
+        const acknowledgement = parseAck(v.acknowledgement), snapshot = parseSnapshot(v.snapshot);
+        if (acknowledgement?.requestId === body.requestId && acknowledgement.recordId === body.recordId &&
+          acknowledgement.version === body.expectedVersion + 1 && snapshot?.student.id === id) return { acknowledgement, snapshot };
+      },
+    })),
     history: (id: string, cursor: string | null, signal: AbortSignal) => run(signal, 15000, s => http.request(`${path(id)}/history${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`,
       { signal: s, decodeFields: decodeConsentFields, decode: (v, status) => status === 200 ? parseHistory(v) : undefined })),
     operation: (id: string, requestId: string, signal: AbortSignal) => run(signal, 15000, s => http.request(`${path(id)}/operations/${requestId}`, { signal: s, decodeFields: decodeConsentFields,
