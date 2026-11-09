@@ -22,17 +22,17 @@ export function IndicatorChart({ model, studentName, range }: { model: ChartMode
   const description = `${placed.length} sesiones mostradas, ordenadas de la más antigua a la más reciente. ${values} con valor y ${missing} sin dato. Los valores completos están en la tabla siguiente.`;
   return <figure className="grid gap-3">
     <figcaption id={`${id}-t`} className="font-semibold [overflow-wrap:anywhere]">{title}</figcaption>
-    <svg role="img" aria-labelledby={`${id}-t ${id}-d`} viewBox={`0 0 ${L.width} ${L.height}`} className="h-auto w-full max-w-3xl text-foreground">
+    <div className="overflow-x-auto" tabIndex={0} role="group" aria-label="Gráfico desplazable en pantallas estrechas"><svg role="img" aria-labelledby={`${id}-t ${id}-d`} viewBox={`0 0 ${L.width} ${L.height}`} className="h-auto w-full min-w-[34rem] max-w-3xl text-foreground">
       <desc id={`${id}-d`}>{description}</desc>
       {model.ticks.map(t => { const y = L.plotBottom - t / model.max * (L.plotBottom - L.top);
         return <g key={t}><line x1={L.left} x2={L.width - L.right} y1={y} y2={y} className="stroke-border" strokeWidth={1} />
           <text x={L.left - 8} y={y + 4} textAnchor="end" className="fill-current text-xs">{new Intl.NumberFormat('es-CO', { maximumFractionDigits: 1 }).format(t)}</text></g>; })}
-      <text x={L.left - 8} y={L.top - 4} textAnchor="end" className="fill-current text-xs">{model.unit}</text>
+      <text x={L.left - 8} y={L.top - 14} textAnchor="end" className="fill-current text-xs">{model.unit}</text>
       <line x1={L.left} x2={L.width - L.right} y1={L.plotBottom} y2={L.plotBottom} className="stroke-foreground" strokeWidth={1.5} />
       {model.xLabels.map(l => { const p = placed[l.index]!; return <text key={l.index} x={p.x} y={L.plotBottom + 18} textAnchor="middle" className="fill-current text-xs">{l.text}</text>; })}
-      <text x={L.left} y={L.missingY - 18} className="fill-current text-xs">Sin dato</text>
+      <text x={L.left - 8} y={L.missingY + 4} textAnchor="end" className="fill-current text-xs">Sin dato</text>
       {placed.map(p => <g key={p.sessionId}><title>{pointText(p, model.unit)}</title><Marker shape={p.shape} x={p.x} y={p.y} hollow={p.kind === 'missing'} /></g>)}
-    </svg>
+    </svg></div>
     {model.conditions.length > 1 && <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm" aria-label="Condiciones de las sesiones">
       {model.conditions.map(c => <li key={c.key} className="flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><Marker shape={c.shape} x={8} y={8} hollow={false} /></svg>{c.label}</li>)}</ul>}
     <p className="text-sm">Cada punto es una sesión; no se unen entre sí ni se interpreta tendencia. El marcador hueco indica sin dato. Se muestran solo las sesiones cargadas.</p>

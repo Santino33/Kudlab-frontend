@@ -95,10 +95,10 @@ function Results({ items, nextCursor, filters, studentName, groupId, studentId, 
       <Table><TableCaption>{items.length} {items.length === 1 ? 'sesión cargada' : 'sesiones cargadas'}, de la más reciente a la más antigua. Fechas en hora de Colombia.</TableCaption>
         <TableHeader><TableRow><TableHead>Fecha</TableHead><TableHead>Intento</TableHead><TableHead>Indicador</TableHead><TableHead className="text-right">Valor</TableHead><TableHead>Datos usados</TableHead><TableHead>Regla</TableHead><TableHead>Configuración</TableHead><TableHead>Incidencias</TableHead><TableHead>Finalización</TableHead><TableHead>Detalle</TableHead></TableRow></TableHeader>
         <TableBody>{rows.map(r => <TableRow key={r.key}>
-          <TableCell><time dateTime={r.at}>{longDate(r.at)}</time></TableCell><TableCell>{r.attempt ?? '—'}</TableCell><TableCell>{r.indicator}</TableCell>
-          <TableCell className="text-right tabular-nums">{r.value}{r.reason && <span className="block text-sm font-normal">{r.reason}</span>}</TableCell>
-          <TableCell>{r.used}</TableCell><TableCell>{r.rule}</TableCell><TableCell>v{r.config}{r.differs && <span className="block text-sm">Condiciones distintas</span>}</TableCell>
-          <TableCell>{r.incidents}</TableCell><TableCell>{r.finalization}{r.interrupted && <span className="block text-sm">No comparable</span>}</TableCell>
+          <TableCell className="whitespace-nowrap"><time dateTime={r.at}>{longDate(r.at)}</time></TableCell><TableCell>{r.attempt ?? '—'}</TableCell><TableCell className="whitespace-nowrap">{r.indicator}</TableCell>
+          <TableCell className="min-w-[12rem] text-right tabular-nums">{r.value}{r.reason && <span className="block text-left text-sm font-normal">{r.reason}</span>}</TableCell>
+          <TableCell>{r.used}</TableCell><TableCell className="whitespace-nowrap">{r.rule}</TableCell><TableCell>v{r.config}{r.differs && <span className="block text-sm">Condiciones distintas</span>}</TableCell>
+          <TableCell>{r.incidents}</TableCell><TableCell className="whitespace-nowrap">{r.finalization}{r.interrupted && <span className="block text-sm">No comparable</span>}</TableCell>
           <TableCell>{r.detailAccess === 'AVAILABLE' ? <a className="font-semibold underline underline-offset-4" href={studentTasksPath(groupId, studentId, r.sessionId)} onClick={navigate}>Ver sesión</a>
             : <span className="text-sm">{DETAIL_UNAVAILABLE}<span className="block">Sesión {r.sessionId.slice(0, 8)}</span></span>}</TableCell></TableRow>)}</TableBody></Table></div>
     {nextCursor ? <div className="grid gap-2"><p>Hay más sesiones. Lo mostrado no es toda la historia.</p>{moreFailed && <p role="alert" className="font-semibold">No pudimos cargar más sesiones; lo ya mostrado se conserva.</p>}

@@ -31,7 +31,7 @@ export function buildChart(sessionsNewestFirst: readonly HistorySession[], metri
   return { metricCode, scope, unit, max, ticks: [0, .25, .5, .75, 1].map(f => f * max), points, conditions, xLabels: indexes.map(index => ({ index, text: shortDate(points[index]!.at) })) };
 }
 export type Layout = { width: number; height: number; left: number; right: number; top: number; plotBottom: number; missingY: number };
-export const DEFAULT_LAYOUT: Layout = { width: 640, height: 300, left: 64, right: 16, top: 16, plotBottom: 232, missingY: 262 };
+export const DEFAULT_LAYOUT: Layout = { width: 640, height: 316, left: 64, right: 16, top: 30, plotBottom: 240, missingY: 288 };
 // Eje x ordinal: el espaciado entre sesiones no sugiere ritmo ni tendencia. Sin dato: franja separada bajo el eje.
 export function place(model: ChartModel, layout: Layout = DEFAULT_LAYOUT): Placed[] {
   const plotWidth = layout.width - layout.left - layout.right, plotHeight = layout.plotBottom - layout.top, n = Math.max(model.points.length, 1);
