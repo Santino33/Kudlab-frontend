@@ -58,5 +58,5 @@ test('public recovery requires 202 message or 200 success:true; no login or toke
   assert.equal((await confirm.api.confirmRecovery('synthetic-only', 'Valida123', signal())).kind, 'success');
   assert.deepEqual(confirm.calls[0].body, { token: 'synthetic-only', newPassword: 'Valida123' });
   assert.equal(confirm.calls.length, 1);
-  assert.deepEqual(Object.keys(confirm.api).sort(), ['listAccounts','getAccount','createAccount','updateAccount','reissueInvitation','deactivateAccount','demoteAccount','requestRecovery','confirmRecovery'].sort());
+  assert.deepEqual(Object.keys(confirm.api).sort(), ['listAccounts','getAccount','createAccount','updateAccount','reissueInvitation','deactivateAccount','demoteAccount','requestRecovery','confirmRecovery','acceptInvitation'].sort());
 });

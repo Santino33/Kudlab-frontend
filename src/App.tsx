@@ -20,6 +20,7 @@ import { Alert, AlertDescription } from './components/ui/alert';
 import { Card, CardContent, CardHeader } from './components/ui/card';
 import { canConsultTasks, canManageAccounts, canManageStudents, resolveRoute, routeTitles } from './features/usuarios/navigation.ts';
 import type { captureEntry } from './features/usuarios/navigation.ts';
+import { AcceptInvitation } from './features/usuarios/invitations/AcceptInvitation';
 import { StaffLayout } from './components/StaffLayout';
 import { createHttpClient } from './lib/http.ts';
 import { invalidateNavigation, startNavigation } from './lib/navigation.ts';
@@ -59,8 +60,9 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
   controller?: AuthController; apiOrigin?: string; pathname?: string; search?: string;
   initialEntry?: ReturnType<typeof captureEntry>; fetcher?: typeof fetch;
 }) {
-  const [entry] = useState(() => initialEntry ?? { route: resolveRoute(pathname, search), recovery: { read: () => undefined, clear() {} } });
+  const [entry] = useState(() => initialEntry ?? { route: resolveRoute(pathname, search), recovery: { read: () => undefined, clear() {} }, invitation: { read: () => undefined, clear() {} } });
   const [route, setRoute] = useState(entry.route);
+  useLayoutEffect(() => { if (route.kind !== 'invitationAccept') entry.invitation.clear(); }, [entry, route.kind]);
   const drafts = useRef<StudentDraftHost | undefined>(undefined);
   const draftOrigin = useRef(apiOrigin);
   if (draftOrigin.current !== apiOrigin) { drafts.current?.discard(); operationHandle(sessionStorage).clear(); draftOrigin.current = apiOrigin; }
@@ -141,6 +143,10 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
       <CardHeader><h1 id="auth-title" className="auth-heading">Acceso no disponible</h1></CardHeader>
       <CardContent><Alert><AlertDescription>No se ha configurado un origen válido para la API. Solicita al responsable que revise la configuración.</AlertDescription></Alert></CardContent>
     </Card></section></StaffLayout>;
+  }
+  if (route.kind === 'invitationAccept') {
+    return <AuthRoot controller={controller} onSuspend={entry.invitation.clear} publicContent={() =>
+      <AcceptInvitation api={apis.recovery} ticket={entry.invitation} />} />;
   }
   if (route.kind === 'recoveryRequest' || route.kind === 'recoveryConfirm') {
     return <AuthRoot controller={controller} onSuspend={entry.recovery.clear} publicContent={() =>

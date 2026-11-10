@@ -40,10 +40,19 @@ separado. Play continúa con API Northflank directa y `credentials: omit`.
 Verificar en entrega múltiples Set-Cookie host-only, Secure/HttpOnly/Lax,
 login/recarga/logout, permisos y CSP; no corregir incompatibilidades relajando cookies.
 
-Por decisión temporal de producto, `/acceso/invitacion` y
-`/acceso/cambio-correo` llevan al login al cargar la SPA y retiran query/hash
-del historial sin consumir tokens. No activan cuentas ni confirman cambios de
-correo. Recuperación conserva `/recuperar-acceso/confirmar`.
+`/acceso/invitacion?token=…` abre la activación pública: contraseña y confirmación,
+canje explícito y acceso al login tras recibir ACTIVA. Configurar Backend
+`INVITATION_BASE_URL=<origen-docente>/acceso/invitacion`; Compose local usa esa ruta.
+El token se retira de query/hash y se conserva solo en memoria hasta canje o
+abandono/suspensión. Al recargar una URL saneada, reabrir el correo. La invitación
+vence a los 7 días y es de un solo uso; un 410 agrupa enlaces inválidos, vencidos
+o usados. Si no sirve, consultar al ADMIN; no solicitar recuperación para activar.
+Un fallo de red puede ocurrir después de activar: comprobar el acceso sin repetir
+automáticamente. La activación no inicia ni reemplaza sesiones existentes.
+
+Por decisión temporal de producto, `/acceso/cambio-correo` continúa llevando al
+login y retirando query/hash sin confirmar el cambio de correo. Recuperación
+conserva `/recuperar-acceso/confirmar`.
 
 `npm run test:pages` verifica el transporte con upstream simulado. Tras build,
 `node tests/pages/runtime.smoke.mjs` ejecuta Pages/workerd local y un servidor

@@ -35,6 +35,10 @@ export function createUsuariosApi(http: HttpClient) {
       return http.request('/api/v1/auth/password-recovery/request', { method: 'POST', signal, body: { email: email.trim().toLowerCase() },
         decode: (data, status) => status === 202 && typeof data === 'object' && data !== null && 'message' in data && typeof data.message === 'string' ? true : undefined });
     },
+    acceptInvitation(token: string, password: string, signal: AbortSignal) {
+      return http.request('/api/v1/account-invitations/accept', { method: 'POST', signal, body: { token, password },
+        decode: (data, status) => status === 200 && typeof data === 'object' && data !== null && 'status' in data && data.status === 'ACTIVA' ? true : undefined });
+    },
     confirmRecovery(token: string, newPassword: string, signal: AbortSignal) {
       return http.request('/api/v1/auth/password-recovery/confirm', { method: 'POST', signal, body: { token, newPassword },
         decode: (data, status) => status === 200 && typeof data === 'object' && data !== null && 'success' in data && data.success === true ? true : undefined });

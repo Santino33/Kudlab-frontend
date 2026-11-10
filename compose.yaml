@@ -37,7 +37,7 @@ services:
       GAME_ACCESS_IP_KEY: ${GAME_ACCESS_IP_KEY:-}
       GAME_ACCESS_KEYS: ${GAME_ACCESS_KEYS:-}
       GAME_ACCESS_ACTIVE_KEY_ID: ${GAME_ACCESS_ACTIVE_KEY_ID:-}
-      INVITATION_BASE_URL: http://localhost:${FRONTEND_PORT:-5173}/accept
+      INVITATION_BASE_URL: http://localhost:${FRONTEND_PORT:-5173}/acceso/invitacion
       EMAIL_CHANGE_BASE_URL: http://localhost:${FRONTEND_PORT:-5173}/change-email
       RESET_BASE_URL: http://localhost:${FRONTEND_PORT:-5173}/recuperar-acceso/confirmar
       MAIL_MODE: smtp
