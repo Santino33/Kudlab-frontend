@@ -47,11 +47,21 @@ test('T-10/CA-07/08: suspense abort keeps uncertain reference; stale response ca
   assert.equal(capture.read()[0].phase, 'uncertain'); assert.equal(store.read().length, 1);
   valid = false; capture.dispose(); assert.equal(signal.aborted, true);
   resolve({ kind: 'success', data: {} }); await pending;
-  assert.equal(calls, 1); assert.equal(store.read().length, 1); assert.equal(capture.read()[0].phase, 'uncertain');
+  assert.equal(calls, 1); assert.equal(store.read().length, 1); assert.deepEqual(capture.read(), []);
 });
 test('T-10/CA-07: fingerprint equals backend canonical order; area omission and UUID case normalize', async () => {
   const body = { ...input, groupId: studentId.toUpperCase(), expectedVersion: 2 };
   const hash = await fingerprint(studentId.toUpperCase(), body, id.toUpperCase());
   const { createHash } = await import('node:crypto');
   assert.equal(hash, createHash('sha256').update(JSON.stringify(['CORRECT', studentId, id, 2, studentId, 'ATTENTION', 'SOMETIMES', null, '2026-01-01', 2025, 1])).digest('hex'));
+});
+test('T-10/CA-07: deliberate new fact preserves pending reference, never replaces it by matching values', async () => {
+  const store = referenceStore(memory(), 'http://localhost:3000', id), calls = [];
+  const capture = session({ write: async (_id, body) => { calls.push(body.requestId); return { kind: 'unavailable', uncertain: true }; } }, store);
+  await capture.send(studentId, input);
+  const second = { ...input, requestId: '00000000-0000-4000-8000-000000000003' };
+  assert.equal(await capture.send(studentId, second), 'blocked');
+  assert.equal(await capture.send(studentId, second, undefined, undefined, true), 'uncertain');
+  assert.deepEqual(calls, [id, second.requestId]); assert.equal(store.read().length, 2);
+  store.purge(); assert.deepEqual(store.read(), []);
 });

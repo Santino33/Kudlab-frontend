@@ -58,3 +58,23 @@ test('T-11/CA-02/06: manual context, no default frequency, Bogotá calendar and 
   assert.equal(today(new Date('2026-01-02T04:59:59Z')), '2026-01-01');
   assert.equal(today(new Date('2026-01-02T05:00:00Z')), '2026-01-02');
 });
+test('T-09/T-12/CA-04/07: correction success verifies target, expected version and all six replacement values', async () => {
+  const body = { ...input, requestId: other, expectedVersion: 2, frequency: 'ALWAYS' }, hash = await fingerprint(id, body, other);
+  const receipt = { requestId: other, studentId: id, observationId: other, fingerprint: hash, revision: { ...revision, frequency: 'ALWAYS', version: 3 } };
+  let response = { receipt, repeated: false };
+  const api = createObservationsApi('http://localhost:3000', { getGeneration: () => 1, notify() {} }, async () => Response.json(response, { status: 201 }));
+  assert.equal((await api.write(id, body, hash, signal(), other)).kind, 'success');
+  response = { receipt: { ...receipt, observationId: id }, repeated: false };
+  assert.equal((await api.write(id, body, hash, signal(), other)).kind, 'unavailable');
+  response = { receipt: { ...receipt, revision: { ...receipt.revision, version: 4 } }, repeated: false };
+  assert.equal((await api.write(id, body, hash, signal(), other)).kind, 'unavailable');
+});
+test('T-09/CA-03/07: receipt null is not failure, mismatched receipts and unordered revision pages are unavailable', async () => {
+  let response = { receipt: null };
+  const api = createObservationsApi('http://localhost:3000', { getGeneration: () => 1, notify() {} }, async () => Response.json(response));
+  assert.deepEqual(await api.receipt(id, id, 'a'.repeat(64), signal()), { kind: 'success', data: { receipt: null } });
+  response = { receipt: { requestId: other, studentId: id, observationId: other, fingerprint: 'a'.repeat(64), revision } };
+  assert.equal((await api.receipt(id, id, 'a'.repeat(64), signal())).kind, 'unavailable');
+  response = { observation: { id: other, studentId: id, author: { id: other, name: 'Docente ficticio' }, createdAt: revision.recordedAt, version: 2 }, items: [{ ...revision, version: 2 }, revision], nextCursor: null };
+  assert.equal((await api.revisions(id, other, null, signal())).kind, 'unavailable');
+});

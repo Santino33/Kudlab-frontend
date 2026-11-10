@@ -1,10 +1,10 @@
 import type { ObservationsApi } from './api.ts';
 import { object } from './types.ts';
-import type { Input, Receipt } from './types.ts';
+import type { Field, Input, Receipt } from './types.ts';
 import { isUuid } from '../../academico/students/types.ts';
 
 export type Reference = { requestId: string; studentId: string; groupId?: string; observationId?: string; kind: 'CREATE' | 'CORRECT'; fingerprint: string };
-export type Attempt = { reference: Reference; body?: Input; phase: 'uncertain' | 'confirmed' | 'rejected'; receipt?: Receipt; reason?: string };
+export type Attempt = { reference: Reference; body?: Input; phase: 'uncertain' | 'confirmed' | 'rejected'; receipt?: Receipt; reason?: string; issues?: { field: Field; reason: string }[] };
 export type ReferenceStore = ReturnType<typeof referenceStore>;
 export async function fingerprint(studentId: string, input: Input, observationId?: string) {
   const text = JSON.stringify([observationId ? 'CORRECT' : 'CREATE', studentId.toLowerCase(), observationId?.toLowerCase() ?? null,
@@ -30,6 +30,7 @@ export function referenceStore(storage: Pick<Storage, 'getItem' | 'setItem' | 'r
   }
   return {
     read,
+    purge() { storage.removeItem(key); },
     put(reference: Reference) {
       const safe = parseReference(reference); if (!safe) throw new Error('Invalid reference');
       const previous = read(), found = previous.find(r => r.requestId === safe.requestId);
@@ -53,14 +54,14 @@ export function createWriteSession({ api, store, initial = [], valid, changed, l
     for (const reference of store.read().filter(matches)) if (!attempts.some(a => a.reference.requestId === reference.requestId)) attempts = [...attempts, { reference, phase: 'uncertain' }];
     publish();
   }
-  async function send(studentId: string, body: Input, observationId?: string, previous?: Reference) {
+  async function send(studentId: string, body: Input, observationId?: string, previous?: Reference, deliberateNew = false) {
     if (!current() || busy.has(studentId)) return 'blocked';
     busy.add(studentId);
     try {
       const hash = await fingerprint(studentId, body, observationId);
       if (!current()) return 'blocked';
       if (previous && (previous.studentId !== studentId || previous.observationId !== observationId || previous.fingerprint !== hash || previous.requestId !== body.requestId)) return 'mismatch';
-      if (!previous && attempts.some(a => a.reference.studentId === studentId && a.phase === 'uncertain')) return 'blocked';
+      if (!previous && !deliberateNew && attempts.some(a => a.reference.studentId === studentId && a.phase === 'uncertain')) return 'blocked';
       const reference: Reference = previous ?? { requestId: body.requestId, studentId, kind: observationId ? 'CORRECT' : 'CREATE', fingerprint: hash,
         ...(body.groupId ? { groupId: body.groupId } : {}), ...(observationId ? { observationId } : {}) };
       try { store.put(reference); } catch { return 'storage'; }
@@ -71,7 +72,7 @@ export function createWriteSession({ api, store, initial = [], valid, changed, l
       if (result.kind === 'success') { clearReference(reference.requestId); update({ ...attempt, phase: 'confirmed', receipt: result.data }); return 'confirmed'; }
       if (result.kind === 'error' && [401, 403, 404].includes(result.status)) { lost(); return 'blocked'; }
       if (result.kind === 'error' && !result.uncertain && result.status < 500 && result.fields?.[0]?.reason !== 'REQUEST_MISMATCH') {
-        clearReference(reference.requestId); update({ ...attempt, phase: 'rejected', reason: result.fields?.map(f => f.reason).join(',') ?? 'INVALID_INPUT' }); return 'rejected';
+        clearReference(reference.requestId); update({ ...attempt, phase: 'rejected', reason: result.fields?.map(f => f.reason).join(',') ?? 'INVALID_INPUT', issues: result.fields }); return 'rejected';
       }
       publish(); return 'uncertain';
     } finally { busy.delete(studentId); }
@@ -88,6 +89,6 @@ export function createWriteSession({ api, store, initial = [], valid, changed, l
       // Null and failed reads leave exactly the same uncertain reference and never send a write.
     } finally { requests.delete(request); busy.delete(ref.studentId); }
   }
-  return { restore, send, reconcile, read: () => attempts, busy: () => busy.size > 0,
+  return { restore, send, reconcile, read: () => current() ? attempts : [], busy: () => busy.size > 0,
     dispose() { disposed = true; for (const request of requests) request.abort(); requests.clear(); } };
 }
