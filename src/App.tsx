@@ -59,7 +59,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
   controller?: AuthController; apiOrigin?: string; pathname?: string; search?: string;
   initialEntry?: ReturnType<typeof captureEntry>; fetcher?: typeof fetch;
 }) {
-  const [entry] = useState(() => initialEntry ?? { route: resolveRoute(pathname, search), recovery: { read: () => undefined, clear() {} } });
+  const [entry] = useState(() => initialEntry ?? { route: resolveRoute(pathname, search), recovery: { read: () => undefined, clear() {} }, invitation: { read: () => undefined, clear() {} } });
   const [route, setRoute] = useState(entry.route);
   const drafts = useRef<StudentDraftHost | undefined>(undefined);
   const draftOrigin = useRef(apiOrigin);

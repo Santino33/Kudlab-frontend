@@ -85,7 +85,7 @@ const path = scenario.get('path') ?? '/';
 history.replaceState(null, '', path);
 Object.assign(window, { usuarioCalls: calls });
 const initialEntry = path.startsWith('/recuperar-acceso') ? {
-  route: resolveRoute(path, ''), recovery: { read: () => recoveryToken, clear: () => { recoveryToken = undefined; } },
+  route: resolveRoute(path, ''), recovery: { read: () => recoveryToken, clear: () => { recoveryToken = undefined; } }, invitation: { read: () => undefined, clear() {} },
 } : undefined;
 
 createRoot(document.getElementById('root')!).render(<StrictMode>
