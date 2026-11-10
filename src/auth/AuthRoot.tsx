@@ -111,7 +111,7 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, onSus
   return <StaffLayout wide={authenticatedContent !== undefined}>
       <section ref={content} className={authenticatedContent !== undefined ? 'staff-content' : 'auth-content'} aria-labelledby="auth-title">
         {notice && <div className="mb-6">{notice}</div>}
-        {publicOnly ? <div key={publicPage.epoch}>{publicPage.hidden ? <Card><CardHeader><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Acceso en pausa</h1><p>Los datos de recuperación fueron retirados.</p></CardHeader></Card> : publicContent?.()}</div> : authenticatedContent ?? <Card>
+        {publicOnly ? <div key={publicPage.epoch}>{publicPage.hidden ? <Card><CardHeader><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Acceso en pausa</h1><p>El enlace y las contraseñas fueron retirados.</p></CardHeader></Card> : publicContent?.()}</div> : authenticatedContent ?? <Card>
           <CardHeader>
             <h1 id="auth-title" className="auth-heading" ref={title} tabIndex={-1}>{heading}</h1>
             <p>{description}</p>

@@ -39,6 +39,14 @@ const accounts: Account[] = [
 const businessFetch: typeof fetch = async (input, init) => {
   const target = new URL(String(input));
   calls.push({ path: target.pathname, method: init?.method ?? 'GET' });
+  if (target.pathname === '/api/v1/account-invitations/accept') {
+    document.body.dataset.invitationSubmissions = String(Number(document.body.dataset.invitationSubmissions ?? 0) + 1);
+    if (scenario.get('invitation') === 'unavailable') throw new TypeError('Synthetic unavailable');
+    if (scenario.get('invitation') === 'pending') return new Promise<Response>(() => {});
+    const status = Number(scenario.get('invitation'));
+    if ([400, 409, 410, 503].includes(status)) return Response.json({ code: status === 410 ? 'INVITATION_EXPIRED' : 'ACCOUNT_CONFLICT' }, { status });
+    return Response.json({ status: 'ACTIVA' });
+  }
   if (target.pathname.startsWith('/api/v1/auth/password-recovery/')) {
     const count = Number(document.body.dataset.recoverySubmissions ?? 0) + 1;
     document.body.dataset.recoverySubmissions = String(count);
@@ -81,11 +89,12 @@ const businessFetch: typeof fetch = async (input, init) => {
 
 // Synthetic token only: never a mailbox URL or real token in this test harness.
 let recoveryToken = scenario.get('ticket') === 'valid' ? 'synthetic-recovery-only' : undefined;
+let invitationToken = scenario.get('ticket') === 'valid' ? 'synthetic-invitation-only' : undefined;
 const path = scenario.get('path') ?? '/';
 history.replaceState(null, '', path);
 Object.assign(window, { usuarioCalls: calls });
-const initialEntry = path.startsWith('/recuperar-acceso') ? {
-  route: resolveRoute(path, ''), recovery: { read: () => recoveryToken, clear: () => { recoveryToken = undefined; } }, invitation: { read: () => undefined, clear() {} },
+const initialEntry = path.startsWith('/recuperar-acceso') || path === '/acceso/invitacion' ? {
+  route: resolveRoute(path, ''), recovery: { read: () => recoveryToken, clear: () => { recoveryToken = undefined; } }, invitation: { read: () => invitationToken, clear: () => { invitationToken = undefined; } },
 } : undefined;
 
 createRoot(document.getElementById('root')!).render(<StrictMode>
