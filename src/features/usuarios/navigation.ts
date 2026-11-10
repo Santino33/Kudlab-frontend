@@ -1,5 +1,6 @@
 import type { AccessState } from '../../auth/state.ts';
 import { indicatorRouteTitles, resolveIndicatorRoute, type IndicatorRoute } from '../indicadores/routes.ts';
+import { resolveObservationMatrix } from '../seguimiento/observations/navigation.ts';
 
 export const canManageAccounts = (state: AccessState) => state.kind === 'authenticated' && state.user.role === 'ADMIN' && !state.denied;
 export const canConsultTasks = (state: AccessState) => state.kind === 'authenticated' && !state.denied;
@@ -11,6 +12,7 @@ export type Route =
   | { kind: 'students' | 'studentNew'; groupId?: string }
   | { kind: 'studentDetail' | 'studentEdit'; studentId: string; groupId?: string }
   | { kind: 'groupDetail' | 'groupEdit'; groupId: string }
+  | { kind: 'observationMatrix'; groupId: string }
   | { kind: 'taskDetail'; taskId: string }
   | { kind: 'assignments'; groupId: string }
   | { kind: 'assignmentDetail'; groupId: string; assignmentId: string }
@@ -27,6 +29,7 @@ export const routeTitles: Record<Route['kind'], string> = {
   tasks: 'Tareas digitales', taskDetail: 'Ficha de tarea', students: 'Estudiantes',
   studentNew: 'Registrar estudiante', studentDetail: 'Ficha de estudiante', studentEdit: 'Editar estudiante',
   groups: 'Mis cursos', groupNew: 'Crear curso', groupDetail: 'Curso', groupEdit: 'Editar curso',
+  observationMatrix: 'Registrar observaciones',
   assignments: 'Asignaciones', assignmentDetail: 'Estudiantes y códigos', supervisedExecution: 'Actividad en Kudlab Play',
   studentActivities: 'Tareas del estudiante', sessionResults: 'Detalle de sesión', submissionRecovery: 'Recuperar envío',
   ...indicatorRouteTitles,
@@ -57,6 +60,8 @@ export function resolveRoute(pathname: string, search: string): Route {
   }
   const indicators = resolveIndicatorRoute(pathname);
   if (indicators) return indicators;
+  const matrix = resolveObservationMatrix(pathname);
+  if (matrix) return matrix;
   const course = /^\/academico\/cursos\/([^/]+)(?:\/(editar|estudiantes\/nuevo|estudiantes\/([^/]+)(\/editar)?))?$/.exec(pathname);
   if (course) {
     try {

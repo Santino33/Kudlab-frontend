@@ -9,6 +9,7 @@ import { fieldLabels, studentIssues } from './types.ts';
 import { detailPath, Failure, StudentFields } from './Students';
 import { CourseLink } from '../groups/Groups';
 import { groupPath } from '../groups/navigation.ts';
+import { requestNavigation } from '../../../lib/navigation.ts';
 
 export function Registration({ api, group, locked }: { api: StudentsApi; group: Group; locked: boolean }) {
   const [input, setInput] = useState<StudentInput>({ studentCode: '', firstName: '', lastName: '' });
@@ -27,8 +28,7 @@ export function Registration({ api, group, locked }: { api: StudentsApi; group: 
     const result = await mutation.run(signal => api.create({ ...input, groupId: group.id }, signal));
     if (result?.kind === 'success') {
       setDone(true);
-      window.history.pushState({ studentNotice: 'created' }, '', detailPath(result.data.id, group.id));
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      void requestNavigation(detailPath(result.data.id, group.id), { studentNotice: 'created' });
     } else if (result?.kind === 'error') {
       setIssues(result.status === 409 ? { studentCode: 'Código de estudiante no disponible' } : Object.fromEntries((result.fields ?? []).map(field => [field.field, field.reason])));
       setFailed(n => n + 1);

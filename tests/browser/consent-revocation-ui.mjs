@@ -15,6 +15,7 @@ let writes = [], reads = 0, assignments = 0;
 const operations = new Map(), events = [{ id, type: 'REGISTER', version, record, previousRecordId: null, author: { id, name: 'Docente ficticio' }, occurredAt: '2026-11-09T12:00:00.000Z', reason: null }];
 const snapshot = () => ({ student, consent: { state, version, currentRecord }, evaluatedAt: '2026-11-09T12:00:00.000Z' });
 const browser = await Browser.launch(), page = await browser.newPage();
+const inFlight = new Set(); let stopIntercepting, interceptionError;
 async function wait(predicate) { await page.eval(async source => { const fn = (0, eval)(`(${source})`); for (let i = 0; i < 250; i++) { if (fn()) return; await new Promise(r => setTimeout(r, 20)); } throw new Error('UI condition absent: ' + source); }, predicate.toString()); }
 const click = text => page.eval(async text => { for (let i = 0; i < 250; i++) { const el = [...document.querySelectorAll('button')].find(el => el.textContent === text); if (el && !el.disabled) { el.click(); return; } await new Promise(r => setTimeout(r, 20)); } throw new Error('Button unavailable: ' + text); }, text);
 const fill = (id, value) => page.eval(({ id, value }) => { const el = document.getElementById(id); Object.getOwnPropertyDescriptor(el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, 'value').set.call(el, value); el.dispatchEvent(new Event('input', { bubbles: true })); }, { id, value });
@@ -23,7 +24,7 @@ const open = async () => { await ready(); await click('Revocar consentimiento');
 const enter = async () => { await page.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', text: '\r', unmodifiedText: '\r', windowsVirtualKeyCode: 13 }); await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 }); };
 try {
   await page.send('Fetch.enable', { patterns: [{ urlPattern: api + '/*', requestStage: 'Request' }] });
-  browser.on(page.sessionId, 'Fetch.requestPaused', async event => {
+  const intercept = async event => {
     const path = new URL(event.request.url).pathname;
     let status = 200, data;
     if (event.request.method === 'OPTIONS') data = {};
@@ -49,11 +50,19 @@ try {
     else if (path.endsWith('/consents')) data = snapshot();
     else if (path.endsWith(`/students/${id}`)) data = student;
     else if (path.endsWith('/task-assignments')) { assignments++; data = { items: [], nextCursor: null }; }
+    else if (path.endsWith('/observations')) data = { items: [], nextCursor: null };
     else { status = 404; data = { code: 'NOT_FOUND' }; }
     await page.send('Fetch.fulfillRequest', { requestId: event.requestId, responseCode: status, responseHeaders: [
       { name: 'Content-Type', value: 'application/json' }, { name: 'Access-Control-Allow-Origin', value: origin }, { name: 'Access-Control-Allow-Credentials', value: 'true' },
       { name: 'Access-Control-Allow-Headers', value: 'content-type' }, { name: 'Access-Control-Allow-Methods', value: 'GET,POST,OPTIONS' },
-    ], body: Buffer.from(JSON.stringify(data)).toString('base64') });
+    ], body: Buffer.from(JSON.stringify(data)).toString('base64') }).catch(error => {
+      // Superseded reads can be aborted by App before CDP fulfils the interception.
+      if (!error.message.includes('Invalid InterceptionId')) throw error;
+    });
+  };
+  stopIntercepting = browser.on(page.sessionId, 'Fetch.requestPaused', event => {
+    const task = intercept(event); inFlight.add(task);
+    task.then(() => inFlight.delete(task), error => { inFlight.delete(task); interceptionError ??= error; });
   });
   await page.goto(`${origin}/academico/estudiantes/${id}`, { settleMs: 100 }); await ready();
   await writeFile(`${output}/ficticio.png`, 'never uploaded');
@@ -136,4 +145,7 @@ try {
   await page.screenshot({ path: `${output}/failure.png`, format: 'png' });
   console.error(await page.eval(() => ({ focus: document.activeElement?.outerHTML, dialog: document.querySelector('[role="alertdialog"]')?.outerHTML })));
   throw error;
-} finally { await browser.close(); }
+} finally {
+  stopIntercepting?.(); await Promise.allSettled([...inFlight]); await browser.close();
+  if (interceptionError) throw interceptionError;
+}
