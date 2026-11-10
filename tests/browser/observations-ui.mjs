@@ -90,11 +90,15 @@ try {
   checks.push('academic denial immediately removes capture/history, no stale data remains');
   await page.goto(path + '?matrix=1'); await wait(() => document.getElementById('matrix-behavior'));
   await fill('matrix'); await set('matrix-frequency-00000000-0000-4000-8000-000000000001', 'SOMETIMES'); await set('matrix-frequency-00000000-0000-4000-8000-000000000002', 'ALWAYS'); await set('matrix-frequency-00000000-0000-4000-8000-000000000004', 'UNOBSERVED');
+  await button('Guardar filas valoradas'); await wait(() => document.body.textContent.includes('Revisa el resultado de cada estudiante.'));
+  assert.equal((await state()).history.length, 2); assert.equal((await state()).calls.filter(c => c.method === 'POST').length, 2); checks.push('two valued rows confirm two independent records, omissions create none');
+  await button('Nueva captura'); await fill('matrix');
+  await set('matrix-frequency-00000000-0000-4000-8000-000000000001', 'SOMETIMES'); await set('matrix-frequency-00000000-0000-4000-8000-000000000002', 'ALWAYS'); await set('matrix-frequency-00000000-0000-4000-8000-000000000004', 'UNOBSERVED');
   await page.eval(() => { observationModel.revoked = ['00000000-0000-4000-8000-000000000002']; });
   await button('Guardar filas valoradas'); await wait(() => document.body.textContent.includes('Revisa el resultado de cada estudiante.'));
-  let matrix = await state(); assert.equal(matrix.history.length, 1); assert.equal(matrix.calls.filter(c => c.method === 'POST').length, 1); checks.push('matrix partial commit, revoked rejected, empty and no-opportunity omitted');
+  let matrix = await state(); assert.equal(matrix.history.length, 3); assert.equal(matrix.calls.filter(c => c.method === 'POST').length, 3); checks.push('matrix partial commit, revoked rejected, empty and no-opportunity omitted');
   await button('Reintentar el mismo envío'); await wait(() => document.body.textContent.includes('Revisa el resultado de cada estudiante.'));
-  matrix = await state(); assert.equal(matrix.history.length, 1); assert.equal(matrix.calls.filter(c => c.method === 'POST').length, 1); checks.push('matrix retry does not duplicate confirmed row');
+  matrix = await state(); assert.equal(matrix.history.length, 3); assert.equal(matrix.calls.filter(c => c.method === 'POST').length, 3); checks.push('matrix retry does not duplicate confirmed row');
   for (const width of [1440, 768, 390, 320]) {
     await page.setViewport({ width, height: 900 }); assert.ok(await page.eval(() => document.documentElement.scrollWidth <= innerWidth), `overflow ${width}`);
     await page.screenshot({ path: `${output}/matrix-${width}.png`, format: 'png', fullPage: true });
