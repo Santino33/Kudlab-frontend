@@ -88,7 +88,7 @@ function Harness() {
   return <main className="mx-auto max-w-6xl space-y-6 p-4 sm:p-8 text-foreground">
     <header className="space-y-2"><p className="font-semibold">Kudlab · Ensayo sintético aislado</p><h1 className="auth-heading">{matrix ? 'Registrar observaciones' : 'Ficha de Participante A Ficticio'}</h1><p>Componentes propios, no composición final de App ni prueba contra Backend.</p></header>
     <div className="flex flex-wrap gap-3" aria-label="Controles exclusivos del ensayo"><Button variant="outline" id="suspend" onClick={() => { host.suspend(); generation++; setMounted(false); }}>Simular suspensión</Button><Button variant="outline" id="resume" onClick={resume}>Reconfirmar acceso sintético</Button><Button variant="outline" id="revoke" onClick={() => { model.revoked = [roster[0]!.id]; setRevoked(true); setVersion(n => n + 1); }}>Simular revocación</Button></div>
-    {mounted ? matrix ? <ObservationMatrixRoute key={generation} {...{ api, consents, groups, students, apiOrigin: origin, actorId }} drafts={host} groupId={group.id} /> :
+    {mounted ? matrix ? <ObservationMatrixRoute key={generation} {...{ api, consents, groups, students, apiOrigin: origin, actorId }} drafts={host} groupId={group.id} isCurrentSelection={() => true} /> :
       <StudentObservations key={generation} {...{ api, apiOrigin: origin, actorId, lease }} student={roster[0]!} refresh={{ revision: version, status: 'ready' }} consentState={revoked ? 'REVOKED' : 'CURRENT'} draft={studentSlot.current} recheck={() => { if (model.mode === 'denied') { host.discard(); setMounted(false); } }} /> : <p role="status">Contenido privado retirado por la suspensión.</p>}
   </main>;
 }

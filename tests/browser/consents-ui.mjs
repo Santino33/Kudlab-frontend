@@ -29,11 +29,15 @@ try {
     else if (path.endsWith('/consents') && event.request.method === 'POST') { writes++; status = 503; data = { code: 'UNAVAILABLE' }; }
     else if (path.endsWith('/consents')) data = { student, consent: recovered ? { state: 'CURRENT', version: 1, currentRecord: record } : { state: 'NONE', version: 0, currentRecord: null }, evaluatedAt: '2026-01-01T00:00:00.000Z' };
     else if (path.endsWith('/task-assignments')) data = { items: [], nextCursor: null };
+    else if (path.endsWith('/observations')) data = { items: [], nextCursor: null };
     else { status = 404; data = { code: 'NOT_FOUND' }; }
     await page.send('Fetch.fulfillRequest', { requestId: event.requestId, responseCode: status, responseHeaders: [
       { name: 'Content-Type', value: 'application/json' }, { name: 'Access-Control-Allow-Origin', value: origin }, { name: 'Access-Control-Allow-Credentials', value: 'true' },
       { name: 'Access-Control-Allow-Headers', value: 'content-type' }, { name: 'Access-Control-Allow-Methods', value: 'GET,POST,OPTIONS' },
-    ], body: Buffer.from(JSON.stringify(data)).toString('base64') });
+    ], body: Buffer.from(JSON.stringify(data)).toString('base64') }).catch(error => {
+      // The app may abort a superseded read before CDP fulfils its interception.
+      if (!error.message.includes('Invalid InterceptionId')) throw error;
+    });
   });
   await page.goto(`${origin}/academico/estudiantes/${id}`, { settleMs: 100 });
   await wait(() => document.body.textContent.includes('El historial no está actualizado') && ![...document.querySelectorAll('button')].find(e => e.textContent === 'Actualizar estado')?.disabled);

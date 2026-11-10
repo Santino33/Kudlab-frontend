@@ -1,5 +1,7 @@
 import type { AuthController } from '../../../auth/controller.ts';
 import type { ConsentDraft } from '../consents/types.ts';
+import type { ObservationDraft } from '../../seguimiento/observations/StudentObservations.tsx';
+import type { MatrixDraft } from '../../seguimiento/observations/matrix.ts';
 
 export type StudentRefresh = { revision: number; status: 'ready' | 'checking' | 'unavailable' };
 export type ConsentChange = { studentId: string; requestId: string; outcome: 'confirmed' | 'uncertain' };
@@ -7,7 +9,7 @@ export type DraftSlot<T> = { read(): T | undefined; write(value: T | undefined):
 export type DraftSelection = { apiOrigin: string; actorId: string; role: 'TEACHER'; groupId: string } &
   ({ kind: 'student'; studentId: string; entryGroupId?: string } | { kind: 'observationMatrix' });
 // Future producers supply their own payload types; no business state is imported ahead of their delivery.
-export interface StudentDraftSlots { consent: ConsentDraft; observations: unknown; notes: unknown; annotations: unknown; observationMatrix: unknown }
+export interface StudentDraftSlots { consent: ConsentDraft; observations: ObservationDraft; notes: unknown; annotations: unknown; observationMatrix: MatrixDraft }
 export type DraftLease = ReturnType<ReturnType<typeof createStudentDraftHost>['confirm']>;
 export function createStudentDraftHost(access: Pick<AuthController, 'getSnapshot' | 'getGeneration'>) {
   let selection: DraftSelection | undefined, generation = -1, epoch = 0, sealed = true;

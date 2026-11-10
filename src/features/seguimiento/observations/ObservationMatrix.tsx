@@ -17,12 +17,12 @@ import { RecoveryAttempts } from './RecoveryAttempts';
 import type { Attempt } from './recovery.ts';
 
 const labels: Record<MatrixRow['status'], string> = { ready: 'Lista para enviar', omitted: 'Omitida: sin registro', sending: 'Comprobando y enviando…', confirmed: 'Guardado confirmado', rejected: 'Rechazada', uncertain: 'Resultado sin confirmar', notSent: 'No enviada' };
-export function ObservationMatrix({ api, consents, apiOrigin, actorId, group, roster, draft, lease, recheck }: {
+export function ObservationMatrix({ api, consents, apiOrigin, actorId, group, roster, draft, lease, recheck, onAccessLost = recheck }: {
   api: ObservationsApi; consents: ConsentsApi; apiOrigin: string; actorId: string; group: Group; roster: Student[];
-  draft: DraftSlot<MatrixDraft>; lease: CaptureLifecycle; recheck(): void;
+  draft: DraftSlot<MatrixDraft>; lease: CaptureLifecycle; recheck(): void; onAccessLost?(): void;
 }) {
   const capture = useCapture({ api, apiOrigin, actorId, draft, lease, initial: () => ({ form: emptyForm(), rows: roster.map(s => ({ studentId: s.id, frequency: '', status: 'ready' as const })), attempts: [], frozen: false }),
-    matches: r => r.kind === 'CREATE' && r.groupId === group.id && roster.some(s => s.id === r.studentId), lost: recheck });
+    matches: r => r.kind === 'CREATE' && r.groupId === group.id && roster.some(s => s.id === r.studentId), lost: onAccessLost });
   const { value, ref, update, busy } = capture;
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({}), [message, setMessage] = useState('');
   const queue = useRef<AbortController | undefined>(undefined), queueBusy = useRef(false), summary = useRef<HTMLParagraphElement>(null);
@@ -46,7 +46,7 @@ export function ObservationMatrix({ api, consents, apiOrigin, actorId, group, ro
       }
       queue.current = new AbortController();
       const signal = queue.current.signal;
-      await capture.run(engine => sendMatrix({ rows, groupId: group.id, consents, engine, valid: capture.valid, changed, lost: recheck, signal, retry, deliberateNew }));
+      await capture.run(engine => sendMatrix({ rows, groupId: group.id, consents, engine, valid: capture.valid, changed, lost: onAccessLost, signal, retry, deliberateNew }));
       if (capture.valid()) tell('Revisa el resultado de cada estudiante. Solo las filas con recibo válido están confirmadas; no se afirma un guardado global.');
     } finally { queueBusy.current = false; }
   }
@@ -73,10 +73,10 @@ export function ObservationMatrix({ api, consents, apiOrigin, actorId, group, ro
       const snapshot = await consents.snapshot(row.studentId, queue.current!.signal);
       if (!capture.valid()) return 'blocked';
       if (snapshot.kind !== 'success') {
-        if (snapshot.kind === 'error' && [401, 403, 404].includes(snapshot.status)) recheck();
+        if (snapshot.kind === 'error' && [401, 403, 404].includes(snapshot.status)) onAccessLost();
         return 'blocked';
       }
-      if (snapshot.data.student.groupId !== group.id) { recheck(); return 'blocked'; }
+      if (snapshot.data.student.groupId !== group.id) { onAccessLost(); return 'blocked'; }
       if (!snapshot.data.student.isActive || snapshot.data.consent.state !== 'CURRENT') return 'blocked';
       return engine.send(row.studentId, body, undefined, attempt.reference);
     });

@@ -14,13 +14,13 @@ import { ObservationHistory } from './ObservationHistory';
 import { RecoveryAttempts } from './RecoveryAttempts';
 
 export type ObservationDraft = { form: FormValues; attempts: Attempt[]; correction?: { id: string; expectedVersion: number }; retryId?: string; focus?: string; reviewRequired?: boolean; deliberateNew?: boolean };
-export function StudentObservations({ api, apiOrigin, actorId, student, refresh, consentState, draft, lease, recheck }: {
+export function StudentObservations({ api, apiOrigin, actorId, student, refresh, consentState, draft, lease, recheck, onAccessLost = recheck }: {
   api: ObservationsApi; apiOrigin: string; actorId: string; student: Student; refresh: StudentRefresh; consentState?: 'CURRENT' | 'NONE' | 'REVOKED';
-  draft: DraftSlot<ObservationDraft>; lease: CaptureLifecycle; recheck(): void;
+  draft: DraftSlot<ObservationDraft>; lease: CaptureLifecycle; recheck(): void; onAccessLost?(): void;
 }) {
   const [denied, setDenied] = useState(false), deniedRef = useRef(false);
   const lifecycle = useRef<CaptureLifecycle>({ valid: () => !deniedRef.current && lease.valid(), onStop: callback => lease.onStop(callback) }).current;
-  function lost() { draft.write(undefined); deniedRef.current = true; setDenied(true); recheck(); }
+  function lost() { if (!lease.valid()) return; draft.write(undefined); deniedRef.current = true; setDenied(true); onAccessLost(); }
   const capture = useCapture<ObservationDraft>({ api, apiOrigin, actorId, draft, lease: lifecycle, initial: () => ({ form: emptyForm(), attempts: [] }), matches: r => r.studentId === student.id && (!r.groupId || r.groupId === student.groupId), lost });
   const { value, ref, update, busy } = capture;
   const [message, setMessage] = useState(''), [errors, setErrors] = useState<Partial<Record<Field, string>>>({}), [historyRevision, setHistoryRevision] = useState(0);

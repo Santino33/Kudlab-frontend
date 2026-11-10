@@ -49,6 +49,7 @@ try {
     else if (path.endsWith('/consents')) data = snapshot();
     else if (path.endsWith(`/students/${id}`)) data = student;
     else if (path.endsWith('/task-assignments')) { assignments++; data = { items: [], nextCursor: null }; }
+    else if (path.endsWith('/observations')) data = { items: [], nextCursor: null };
     else { status = 404; data = { code: 'NOT_FOUND' }; }
     await page.send('Fetch.fulfillRequest', { requestId: event.requestId, responseCode: status, responseHeaders: [
       { name: 'Content-Type', value: 'application/json' }, { name: 'Access-Control-Allow-Origin', value: origin }, { name: 'Access-Control-Allow-Credentials', value: 'true' },
