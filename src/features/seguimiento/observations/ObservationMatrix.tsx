@@ -11,7 +11,7 @@ import type { Field } from './types.ts';
 import { useCapture } from './use-capture.ts';
 import type { CaptureLifecycle } from './use-capture.ts';
 import { ObservationFields, selectClass } from './ObservationForm';
-import { prepareMatrix, sendMatrix } from './matrix.ts';
+import { hasMatrixDraft, prepareMatrix, sendMatrix } from './matrix.ts';
 import type { MatrixDraft, MatrixRow } from './matrix.ts';
 import { RecoveryAttempts } from './RecoveryAttempts';
 import type { Attempt } from './recovery.ts';
@@ -22,7 +22,8 @@ export function ObservationMatrix({ api, consents, apiOrigin, actorId, group, ro
   draft: DraftSlot<MatrixDraft>; lease: CaptureLifecycle; recheck(): void; onAccessLost?(): void;
 }) {
   const capture = useCapture({ api, apiOrigin, actorId, draft, lease, initial: () => ({ form: emptyForm(), rows: roster.map(s => ({ studentId: s.id, frequency: '', status: 'ready' as const })), attempts: [], frozen: false }),
-    matches: r => r.kind === 'CREATE' && r.groupId === group.id && roster.some(s => s.id === r.studentId), lost: onAccessLost });
+    matches: r => r.kind === 'CREATE' && r.groupId === group.id && roster.some(s => s.id === r.studentId), lost: onAccessLost,
+    dirty: hasMatrixDraft });
   const { value, ref, update, busy } = capture;
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({}), [message, setMessage] = useState('');
   const queue = useRef<AbortController | undefined>(undefined), queueBusy = useRef(false), summary = useRef<HTMLParagraphElement>(null);
@@ -33,7 +34,7 @@ export function ObservationMatrix({ api, consents, apiOrigin, actorId, group, ro
   function changed(row: MatrixRow) { update({ ...ref.current, rows: [...ref.current.rows.filter(r => r.studentId !== row.studentId), row] }); }
   function tell(text: string) { setMessage(text); requestAnimationFrame(() => { if (capture.valid()) summary.current?.focus(); }); }
   async function save(retry = false) {
-    if (busy || queueBusy.current || !capture.valid() || capture.storageError) return;
+    if (!capture.navigationAvailable || busy || queueBusy.current || !capture.valid() || capture.storageError) return;
     queueBusy.current = true;
     let rows = ref.current.rows;
     const deliberateNew = ref.current.deliberateNew;
@@ -62,7 +63,7 @@ export function ObservationMatrix({ api, consents, apiOrigin, actorId, group, ro
   }
   const rebuilding = value.rebuilding;
   async function retryRebuilt() {
-    const attempt = ref.current.attempts.find(a => a.reference.requestId === rebuilding); if (!attempt || busy || !capture.valid()) return;
+    const attempt = ref.current.attempts.find(a => a.reference.requestId === rebuilding); if (!capture.navigationAvailable || !attempt || busy || !capture.valid()) return;
     const prepared = prepareMatrix(ref.current.form, roster, ref.current.rows, group.id);
     if (!prepared.rows) { setErrors(prepared.issues ?? {}); tell('Revisa el contexto común.'); return; }
     const row = prepared.rows.find(r => r.studentId === attempt.reference.studentId);
@@ -86,12 +87,14 @@ export function ObservationMatrix({ api, consents, apiOrigin, actorId, group, ro
     }
   }
   const pending = value.attempts.some(a => a.phase === 'uncertain');
-  return <section aria-labelledby="matrix-title" className="space-y-6 min-w-0" onFocusCapture={event => { if (event.target.id) update({ ...ref.current, focus: event.target.id }); }}>
+  return <section aria-labelledby="matrix-title" className="space-y-6 min-w-0 [overflow-wrap:anywhere]" onFocusCapture={event => { if (event.target.id) update({ ...ref.current, focus: event.target.id }); }}>
+    {capture.leaveDialog}
+    {!capture.navigationAvailable && <p role="status">La captura está deshabilitada: este navegador no permite comprobar la navegación segura del mismo documento. Puedes consultar los recibos pendientes; el aviso al salir de la página es solo complementario.</p>}
     <header className="space-y-2"><h2 id="matrix-title" className="text-xl font-semibold">Captura por curso</h2><p className="break-words">{group.name} · {roster.length} estudiantes</p><p className="text-sm text-muted">Un contexto común, una frecuencia por estudiante. Las filas sin selección o sin oportunidad se omiten sin crear constancia de revisión.</p></header>
     {capture.storageError && <p role="alert">{capture.storageError}</p>}
     <p ref={summary} role="status" tabIndex={-1} className="empty:hidden">{message}</p>
     <div className="rounded-xl border border-border bg-white p-5 sm:p-8 space-y-5"><h3 className="text-lg font-semibold">Contexto de la captura</h3>
-      <ObservationFields prefix="matrix" contextOnly value={value.form} change={form => update({ ...ref.current, form })} errors={errors} disabled={busy || value.frozen} />
+      <ObservationFields prefix="matrix" contextOnly value={value.form} change={form => update({ ...ref.current, form })} errors={errors} disabled={!capture.navigationAvailable || busy || value.frozen} />
       {value.frozen && <p className="text-sm">Contexto congelado para este envío. Una conducta distinta requiere una nueva captura expresa.</p>}
     </div>
     <ul className="divide-y divide-border" aria-label="Frecuencias y resultados por estudiante">{roster.map(student => {
@@ -100,7 +103,7 @@ export function ObservationMatrix({ api, consents, apiOrigin, actorId, group, ro
       return <li key={student.id} className="py-5 space-y-4">
         <div className="grid items-start gap-4 md:grid-cols-2"><div className="space-y-1 min-w-0"><h3 className="font-semibold break-words">{student.firstName} {student.lastName}</h3><p className="text-sm text-muted break-words">Código {student.studentCode} · {student.isActive ? 'Activo al consultar' : 'Inactivo al consultar'}</p></div>
           <div className="space-y-2 min-w-0"><Label htmlFor={`matrix-frequency-${student.id}`}>Frecuencia de {student.firstName} {student.lastName}</Label>
-            <select id={`matrix-frequency-${student.id}`} className={selectClass} value={row?.frequency ?? ''} disabled={busy || value.frozen} onChange={event => changed({ studentId: student.id, frequency: event.target.value, status: 'ready' })}>
+            <select id={`matrix-frequency-${student.id}`} className={selectClass} value={row?.frequency ?? ''} disabled={!capture.navigationAvailable || busy || value.frozen} onChange={event => changed({ studentId: student.id, frequency: event.target.value, status: 'ready' })}>
               <option value="">Sin selección</option>{Object.entries(frequencies).map(([v, name]) => <option key={v} value={v}>{name}</option>)}<option value="UNOBSERVED">Sin oportunidad de observar</option>
             </select>
           </div></div>
@@ -110,7 +113,7 @@ export function ObservationMatrix({ api, consents, apiOrigin, actorId, group, ro
     })}</ul>
     {!roster.length && <p>No hay estudiantes en este curso. No se enviarán registros.</p>}
     <div className="flex flex-wrap gap-3">
-      {rebuilding ? <Button disabled={busy || Boolean(capture.storageError)} onClick={() => void retryRebuilt()}>Comprobar huella y reenviar la fila</Button> : <Button disabled={busy || !roster.length || Boolean(capture.storageError)} onClick={() => void save(value.frozen)}>{busy ? 'Procesando estudiantes…' : value.frozen ? 'Reintentar el mismo envío' : 'Guardar filas valoradas'}</Button>}
+      {rebuilding ? <Button disabled={!capture.navigationAvailable || busy || Boolean(capture.storageError)} onClick={() => void retryRebuilt()}>Comprobar huella y reenviar la fila</Button> : <Button disabled={!capture.navigationAvailable || busy || !roster.length || Boolean(capture.storageError)} onClick={() => void save(value.frozen)}>{busy ? 'Procesando estudiantes…' : value.frozen ? 'Reintentar el mismo envío' : 'Guardar filas valoradas'}</Button>}
       <Button variant="outline" disabled={busy} onClick={() => { update({ form: emptyForm(), rows: roster.map(s => ({ studentId: s.id, frequency: '', status: 'ready' })), attempts: ref.current.attempts, frozen: false, deliberateNew: true }); setErrors({}); tell('Nueva captura independiente. Los registros confirmados y los intentos anteriores sin confirmar se conservan; estos últimos siguen pendientes.'); }}>Nueva captura</Button>
     </div>
     {pending && <p className="text-sm">Hay intentos sin confirmar. Comprueba sus recibos incluso si el estudiante ya no es elegible; no iniciarás una nueva captura automáticamente.</p>}

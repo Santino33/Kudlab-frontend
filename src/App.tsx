@@ -22,6 +22,7 @@ import { canConsultTasks, canManageAccounts, canManageStudents, resolveRoute, ro
 import type { captureEntry } from './features/usuarios/navigation.ts';
 import { StaffLayout } from './components/StaffLayout';
 import { createHttpClient } from './lib/http.ts';
+import { invalidateNavigation, startNavigation } from './lib/navigation.ts';
 import { createUsuariosApi } from './features/usuarios/api.ts';
 import { Dashboard, Workspace } from './features/usuarios/workspace/Workspace';
 import { Accounts } from './features/usuarios/accounts/Accounts';
@@ -70,11 +71,10 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
     const key = selection(route);
     if (key !== selected.current) { drafts.current?.discard(); operationHandle(sessionStorage).clear(); selected.current = key; }
   }, [route]);
-  useEffect(() => {
-    const changed = () => setRoute(resolveRoute(window.location.pathname, window.location.search));
-    window.addEventListener('popstate', changed);
-    return () => window.removeEventListener('popstate', changed);
-  }, []);
+  useLayoutEffect(() => startNavigation(
+    () => setRoute(resolveRoute(window.location.pathname, window.location.search)),
+    (from, to) => selection(resolveRoute(from.pathname, from.search)) === selection(resolveRoute(to.pathname, to.search)),
+  ), []);
   useEffect(() => {
     document.getElementById('auth-title')?.focus();
     document.title = `${routeTitles[route.kind]} · Kudlab`;
@@ -94,6 +94,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
     const sync = () => {
       drafts.current?.sync();
       const state = controller.getSnapshot();
+      if (state.kind !== 'authenticated' || state.denied || state.user.role !== 'TEACHER') invalidateNavigation();
       if (['signedOut', 'signingIn', 'signingOut', 'signOutUnconfirmed'].includes(state.kind) ||
         state.kind === 'authenticated' && (state.denied || state.user.role !== 'TEACHER') ||
         (state.kind === 'checking' || state.kind === 'checkUnavailable') && state.context === 'denied') operationHandle(sessionStorage).clear();

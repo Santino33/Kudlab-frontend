@@ -48,6 +48,7 @@ try {
   await set('observation-observedOn', '2026-01-01'); await submitTwice();
   await wait(() => document.body.textContent.includes('Guardado confirmado. Consulta el historial vigente'));
   assert.equal((await state()).history.length, 1); assert.equal((await state()).calls.filter(c => c.method === 'POST').length, 1); checks.push('duplicate submit one intention');
+  await wait(() => [...document.querySelectorAll('button')].some(b => b.textContent === 'Preparar corrección' && !b.disabled));
   await button('Preparar corrección'); await set('observation-frequency', 'ALWAYS'); await submitTwice();
   await wait(() => document.body.textContent.includes('Versión vigente consultada: 2'));
   assert.equal((await state()).history[0].revision.frequency, 'ALWAYS');

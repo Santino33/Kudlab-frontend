@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 import { Loading, Notice } from '../../usuarios/shared';
 import { useMutation, useQuery } from '../../usuarios/hooks';
 import type { HttpResult } from '../../usuarios/types.ts';
-import { navigate } from '../../../lib/navigation.ts';
+import { navigate, replaceCurrentEntry, requestNavigation } from '../../../lib/navigation.ts';
 import type { StudentsApi, StudentWrite } from './api.ts';
 import { fieldLabels, studentChanges, studentFields, studentIssues } from './types.ts';
 import type { Student, StudentField, StudentInput } from './types.ts';
@@ -133,7 +133,13 @@ export function StudentDetail({ api, readApi, activities, consents, observations
   }, [studentId, group?.id, actorId, apiOrigin, drafts, queryKey]);
   const [notice, setNotice] = useState(() => window.history.state?.studentNotice === 'updated' ? 'Datos actualizados' : window.history.state?.studentNotice === 'created' ? 'Estudiante registrado' : '');
   const [checking, setChecking] = useState(false);
-  useEffect(() => { if (window.history.state?.studentNotice) window.history.replaceState(null, ''); }, []);
+  useEffect(() => {
+    const state: unknown = window.history.state;
+    if (state && typeof state === 'object' && !Array.isArray(state) && Object.hasOwn(state, 'studentNotice')) {
+      const { studentNotice: _notice, ...rest } = state as Record<string, unknown>;
+      replaceCurrentEntry(window.location.href, rest);
+    }
+  }, []);
   const focused = useRef(false);
   useEffect(() => { if (student && !focused.current) { focused.current = true; if (!lease?.slot('consent').read()?.focus && !lease?.slot('observations').read()?.focus) document.getElementById('auth-title')?.focus(); } }, [student, lease]);
   function check() { setChecking(true); query.reload(); }
@@ -217,8 +223,7 @@ function EditForm({ api, student, locked, group }: { api: StudentsApi; student: 
     const result = await mutation.run((signal) => api.update(student, changes, signal));
     if (result?.kind === 'success') {
       setDone(true);
-      window.history.pushState({ studentNotice: 'updated' }, '', detailPath(student.id, group?.id));
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      void requestNavigation(detailPath(student.id, group?.id), { studentNotice: 'updated' });
     }
     else if (result?.kind === 'error') {
       if (result.status === 409) setIssues({ studentCode: 'Código de estudiante no disponible' });

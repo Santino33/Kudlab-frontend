@@ -19,15 +19,16 @@ export function StudentObservations({ api, apiOrigin, actorId, student, refresh,
   draft: DraftSlot<ObservationDraft>; lease: CaptureLifecycle; recheck(): void; onAccessLost?(): void;
 }) {
   const [denied, setDenied] = useState(false), deniedRef = useRef(false);
-  const lifecycle = useRef<CaptureLifecycle>({ valid: () => !deniedRef.current && lease.valid(), onStop: callback => lease.onStop(callback) }).current;
+  const lifecycle = useRef<CaptureLifecycle>({ valid: () => !deniedRef.current && lease.valid(), onStop: callback => lease.onStop(callback), discard: () => lease.discard() }).current;
   function lost() { if (!lease.valid()) return; draft.write(undefined); deniedRef.current = true; setDenied(true); onAccessLost(); }
-  const capture = useCapture<ObservationDraft>({ api, apiOrigin, actorId, draft, lease: lifecycle, initial: () => ({ form: emptyForm(), attempts: [] }), matches: r => r.studentId === student.id && (!r.groupId || r.groupId === student.groupId), lost });
+  const capture = useCapture<ObservationDraft>({ api, apiOrigin, actorId, draft, lease: lifecycle, initial: () => ({ form: emptyForm(), attempts: [] }), matches: r => r.studentId === student.id && (!r.groupId || r.groupId === student.groupId), lost,
+    dirty: v => !v.reviewRequired && (Boolean(v.correction) || Object.values(v.form).some(Boolean)) });
   const { value, ref, update, busy } = capture;
   const [message, setMessage] = useState(''), [errors, setErrors] = useState<Partial<Record<Field, string>>>({}), [historyRevision, setHistoryRevision] = useState(0);
   const result = useRef<HTMLParagraphElement>(null);
   const eligible = student.isActive && consentState === 'CURRENT' && refresh.status === 'ready';
   const uncertain = value.attempts.filter(a => a.phase === 'uncertain'), retry = value.attempts.find(a => a.reference.requestId === value.retryId);
-  const disabled = busy || !eligible || Boolean(capture.storageError) || Boolean(value.reviewRequired) || Boolean(uncertain.length && !retry && !value.deliberateNew);
+  const disabled = !capture.navigationAvailable || busy || !eligible || Boolean(capture.storageError) || Boolean(value.reviewRequired) || Boolean(uncertain.length && !retry && !value.deliberateNew);
   function tell(text: string) { setMessage(text); requestAnimationFrame(() => { if (capture.valid()) result.current?.focus(); }); }
   async function submit(event: FormEvent) {
     event.preventDefault(); if (disabled || !capture.valid()) return;
@@ -58,7 +59,9 @@ export function StudentObservations({ api, apiOrigin, actorId, student, refresh,
     requestAnimationFrame(() => { if (capture.valid()) document.getElementById('observation-behavior')?.focus(); });
   }
   if (denied) return <p role="status">La consulta ya no está autorizada. El contenido se retiró mientras se comprueba el acceso.</p>;
-  return <section aria-labelledby="observations-title" className="rounded-xl border border-border bg-white p-5 sm:p-8 space-y-6" onFocusCapture={event => { if (event.target.id) update({ ...ref.current, focus: event.target.id }); }}>
+  return <section aria-labelledby="observations-title" className="rounded-xl border border-border bg-white p-5 sm:p-8 space-y-6 [overflow-wrap:anywhere]" onFocusCapture={event => { if (event.target.id) update({ ...ref.current, focus: event.target.id }); }}>
+    {capture.leaveDialog}
+    {!capture.navigationAvailable && <p role="status">La captura está deshabilitada: este navegador no permite comprobar la navegación segura del mismo documento. Puedes consultar el historial y los recibos pendientes. Usa un navegador compatible; salir de la página solo dispone del aviso nativo complementario.</p>}
     <header className="flex flex-wrap items-start justify-between gap-4"><div className="space-y-2 min-w-0 [overflow-wrap:anywhere]"><h2 id="observations-title" className="text-xl font-semibold">Observaciones</h2><p className="text-sm text-muted break-words">Registro individual de {student.firstName} {student.lastName} · Código {student.studentCode}</p></div>
       <Button type="button" variant="outline" disabled={busy} onClick={() => { update({ form: emptyForm(), attempts: ref.current.attempts, deliberateNew: true }); setErrors({}); tell('Nueva observación independiente. Los intentos anteriores sin confirmar siguen pendientes y visibles; no se cancelan ni se reemplazan.'); }}>Nueva observación</Button></header>
     {!eligible && <p role="status">{refresh.status !== 'ready' ? 'Las escrituras esperan una comprobación actual del estudiante.' : !student.isActive ? 'Estudiante inactivo: solo consulta histórica.' : consentState === undefined ? 'No se pudo comprobar el consentimiento. Puedes consultar el historial, pero no guardar.' : 'Sin consentimiento vigente: solo consulta histórica.'}</p>}

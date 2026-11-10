@@ -15,8 +15,10 @@ import type { AuthController } from '../../src/auth/controller.ts';
 import type { Observation, Receipt, Revision } from '../../src/features/seguimiento/observations/types.ts';
 import '../../src/styles.css';
 import { Button } from '../../src/components/ui/button';
+import { startNavigation } from '../../src/lib/navigation.ts';
 
 if (!import.meta.env.DEV) throw new Error('Synthetic harness only in development mode');
+startNavigation(() => {}, (from, to) => from.pathname === to.pathname);
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const group = { id: uuid(20), name: 'Curso de prueba', grade: 'Primero', schoolYear: 2026, teacherId: uuid(30), teacherName: 'Docente ficticio', studentCount: 4 };
 const roster = [1, 2, 3, 4].map(n => ({ id: uuid(n), groupId: group.id, firstName: `Participante ${String.fromCharCode(64 + n)}`, lastName: 'Ficticio', studentCode: `OBS-${n}`, isActive: true }));

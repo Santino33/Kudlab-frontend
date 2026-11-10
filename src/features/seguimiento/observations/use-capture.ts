@@ -3,15 +3,17 @@ import type { DraftSlot, DraftLease } from '../../academico/students/student-dra
 import type { ObservationsApi } from './api.ts';
 import { createWriteSession, referenceStore } from './recovery.ts';
 import type { Attempt, Reference } from './recovery.ts';
+import { useLeaveGuard } from './use-leave-guard';
 
-export type CaptureLifecycle = Pick<NonNullable<DraftLease>, 'valid' | 'onStop'>;
-export function useCapture<T extends { attempts: Attempt[]; focus?: string }>({ api, apiOrigin, actorId, draft, lease, initial, matches, lost }: {
-  api: ObservationsApi; apiOrigin: string; actorId: string; draft: DraftSlot<T>; lease: CaptureLifecycle; initial(): T; matches(reference: Reference): boolean; lost(): void;
+export type CaptureLifecycle = Pick<NonNullable<DraftLease>, 'valid' | 'onStop' | 'discard'>;
+export function useCapture<T extends { attempts: Attempt[]; focus?: string }>({ api, apiOrigin, actorId, draft, lease, initial, matches, lost, dirty }: {
+  api: ObservationsApi; apiOrigin: string; actorId: string; draft: DraftSlot<T>; lease: CaptureLifecycle; initial(): T; matches(reference: Reference): boolean; lost(): void; dirty(value: T): boolean;
 }) {
   const [value, setValue] = useState<T>(() => draft.read() ?? initial());
   const ref = useRef(value), alive = useRef(false), current = useRef({ draft, lease, matches, lost }); current.current = { draft, lease, matches, lost };
   const runtime = useRef<ReturnType<typeof createWriteSession> | undefined>(undefined);
   const [busy, setBusy] = useState(false), [storageError, setStorageError] = useState('');
+  const leaving = useLeaveGuard(lease, () => Boolean(runtime.current?.busy()) || dirty(ref.current) || ref.current.attempts.some(a => a.phase === 'uncertain'));
   function update(next: T) {
     if (!alive.current || !current.current.lease.valid()) return;
     ref.current = next; current.current.draft.write(next); setValue(next);
@@ -38,5 +40,5 @@ export function useCapture<T extends { attempts: Attempt[]; focus?: string }>({ 
     try { return await action(runtime.current); }
     finally { if (alive.current && current.current.lease.valid()) setBusy(false); }
   }
-  return { value, ref, update, busy, storageError, run, valid: () => alive.current && current.current.lease.valid() };
+  return { value, ref, update, busy, storageError, run, navigationAvailable: leaving.available, leaveDialog: leaving.dialog, valid: () => alive.current && current.current.lease.valid() };
 }

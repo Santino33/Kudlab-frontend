@@ -1,11 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { prepareMatrix, sendMatrix } from '../../src/features/seguimiento/observations/matrix.ts';
+import { hasMatrixDraft, prepareMatrix, sendMatrix } from '../../src/features/seguimiento/observations/matrix.ts';
 import { observationMatrixPath, resolveObservationMatrix } from '../../src/features/seguimiento/observations/navigation.ts';
 const uuid = n => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const group = uuid(99), roster = [1, 2, 3, 4].map(n => ({ id: uuid(n), groupId: group, isActive: true }));
 const form = { behavior: 'ATTENTION', frequency: '', area: '', observedOn: '2026-01-01', schoolYear: '2025', term: '1' };
 const selected = ['SOMETIMES', 'ALWAYS', '', 'UNOBSERVED'].map((frequency, n) => ({ studentId: roster[n].id, frequency }));
+test('T-15: reconciled matrix receipt clears its guard despite an older uncertain row label', () => {
+  const row = { studentId: uuid(1), frequency: 'ALWAYS', status: 'uncertain', body: { requestId: uuid(9) } };
+  const draft = { form, rows: [row], frozen: true, attempts: [{ reference: { requestId: uuid(9) }, phase: 'uncertain' }] };
+  assert.equal(hasMatrixDraft(draft), true);
+  assert.equal(hasMatrixDraft({ ...draft, attempts: [{ ...draft.attempts[0], phase: 'confirmed' }] }), false);
+  assert.equal(hasMatrixDraft({ ...draft, rows: [{ ...row, status: 'rejected' }], attempts: [] }), true);
+  assert.equal(hasMatrixDraft({ ...draft, rows: [{ ...row, status: 'omitted' }], attempts: [] }), false);
+});
 test('T-16 preparación propia: destino docente de matriz es acotado y no monta el router global', () => {
   assert.deepEqual(resolveObservationMatrix(observationMatrixPath(group)), { kind: 'observationMatrix', groupId: group });
   for (const value of ['/academico/cursos/bad/observaciones', `/academico/cursos/${group}/otra`, '/academico/cursos/%GG/observaciones', '/academico/cursos/a%2Fb/observaciones']) assert.equal(resolveObservationMatrix(value), undefined);

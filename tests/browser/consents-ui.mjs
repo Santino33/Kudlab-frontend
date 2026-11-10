@@ -9,12 +9,15 @@ const output = process.env.TASTE_SKILL_TMP ?? '/tmp/opencode/consent-ui-mock'; a
 const id = '00000000-0000-4000-8000-000000000001', group = '00000000-0000-4000-8000-000000000002';
 let student = { id, groupId: group, studentCode: 'SYNTHETIC', firstName: 'Persona', lastName: 'Ficticia', isActive: false };
 let historyCalls = 0, writes = 0, recovered = false, lookups = 0;
+let secondHistoryReady;
+const secondHistory = new Promise(resolve => { secondHistoryReady = resolve; });
 const record = { id, signedOn: '2026-01-01', receivedOn: '2026-01-01', mediaType: 'image/png', byteSize: 1, sha256: 'a'.repeat(64) };
 const browser = await Browser.launch(), page = await browser.newPage();
+const inFlight = new Set(); let stopIntercepting, interceptionError;
 async function wait(predicate) { await page.eval(async source => { const fn = (0, eval)(`(${source})`); for (let i = 0; i < 200; i++) { if (fn()) return; await new Promise(r => setTimeout(r, 20)); } throw new Error('UI condition absent'); }, predicate.toString()); }
 try {
   await page.send('Fetch.enable', { patterns: [{ urlPattern: api + '/*', requestStage: 'Request' }] });
-  browser.on(page.sessionId, 'Fetch.requestPaused', async event => {
+  const intercept = async event => {
     const path = new URL(event.request.url).pathname;
     let status = 200, data;
     if (event.request.method === 'OPTIONS') data = {};
@@ -38,10 +41,18 @@ try {
       // The app may abort a superseded read before CDP fulfils its interception.
       if (!error.message.includes('Invalid InterceptionId')) throw error;
     });
+    if (path.endsWith('/consents/history') && historyCalls === 2) secondHistoryReady();
+  };
+  stopIntercepting = browser.on(page.sessionId, 'Fetch.requestPaused', event => {
+    const task = intercept(event); inFlight.add(task);
+    task.then(() => inFlight.delete(task), error => { inFlight.delete(task); interceptionError ??= error; });
   });
   await page.goto(`${origin}/academico/estudiantes/${id}`, { settleMs: 100 });
   await wait(() => document.body.textContent.includes('El historial no está actualizado') && ![...document.querySelectorAll('button')].find(e => e.textContent === 'Actualizar estado')?.disabled);
-  await page.eval(() => new Promise(r => setTimeout(r, 150)));
+  let deadline;
+  try { await Promise.race([secondHistory, new Promise((_, reject) => { deadline = setTimeout(() => reject(Error('Expected bounded second history read')), 15000); })]); }
+  finally { clearTimeout(deadline); }
+  await page.eval(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   assert.equal(historyCalls, 2, 'one academic recheck, no automatic 404 loop');
   await writeFile(`${output}/synthetic.png`, 'synthetic bytes, never uploaded');
   const doc = await page.send('DOM.getDocument'), input = await page.send('DOM.querySelector', { nodeId: doc.root.nodeId, selector: '#consent-file' });
@@ -66,4 +77,7 @@ try {
   assert.equal(await page.eval(() => document.getElementById('consent-file').files.length), 0);
   assert.equal(lookups, 1); assert.equal(writes, 1);
   console.log(JSON.stringify({ ok: true, backendRequests: 0, checks: ['history 404 bounded', 'duplicate submit blocked', 'changed group purges File/dates/handle', 'full reload reconciles minimal handle after fresh scope without POST replay'] }));
-} finally { await browser.close(); }
+} finally {
+  stopIntercepting?.(); await Promise.allSettled([...inFlight]); await browser.close();
+  if (interceptionError) throw interceptionError;
+}

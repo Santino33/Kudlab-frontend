@@ -14,10 +14,12 @@ import type { Group } from '../../src/features/academico/groups/types.ts';
 import type { Student } from '../../src/features/academico/students/types.ts';
 import type { Observation, Receipt } from '../../src/features/seguimiento/observations/types.ts';
 import { fingerprint } from '../../src/features/seguimiento/observations/recovery.ts';
+import { requestNavigation, replaceCurrentEntry } from '../../src/lib/navigation.ts';
 import '../../src/styles.css';
 
 // Test-only transport. No credentials, external network or Backend/R2 fallback.
 if (!import.meta.env.DEV) throw new Error('Synthetic composition harness only');
+Object.assign(window, { observationNavigation: { requestNavigation, replaceCurrentEntry } });
 const scenario = new URLSearchParams(location.search), uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const origin = 'http://localhost:39871', actorId = uuid(40), groupId = uuid(20);
 const group: Group = { id: groupId, name: 'Curso de prueba', grade: 'Primero', schoolYear: 2026, teacherId: actorId, teacherName: 'Docente ficticio' };

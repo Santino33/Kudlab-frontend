@@ -6,6 +6,11 @@ import type { Attempt, createWriteSession } from './recovery.ts';
 
 export type MatrixRow = { studentId: string; frequency: string; body?: Input; status: 'ready' | 'omitted' | 'sending' | 'confirmed' | 'rejected' | 'uncertain' | 'notSent'; reason?: string };
 export type MatrixDraft = { form: FormValues; rows: MatrixRow[]; attempts: Attempt[]; frozen: boolean; focus?: string; deliberateNew?: boolean; rebuilding?: string };
+export function hasMatrixDraft(value: MatrixDraft) {
+  if (!value.frozen) return Object.values(value.form).some(Boolean) || value.rows.some(row => Boolean(row.frequency));
+  return value.rows.some(row => !['confirmed', 'omitted'].includes(
+    value.attempts.find(attempt => attempt.reference.requestId === row.body?.requestId)?.phase ?? row.status));
+}
 export function prepareMatrix(form: FormValues, roster: readonly Student[], selections: readonly MatrixRow[], groupId: string) {
   const issues = formIssues(form, new Date(), true);
   if (Object.keys(issues).length) return { issues };
