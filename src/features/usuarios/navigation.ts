@@ -97,6 +97,10 @@ export function resolveRoute(pathname: string, search: string): Route {
 export type RecoveryTicket = { read(): string | undefined; clear(): void };
 export function captureEntry(location: Pick<Location, 'pathname' | 'search' | 'hash'>,
   history: Pick<History, 'replaceState'>): { route: Route; recovery: RecoveryTicket } {
+  if (['/acceso/invitacion', '/acceso/cambio-correo'].includes(location.pathname)) {
+    history.replaceState(null, '', '/acceso');
+    return { route: { kind: 'access' }, recovery: { read: () => undefined, clear: () => {} } };
+  }
   const route = resolveRoute(location.pathname, location.search);
   const params = new URLSearchParams(location.search);
   const values = params.getAll('token');

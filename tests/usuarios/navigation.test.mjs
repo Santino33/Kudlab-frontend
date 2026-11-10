@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { resolveRoute } from '../../src/features/usuarios/navigation.ts';
+import { captureEntry, resolveRoute } from '../../src/features/usuarios/navigation.ts';
 
 test('finite direct page routes, with no generic router or permission grant', () => {
   for (const [path, kind] of [['/', 'entry'], ['/acceso', 'access'],
@@ -10,6 +10,19 @@ test('finite direct page routes, with no generic router or permission grant', ()
     assert.equal(resolveRoute(path, '').kind, kind);
   }
   assert.deepEqual(resolveRoute('/usuarios/id%20con%20espacio', ''), { kind: 'detail', accountId: 'id con espacio' });
+});
+
+test('deferred mail entries go to login without retaining or consuming a token', () => {
+  for (const pathname of ['/acceso/invitacion', '/acceso/cambio-correo']) {
+    for (const search of ['', '?token=synthetic', '?token=a&token=b']) {
+      const calls = [];
+      const entry = captureEntry({ pathname, search, hash: '#private' }, { replaceState: (...args) => calls.push(args) });
+      assert.deepEqual(calls, [[null, '', '/acceso']]);
+      assert.deepEqual(entry.route, { kind: 'access' });
+      assert.equal(entry.recovery.read(), undefined);
+    }
+  }
+  assert.equal(captureEntry({ pathname: '/acceso', search: '?token=synthetic', hash: '' }, { replaceState() {} }).route.kind, 'blockedLink');
 });
 
 test('unknown, malformed and excluded routes never turn into functional transactions', () => {
