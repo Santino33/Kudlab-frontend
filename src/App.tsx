@@ -29,6 +29,10 @@ import { AccountDetail } from './features/usuarios/accounts/AccountDetail';
 import { AccountForm } from './features/usuarios/accounts/AccountForm';
 import { Recovery } from './features/usuarios/recovery/Recovery';
 import { Notice } from './features/usuarios/shared';
+import { createIndicatorsApi } from './features/indicadores/api.ts';
+import { IndicatorCatalog } from './features/indicadores/IndicatorCatalog';
+import { IndicatorDefinitionView } from './features/indicadores/IndicatorDefinitionView';
+import { StudentIndicatorsRoute } from './features/indicadores/StudentIndicatorsRoute';
 import { Button } from './components/ui/button';
 import { createActivitiesApi } from './features/tareas/activities/api.ts';
 import { ActivityRoutes } from './features/tareas/activities/ActivityRoutes';
@@ -102,6 +106,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
       return {
        consents: createConsentsApi(apiOrigin, controller, fetcher),
        academicRead: createStudentsApi(readHttp),
+       indicators: createIndicatorsApi(readHttp),
        groupsRead: { ...groupRead, async detail(...args: Parameters<typeof groupRead.detail>) {
          const captured = drafts.current?.capture();
          const result = await groupRead.detail(...args);
@@ -137,6 +142,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
   const management = ['accounts', 'invite', 'detail', 'edit'].includes(route.kind);
   const tasks = route.kind === 'tasks' || route.kind === 'taskDetail';
   const students = ['students', 'studentNew', 'studentDetail', 'studentEdit'].includes(route.kind);
+  const indicators = ['indicatorCatalog', 'indicatorDetail', 'studentIndicators'].includes(route.kind);
   const courses = ['groups', 'groupNew', 'groupDetail', 'groupEdit'].includes(route.kind);
   const activities = ['assignments', 'assignmentDetail', 'supervisedExecution', 'studentActivities', 'sessionResults', 'submissionRecovery'].includes(route.kind);
   const selectedGroup = 'groupId' in route ? route.groupId : undefined;
@@ -144,10 +150,14 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
     <p>No la repitas sin revisar el estado actual de la cuenta. El fallo no demuestra que se haya deshecho.</p>
     <Button variant="outline" className="mt-4" onClick={() => setUncertain(false)}>Ya revisé el estado actual</Button>
   </Notice> : undefined} renderAuthenticated={
-    (user, access, generation) => <Workspace user={user} section={students || courses || activities ? 'groups' : tasks ? 'tasks' : route.kind === 'invite' ? 'invite' : management ? 'accounts' : 'home'} signOut={access.signOut}>
+    (user, access, generation) => <Workspace user={user} section={students || courses || activities || indicators ? 'groups' : tasks ? 'tasks' : route.kind === 'invite' ? 'invite' : management ? 'accounts' : 'home'} signOut={access.signOut}>
       {groupWrite && <div className="mb-6"><GroupWriteNotice write={groupWrite} /></div>}
       {studentWrite && canManageStudents(access.getSnapshot()) && <div className="mb-6"><StudentWriteNotice write={studentWrite} /></div>}
       <div key={`${generation}:${route.kind}:${selectedGroup ?? ''}:${'studentId' in route ? route.studentId : 'accountId' in route ? route.accountId : route.kind === 'taskDetail' ? route.taskId : ''}:${'sessionId' in route ? route.sessionId : ''}:${'assignmentId' in route ? route.assignmentId : ''}:${'recipientId' in route ? route.recipientId : ''}`}>{(management && !canManageAccounts(access.getSnapshot())) || (tasks && !canConsultTasks(access.getSnapshot())) || ((students || activities) && !canManageStudents(access.getSnapshot())) || (courses && !canConsultTasks(access.getSnapshot())) || (['groupNew', 'groupEdit'].includes(route.kind) && !canManageAccounts(access.getSnapshot())) ? <DestinationNotice denied /> :
+        indicators && !canManageStudents(access.getSnapshot()) ? <Notice title="Sección no disponible"><p>Los indicadores están disponibles para el personal docente.</p></Notice> :
+        route.kind === 'indicatorCatalog' ? <IndicatorCatalog api={apis.indicators} /> :
+        route.kind === 'indicatorDetail' ? <IndicatorDefinitionView api={apis.indicators} metricCode={route.metricCode} /> :
+        route.kind === 'studentIndicators' ? <GroupContent api={apis.groupsRead} groupId={route.groupId}>{group => <StudentIndicatorsRoute api={apis.indicators} studentsApi={apis.academicRead} group={group} studentId={route.studentId} />}</GroupContent> :
         activities && selectedGroup ? <GroupContent api={apis.groups} groupId={selectedGroup}>{group => <ActivityRoutes api={apis.activities} studentsApi={apis.studentsForGroup(group.id)} tasksApi={apis.tasks} route={route} group={group} access={access} actorId={user.id} runtimeOrigin={import.meta.env.VITE_PLAY_ORIGIN ?? ''} />}</GroupContent> :
         route.kind === 'groups' ? <Groups api={apis.groups} admin={user.role === 'ADMIN'} write={groupWrite} reviewed={() => setGroupWrite(undefined)} /> :
         route.kind === 'groupNew' ? <GroupForm api={apis.groups} locked={Boolean(groupWrite)} /> :

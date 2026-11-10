@@ -1,4 +1,5 @@
 import type { AccessState } from '../../auth/state.ts';
+import { indicatorRouteTitles, resolveIndicatorRoute, type IndicatorRoute } from '../indicadores/routes.ts';
 
 export const canManageAccounts = (state: AccessState) => state.kind === 'authenticated' && state.user.role === 'ADMIN' && !state.denied;
 export const canConsultTasks = (state: AccessState) => state.kind === 'authenticated' && !state.denied;
@@ -16,7 +17,8 @@ export type Route =
   | { kind: 'supervisedExecution'; groupId: string; assignmentId: string; recipientId: string }
   | { kind: 'studentActivities'; groupId: string; studentId: string }
   | { kind: 'sessionResults' | 'submissionRecovery'; groupId: string; studentId: string; sessionId: string }
-  | { kind: 'detail' | 'edit'; accountId: string };
+  | { kind: 'detail' | 'edit'; accountId: string }
+  | IndicatorRoute;
 
 export const routeTitles: Record<Route['kind'], string> = {
   entry: 'Inicio', access: 'Acceso', accounts: 'Profesores', invite: 'Invitar profesor',
@@ -27,6 +29,7 @@ export const routeTitles: Record<Route['kind'], string> = {
   groups: 'Mis cursos', groupNew: 'Crear curso', groupDetail: 'Curso', groupEdit: 'Editar curso',
   assignments: 'Asignaciones', assignmentDetail: 'Estudiantes y códigos', supervisedExecution: 'Actividad en Kudlab Play',
   studentActivities: 'Tareas del estudiante', sessionResults: 'Detalle de sesión', submissionRecovery: 'Recuperar envío',
+  ...indicatorRouteTitles,
 };
 
 export function resolveRoute(pathname: string, search: string): Route {
@@ -52,6 +55,8 @@ export function resolveRoute(pathname: string, search: string): Route {
     if (studentId) return sessionId ? { kind: recovery ? 'submissionRecovery' : 'sessionResults', groupId: groupId!, studentId, sessionId } : { kind: 'studentActivities', groupId: groupId!, studentId };
     return assignmentId ? recipientId ? { kind: 'supervisedExecution', groupId: groupId!, assignmentId, recipientId } : { kind: 'assignmentDetail', groupId: groupId!, assignmentId } : { kind: 'assignments', groupId: groupId! };
   }
+  const indicators = resolveIndicatorRoute(pathname);
+  if (indicators) return indicators;
   const course = /^\/academico\/cursos\/([^/]+)(?:\/(editar|estudiantes\/nuevo|estudiantes\/([^/]+)(\/editar)?))?$/.exec(pathname);
   if (course) {
     try {
