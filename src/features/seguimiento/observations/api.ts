@@ -29,6 +29,8 @@ export function createObservationsApi(origin: string, access: Pick<AuthControlle
       return run(signal, false, s => http.request(`${base(id)}?${query}`, { signal: s, decodeFields, decode: (v, status) => {
         const page = status === 200 ? parsePage(v, item => parseObservation(item, id)) : undefined;
         if (!page || new Set(page.items.map(i => i.id)).size !== page.items.length || page.items.some((item, n) => n && (item.createdAt > page.items[n - 1]!.createdAt || item.createdAt === page.items[n - 1]!.createdAt && item.id >= page.items[n - 1]!.id))) return;
+        if (page.items.some(({ revision: r }) => filters.schoolYear !== undefined && r.schoolYear !== filters.schoolYear || filters.term !== undefined && r.term !== filters.term ||
+          filters.behavior && r.behavior !== filters.behavior || filters.area && (r.area ?? 'UNSPECIFIED') !== filters.area || filters.observedFrom && r.observedOn < filters.observedFrom || filters.observedTo && r.observedOn > filters.observedTo)) return;
         return page;
       } }));
     },
@@ -36,7 +38,7 @@ export function createObservationsApi(origin: string, access: Pick<AuthControlle
       return run(signal, false, s => http.request(`${base(id)}/${encodeURIComponent(observationId)}/revisions${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`, { signal: s, decodeFields, decode: (v, status) => {
         if (status !== 200 || !object(v)) return;
         const observation = parseIdentity(v.observation, id), page = parsePage(v, parseRevision);
-        if (!observation || observation.id !== observationId || !page || page.items.some((item, n) => item.actorId !== observation.author.id || item.version > observation.version || n && item.version <= page.items[n - 1]!.version)) return;
+        if (!observation || observation.id !== observationId || !page || !cursor && page.items[0]?.version !== 1 || page.items.some((item, n) => item.actorId !== observation.author.id || item.version > observation.version || Date.parse(item.recordedAt) < Date.parse(observation.createdAt) || n && item.version !== page.items[n - 1]!.version + 1)) return;
         return { observation, ...page };
       } }));
     },

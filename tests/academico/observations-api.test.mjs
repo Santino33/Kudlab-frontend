@@ -46,6 +46,8 @@ test('T-09/CA-03/08: history identity/order/version/cursor and obsolete generati
   for (const items of [[{ ...row, studentId: other }], [{ ...row, version: 2 }], [row, row]]) {
     response = { items, nextCursor: null }; assert.equal((await api.history(id, {}, null, signal())).kind, 'unavailable');
   }
+  response = { items: [row], nextCursor: null };
+  assert.equal((await api.history(id, { schoolYear: 2026 }, null, signal())).kind, 'unavailable');
   const stale = createObservationsApi('http://localhost:3000', { getGeneration: () => generation, notify() {} }, async () => { generation++; return Response.json({ items: [], nextCursor: null }); });
   assert.equal((await stale.history(id, {}, null, signal())).kind, 'obsolete');
 });
