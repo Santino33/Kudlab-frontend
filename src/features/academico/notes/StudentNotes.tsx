@@ -136,7 +136,7 @@ export function StudentNotes({ api, student, refresh }: { api: NotesApi; student
         <Button variant="outline" className="mt-4" onClick={reload}>Reintentar</Button></AlertDescription></Alert>}
       <div className="staff-table-region" role="region" aria-label="Notas por área y periodo" tabIndex={0}>
         <Table>
-          <TableCaption>Año {load.data.schoolYear} del curso actual. «Sin nota» indica que aún no hay registro, no una nota de cero.</TableCaption>
+          <TableCaption className="px-4 pt-4">Año {load.data.schoolYear} del curso actual. «Sin nota» indica que aún no hay registro, no una nota de cero.</TableCaption>
           <TableHeader><TableRow><TableHead>Área</TableHead>{terms.map((period) => <TableHead key={period} className="text-right">Periodo {period}</TableHead>)}</TableRow></TableHeader>
           <TableBody>{subjects.map((area) => <TableRow key={area}>
             <TableHead scope="row">{subjectLabels[area]}</TableHead>
