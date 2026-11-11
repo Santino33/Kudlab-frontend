@@ -48,7 +48,7 @@ try {
     task.then(() => inFlight.delete(task), error => { inFlight.delete(task); interceptionError ??= error; });
   });
   await page.goto(`${origin}/academico/estudiantes/${id}`, { settleMs: 100 });
-  await wait(() => document.body.textContent.includes('El historial no está actualizado') && ![...document.querySelectorAll('button')].find(e => e.textContent === 'Actualizar estado')?.disabled);
+  await wait(() => document.body.textContent.includes('No pudimos actualizar el historial') && ![...document.querySelectorAll('button')].find(e => e.textContent === 'Actualizar estado')?.disabled);
   let deadline;
   try { await Promise.race([secondHistory, new Promise((_, reject) => { deadline = setTimeout(() => reject(Error('Expected bounded second history read')), 15000); })]); }
   finally { clearTimeout(deadline); }
@@ -57,25 +57,34 @@ try {
   await writeFile(`${output}/synthetic.png`, 'synthetic bytes, never uploaded');
   const doc = await page.send('DOM.getDocument'), input = await page.send('DOM.querySelector', { nodeId: doc.root.nodeId, selector: '#consent-file' });
   await page.send('DOM.setFileInputFiles', { nodeId: input.nodeId, files: [`${output}/synthetic.png`] });
+  assert.equal(writes, 0);
+  assert.ok(await page.eval(() => document.body.textContent.includes('Documento seleccionado: synthetic.png') && document.body.textContent.includes('Aún no se ha registrado.')));
   await page.eval(() => {
     for (const id of ['consent-signedOn', 'consent-receivedOn']) { const input = document.getElementById(id); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '2026-01-01'); input.dispatchEvent(new Event('input', { bubbles: true })); }
   });
   await page.eval(() => { const form = document.getElementById('consent-file').form; form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
-  await wait(() => document.body.textContent.includes('No pudimos confirmar el guardado'));
+  await wait(() => document.body.textContent.includes('No pudimos comprobar si el documento se guardó'));
+  assert.ok(await page.eval(() => document.body.textContent.includes('El archivo seleccionado no confirma que se haya guardado.')));
   assert.equal(writes, 1, 'same-turn duplicate submit is blocked');
   student = { ...student, groupId: '00000000-0000-4000-8000-000000000003' };
   await wait(() => ![...document.querySelectorAll('button')].find(e => e.textContent === 'Actualizar estado')?.disabled);
   await page.eval(() => [...document.querySelectorAll('button')].find(e => e.textContent === 'Actualizar estado').click());
-  await wait(() => !document.body.textContent.includes('Archivo retenido: synthetic.png') && Boolean(document.getElementById('consent-file')));
+  await wait(() => !document.body.textContent.includes('Documento seleccionado: synthetic.png') && Boolean(document.getElementById('consent-file')));
   assert.equal(await page.eval(() => document.getElementById('consent-signedOn').value), '');
   assert.equal(await page.eval(() => sessionStorage.getItem('kudlab.consent-operation')), null);
-  recovered = true;
   await page.eval(id => sessionStorage.setItem('kudlab.consent-operation', JSON.stringify({ actorId: id, studentId: id, requestId: id })), id);
   await page.goto(`${origin}/academico/estudiantes/${id}`, { settleMs: 100 });
-  await wait(() => document.body.textContent.includes('Consentimiento registrado.'));
+  await wait(() => document.body.textContent.includes('Todavía no pudimos comprobar si se guardó.'));
+  assert.notEqual(await page.eval(() => sessionStorage.getItem('kudlab.consent-operation')), null);
+  assert.equal(await page.eval(() => document.getElementById('consent-file').disabled), true);
+  assert.equal(writes, 1, 'reload with unknown operation must not invent metadata or resend');
+  recovered = true;
+  await page.goto(`${origin}/academico/estudiantes/${id}`, { settleMs: 100 });
+  await wait(() => document.body.textContent.includes('El consentimiento se guardó.'));
+  await wait(() => document.getElementById('consent-title').closest('section').textContent.includes('Estado actual del estudiante: Inactivo'));
   assert.equal(await page.eval(() => sessionStorage.getItem('kudlab.consent-operation')), null);
   assert.equal(await page.eval(() => document.getElementById('consent-file').files.length), 0);
-  assert.equal(lookups, 1); assert.equal(writes, 1);
+  assert.equal(lookups, 2); assert.equal(writes, 1);
   console.log(JSON.stringify({ ok: true, backendRequests: 0, checks: ['history 404 bounded', 'duplicate submit blocked', 'changed group purges File/dates/handle', 'full reload reconciles minimal handle after fresh scope without POST replay'] }));
 } finally {
   stopIntercepting?.(); await Promise.allSettled([...inFlight]); await browser.close();

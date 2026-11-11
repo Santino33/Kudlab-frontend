@@ -68,8 +68,8 @@ export function parseOperation(v: unknown): ConsentOperation | undefined {
 export const fieldMessages: Record<string, string> = {
   required: 'Completa este campo.', invalid_format: 'Revisa el formato y los límites indicados.', too_large: 'El archivo supera los 10 MiB.',
   future_date: 'La fecha no puede ser futura en Colombia.', date_order: 'La firma debe ser anterior o igual a la recepción.',
-  STALE_VERSION: 'El consentimiento cambió. Consulta el estado actual antes de preparar otro registro.', REQUEST_REUSED: 'Este identificador corresponde a otro contenido. Comprueba la operación original.',
-  NOT_CURRENT: 'El registro ya no es el vigente.', EVIDENCE_MISMATCH: 'No se pudo comprobar que el documento coincida con el intento original.',
+  STALE_VERSION: 'La información cambió mientras completabas el formulario. Revisa el estado actual antes de continuar.', REQUEST_REUSED: 'El documento o los datos no coinciden con el envío pendiente. Comprueba si se guardó antes de volver a enviarlo.',
+  NOT_CURRENT: 'Este consentimiento ya no es el vigente. Actualiza el estado antes de continuar.', EVIDENCE_MISMATCH: 'No pudimos comprobar que sea el mismo documento del envío pendiente. Conserva el original y comprueba si se guardó.',
 };
 export function decodeConsentFields(v: unknown): { field: ConsentField; reason: string }[] {
   if (!object(v) || !Array.isArray(v.fields)) return [];

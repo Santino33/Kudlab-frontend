@@ -59,7 +59,7 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
     handle.clear(); setPendingId(undefined); setRevoking(false);
     update(action === 'REVOKE' ? { ...currentDraft.current, revocation: undefined, operation: undefined, phase: undefined } : { signedOn: '', receivedOn: '' });
     if (action === 'REGISTER' && input.current) input.current.value = '';
-    setMessage(action === 'REVOKE' ? 'Revocación registrada. El estado activo del estudiante no ha cambiado.' : 'Consentimiento registrado.');
+    setMessage(action === 'REVOKE' ? 'La revocación se guardó. Revocar no cambia por sí solo si el estudiante está activo o inactivo.' : 'El consentimiento se guardó. Consulta el estado actual del estudiante en esta sección.');
     onChange({ studentId, requestId, outcome: 'confirmed' });
   }
   async function reconcile() {
@@ -72,14 +72,14 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
       if (result.data.status === 'COMMITTED') { confirmed(pendingId, result.data.action); return; }
       if (result.data.status === 'REJECTED') {
         handle.clear(); setPendingId(undefined); update({ ...currentDraft.current, operation: undefined, phase: undefined, reviewRequired: true });
-        setMessage('El intento no se confirmó porque cambió la versión. Revisa el estado actual antes de guardar de nuevo.'); recheck(); return;
+        setMessage('Este documento no se registró porque la información cambió. Revisa el estado actual antes de guardarlo de nuevo.'); recheck(); return;
       }
       const a = result.data.attempt;
       update({ ...currentDraft.current, signedOn: a.signedOn!, receivedOn: a.receivedOn!, phase: 'retry',
         operation: { requestId: pendingId, expectedVersion: a.expectedVersion, signedOn: a.signedOn!, receivedOn: a.receivedOn! } });
-      setMessage('El intento sigue pendiente. Puedes reenviar exactamente el mismo documento y las mismas fechas; conservaremos su identificador.');
+      setMessage('El guardado sigue pendiente. Selecciona el mismo documento y pulsa Volver a enviar el mismo documento. Conservaremos las fechas para evitar un registro duplicado.');
     } else {
-      setMessage('El resultado sigue sin confirmar. Conservamos el identificador; una consulta fallida o sin resultado no demuestra que se haya deshecho.');
+      setMessage('Todavía no pudimos comprobar si se guardó. No lo des por registrado ni por perdido. Pulsa Comprobar si se guardó para consultar de nuevo.');
       if (result.kind === 'error' && result.status === 404) {
         if (currentDraft.current.operation) update({ ...currentDraft.current, phase: 'retry' });
         recheck();
@@ -101,7 +101,7 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
     if (Object.keys(issues).length) { setMessage('Revisa los campos indicados.'); requestAnimationFrame(() => summary.current?.focus()); return; }
     const metadata = draft.operation ?? { requestId: crypto.randomUUID(), expectedVersion: draft.baseVersion ?? snapshot.consent.version, signedOn: draft.signedOn, receivedOn: draft.receivedOn };
     update({ ...draft, operation: metadata, phase: 'sending' }); setPendingId(metadata.requestId);
-    handle.write({ actorId, studentId, requestId: metadata.requestId }); setBusy(true); setMessage('Comprobando y guardando el documento…');
+    handle.write({ actorId, studentId, requestId: metadata.requestId }); setBusy(true); setMessage('Estamos guardando el documento. Espera la confirmación.');
     const request = controller(), result = await api.register(studentId, metadata, draft.file!, request.signal); requests.current.delete(request);
     if (!authorized()) return;
     setBusy(false);
@@ -109,7 +109,7 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
     const conflict = result.kind === 'error' && result.fields?.find(field => field.field === 'operation')?.reason;
     if (result.kind === 'obsolete' || 'uncertain' in result && result.uncertain || result.kind === 'unavailable' || conflict === 'REQUEST_REUSED' || conflict === 'EVIDENCE_MISMATCH') {
       update({ ...currentDraft.current, phase: 'uncertain' });
-      setMessage('No pudimos confirmar el guardado. Comprueba este intento antes de volver a enviarlo.');
+      setMessage('No pudimos comprobar si el documento se guardó. Pulsa Comprobar si se guardó antes de enviarlo otra vez.');
       onChange({ studentId, requestId: metadata.requestId, outcome: 'uncertain' });
     } else {
       handle.clear(); setPendingId(undefined); update({ ...currentDraft.current, operation: undefined, phase: undefined, reviewRequired: Boolean(conflict) });
@@ -152,7 +152,7 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
     const conflict = result.kind === 'error' && result.fields?.find(field => field.field === 'operation')?.reason;
     if (result.kind === 'obsolete' || 'uncertain' in result && result.uncertain || result.kind === 'unavailable' || conflict === 'REQUEST_REUSED') {
       update({ ...currentDraft.current, phase: 'uncertain' });
-      setMessage('No pudimos confirmar la revocación. Comprueba este intento antes de volver a enviarlo.');
+      setMessage('No pudimos comprobar si la revocación se guardó. Pulsa Comprobar si se guardó antes de intentarlo otra vez.');
       onChange({ studentId, requestId: operation.requestId, outcome: 'uncertain' });
     } else {
       handle.clear(); setPendingId(undefined); update({ ...currentDraft.current, operation: undefined, phase: undefined });
@@ -163,7 +163,7 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
   async function download(recordId: string) {
     const request = controller(), result = await api.document(studentId, recordId, request.signal); requests.current.delete(request);
     if (!authorized()) return;
-    if (result.kind !== 'success') { setMessage('No se pudo descargar el documento. Su estado no ha cambiado.'); if (result.kind === 'error' && result.status === 404) recheck(); return; }
+    if (result.kind !== 'success') { setMessage('No pudimos descargar el documento ahora. Puedes intentarlo de nuevo. Este problema de descarga no modifica el consentimiento registrado.'); if (result.kind === 'error' && result.status === 404) recheck(); return; }
     const url = URL.createObjectURL(result.data); urls.current.add(url);
     const link = document.createElement('a'); link.href = url;
     link.download = `consentimiento-${recordId}.${result.data.type === 'application/pdf' ? 'pdf' : result.data.type === 'image/png' ? 'png' : 'jpg'}`;
@@ -174,41 +174,42 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
   const needsReview = Boolean(!pendingId && (draft.reviewRequired || snapshot && draft.baseVersion !== undefined && draft.baseVersion !== snapshot.consent.version));
   return <section className="rounded-xl border border-border bg-white p-5 sm:p-8" aria-labelledby="consent-title">
     <header className="flex flex-wrap items-start justify-between gap-4"><div><h2 id="consent-title" className="text-xl font-semibold">Consentimiento informado</h2>
-      <p className="mt-2 max-w-2xl text-sm text-muted">Documento del representante y trazabilidad de cada registro. El estado académico se muestra por separado.</p></div>
+      <p className="mt-2 max-w-2xl text-sm text-muted">Registra el documento firmado por el acudiente. Al confirmar el guardado, el estudiante se activa automáticamente; no necesitas otro botón de activación.</p></div>
       <span className="account-status">{refresh.status === 'checking' ? 'Comprobando…' : !available ? 'No se pudo comprobar' : snapshot!.consent.state === 'NONE' ? 'Sin registro' : snapshot!.consent.state === 'CURRENT' ? 'Vigente' : 'Revocado'}</span>
     </header>
     <Button className="mt-4" variant="outline" disabled={refresh.status === 'checking'} onClick={recheck}>Actualizar estado</Button>
-    {!available && <p className="mt-5">Las acciones de registro esperan una comprobación actual. Tu borrador se conserva mientras mantengas acceso.</p>}
+    {available && <p className="mt-4" role="status">Estado actual del estudiante: <strong>{snapshot!.student.isActive ? 'Activo' : 'Inactivo'}</strong>. {snapshot!.consent.state === 'NONE' ? 'Aún no tiene consentimiento registrado.' : snapshot!.consent.state === 'REVOKED' ? 'El consentimiento fue revocado. Necesita uno nuevo para iniciar actividades.' : 'Tiene consentimiento vigente.'}</p>}
+    {!available && <p className="mt-5">Necesitamos comprobar la información antes de guardar. Pulsa Actualizar estado. Conservamos lo que completaste mientras mantengas acceso.</p>}
     <p id="consent-result" ref={summary} tabIndex={-1} role="status" className="mt-5 text-sm empty:hidden">{message}</p>
-    {pendingId && <div className="mt-4 rounded-lg border border-border p-4"><h3 className="font-semibold">Hay un intento por comprobar</h3><p className="mt-1 text-sm">No crearemos otra operación mientras su resultado sea incierto. Si el intento era un documento pendiente y recargaste, deberás seleccionar otra vez el archivo original.</p><Button className="mt-3" variant="outline" disabled={busy} onClick={() => void reconcile()}>Comprobar intento</Button>
+    {pendingId && <div className="mt-4 rounded-lg border border-border p-4"><h3 className="font-semibold">Guardado por confirmar</h3><p className="mt-1 text-sm">Primero comprobaremos si se guardó para evitar duplicados. Si recargaste la página y podemos continuar el envío, te pediremos que selecciones otra vez el documento original.</p><Button className="mt-3" variant="outline" disabled={busy} onClick={() => void reconcile()}>Comprobar si se guardó</Button>
       {revokeAttempt && draft.phase === 'retry' && <Button className="mt-3 sm:ml-3" variant="outline" disabled={busy || !available} onClick={openRevocation}>Revisar reenvío de revocación</Button>}</div>}
     <form onSubmit={submit} className="mt-6 max-w-2xl space-y-5" onFocusCapture={event => { if (event.target.id) update({ ...currentDraft.current, focus: event.target.id }); }}>
       <div className="space-y-2"><Label htmlFor="consent-file">Documento firmado</Label>
-        <p id="consent-file-help" className="text-sm text-muted">PDF sin contraseña (hasta 200 páginas), PNG o JPEG estático (hasta 40 millones de píxeles). Máximo 10 MiB. Se conserva el archivo original. Si el selector se cerró al comprobar tu acceso, vuelve a seleccionar el archivo.</p>
+        <p id="consent-file-help" className="text-sm text-muted">PDF, PNG o JPEG, no vacío y de máximo 10 MiB. Revisa que el documento se pueda leer y corresponda al consentimiento firmado: el sistema solo comprueba el tipo y tamaño del archivo. Se conserva el original. Si el selector se cerró al comprobar tu acceso, vuelve a seleccionar el archivo.</p>
          <Input ref={input} id="consent-file" type="file" accept=".pdf,.png,.jpg,.jpeg" disabled={busy || Boolean(revokeAttempt) || Boolean(pendingId && draft.phase !== 'retry')} aria-invalid={Boolean(errors.file)} aria-describedby="consent-file-help consent-file-error" onChange={event => {
           const file = event.target.files?.[0]; if (!file || !authorized()) return;
           if (file.size > 10485760 || !file.size) { setErrors(old => ({ ...old, file: 'Selecciona un archivo de hasta 10 MiB y no vacío.' })); event.target.value = ''; return; }
           edit({ ...currentDraft.current, file }); setErrors(old => ({ ...old, file: '' }));
         }} />
-        {draft.file && <div className="flex flex-wrap items-center gap-3 text-sm"><FileText aria-hidden="true" className="size-4 shrink-0" /><span className="min-w-0 [overflow-wrap:anywhere]">Archivo retenido: {draft.file.name} · {(draft.file.size / 1024).toFixed(1)} KiB</span><Button type="button" variant="outline" disabled={frozen} onClick={() => { update({ ...draft, file: undefined }); if (input.current) input.current.value = ''; }}>Quitar</Button></div>}
+        {draft.file && <div className="flex flex-wrap items-center gap-3 text-sm"><FileText aria-hidden="true" className="size-4 shrink-0" /><span className="min-w-0 [overflow-wrap:anywhere]">Documento seleccionado: {draft.file.name} · {(draft.file.size / 1024).toFixed(1)} KiB. {pendingId ? 'El archivo seleccionado no confirma que se haya guardado.' : 'Aún no se ha registrado. Completa las fechas y pulsa Registrar consentimiento o Registrar nuevo documento.'}</span><Button type="button" variant="outline" disabled={frozen} onClick={() => { update({ ...draft, file: undefined }); if (input.current) input.current.value = ''; }}>Quitar archivo</Button></div>}
         <p id="consent-file-error" className="text-sm">{errors.file}</p>
       </div>
       <div className="grid gap-5 sm:grid-cols-2">{(['signedOn', 'receivedOn'] as const).map(field => <div key={field} className="space-y-2"><Label htmlFor={`consent-${field}`}>{field === 'signedOn' ? 'Fecha de firma' : 'Fecha de recepción'}</Label>
         <Input id={`consent-${field}`} type="date" value={draft[field]} disabled={frozen} aria-invalid={Boolean(errors[field])} aria-describedby={`consent-${field}-error consent-date-help`} onChange={event => edit({ ...draft, [field]: event.target.value })} />
         <p id={`consent-${field}-error`} className="text-sm">{errors[field]}</p></div>)}</div>
-      <p id="consent-date-help" className="text-sm text-muted">Fechas en Colombia (America/Bogota), no futuras. La firma debe ser anterior o igual a la recepción.</p>
+      <p id="consent-date-help" className="text-sm text-muted">Indica cuándo firmó el acudiente y cuándo recibiste el documento. Ninguna fecha puede ser posterior a hoy en Colombia; la firma no puede ser posterior a la recepción.</p>
       {errors.operation && <p>{errors.operation}</p>}
       {needsReview && <div role="status" className="space-y-3"><p>El consentimiento cambió mientras preparabas este documento. Revisa el estado y el historial antes de continuar.</p><Button type="button" variant="outline" disabled={!available} onClick={() => { update({ ...draft, baseVersion: snapshot!.consent.version, reviewRequired: false }); setErrors({}); }}>He revisado el estado actual</Button></div>}
-      <Button type="submit" disabled={busy || !available || needsReview || Boolean(revokeAttempt) || Boolean(pendingId && draft.phase !== 'retry')}>{busy ? 'Comprobando operación…' : pendingId && !revokeAttempt ? 'Reenviar el mismo intento' : !snapshot || snapshot.consent.state === 'NONE' ? 'Registrar consentimiento' : 'Registrar nuevo documento'}</Button>
-      <p className="text-sm text-muted">Un registro confirmado activa al estudiante. Los documentos anteriores permanecen en el historial.</p>
+      <Button type="submit" disabled={busy || !available || needsReview || Boolean(revokeAttempt) || Boolean(pendingId && draft.phase !== 'retry')}>{busy ? draft.phase === 'sending' ? 'Guardando…' : 'Comprobando si se guardó…' : pendingId && !revokeAttempt ? 'Volver a enviar el mismo documento' : !snapshot || snapshot.consent.state === 'NONE' ? 'Registrar consentimiento' : 'Registrar nuevo documento'}</Button>
+      <p className="text-sm text-muted">Elegir un archivo no lo guarda. Registra un documento nuevo si necesitas renovar o reemplazar el anterior. Los documentos anteriores permanecen en el historial.</p>
     </form>
     {snapshot?.consent.state === 'CURRENT' && <div className="mt-8 space-y-3"><h3 className="text-lg font-semibold">Revocar consentimiento</h3>
-      <p className="max-w-2xl">Registra la comunicación del acudiente sin adjuntar otro archivo. La revocación no inactiva al estudiante.</p>
+      <p className="max-w-2xl">Si el acudiente retira su autorización, registra aquí su comunicación. No necesitas otro archivo. El estudiante no podrá iniciar nuevas actividades; revocar no cambia por sí solo su estado activo o inactivo.</p>
       <Button id="consent-revoke" variant="outline" disabled={frozen || !available} onClick={openRevocation}>Revocar consentimiento</Button></div>}
     <AlertDialog open={revoking} onOpenChange={open => { if (!busy) setRevoking(open); }}>
       <AlertDialogContent initialFocus={cancel} finalFocus={() => document.getElementById('consent-result')?.textContent ? summary.current : document.getElementById('consent-revoke')}>
         <AlertDialogHeader><AlertDialogTitle>Revocar consentimiento</AlertDialogTitle>
-          <AlertDialogDescription>Para el estudiante {snapshot?.student.studentCode}, se bloquearán nuevos inicios. Se conservan su estado activo, los documentos, el historial y las asignaciones. Las sesiones iniciadas con autorización podrán terminar y entregar su evidencia.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogDescription>El estudiante {snapshot?.student.studentCode} no podrá iniciar nuevas actividades. Las que ya inició con autorización podrán terminar y guardar sus resultados. Se conservan los documentos y el historial; su estado activo o inactivo no cambia por esta acción.</AlertDialogDescription></AlertDialogHeader>
         <form onSubmit={revoke} noValidate className="space-y-6">
           <div className="space-y-2"><Label htmlFor="consent-reason">Motivo o referencia de la comunicación</Label>
             <p id="consent-reason-help">Escribe el motivo comunicado por el acudiente. Máximo 2 000 caracteres; no incluyas datos personales adicionales.</p>
@@ -225,14 +226,14 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
     </AlertDialog>
     <div className="mt-8 border-t border-border pt-6"><h3 className="text-lg font-semibold">Historial de documentos</h3>
       {historyState === 'loading' && <p role="status" className="mt-3">Consultando historial…</p>}
-      {historyState === 'unavailable' && <div className="mt-3"><p>El historial no está actualizado. No significa que no existan registros.</p><Button variant="outline" className="mt-3" onClick={() => void history()}>Reintentar historial</Button></div>}
+      {historyState === 'unavailable' && <div className="mt-3"><p>No pudimos actualizar el historial. Los registros guardados no se borraron por este problema.</p><Button variant="outline" className="mt-3" onClick={() => void history()}>Volver a consultar el historial</Button></div>}
       {historyState === 'ready' && !events.length && <p className="mt-3 text-sm text-muted">Todavía no hay documentos registrados.</p>}
       <ol className="mt-4 divide-y divide-border">{events.map(event => <li key={event.id} className="flex flex-wrap items-start justify-between gap-4 py-4">
-        <div className="min-w-0 space-y-1"><p className="font-medium">{event.type === 'REGISTER' ? 'Registro inicial' : event.type === 'REPLACE' ? 'Nuevo documento' : 'Revocación'} · Versión {event.version}</p>
+        <div className="min-w-0 space-y-1"><p className="font-medium">{event.type === 'REGISTER' ? 'Registro inicial' : event.type === 'REPLACE' ? 'Nuevo documento' : 'Revocación'} · Registro {event.version}</p>
           <p className="text-sm [overflow-wrap:anywhere]">{event.author.name} · {new Date(event.occurredAt).toLocaleString('es-CO', { timeZone: 'America/Bogota' })} (Colombia)</p>
            <p className="text-sm text-muted">Firma: {event.record.signedOn} · Recepción: {event.record.receivedOn}</p>
            {event.reason && <p className="max-w-2xl whitespace-pre-wrap [overflow-wrap:anywhere]">Motivo: {event.reason}</p>}</div>
-        <Button type="button" variant="outline" onClick={() => void download(event.record.id)} aria-label={`Descargar documento de la versión ${event.version}`}><Download aria-hidden="true" className="size-4" />Descargar</Button>
+        <Button type="button" variant="outline" onClick={() => void download(event.record.id)} aria-label={`Descargar documento del registro ${event.version}`}><Download aria-hidden="true" className="size-4" />Descargar</Button>
       </li>)}</ol>
       {cursor && <Button variant="outline" disabled={historyState === 'loading'} onClick={() => void history(cursor)}>Ver registros anteriores</Button>}
     </div>
