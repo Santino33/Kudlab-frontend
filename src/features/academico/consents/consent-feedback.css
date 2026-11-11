@@ -1,0 +1,28 @@
+.consent-feedback {
+  margin-block-start: 1.25rem;
+  margin-inline-start: auto;
+  width: min(100%, 24rem);
+  border-color: var(--color-foreground);
+  animation: consent-feedback-enter 180ms ease-out;
+}
+
+/* In a narrow or short viewport the notice stays in flow, leaving controls usable. */
+@media (min-width: 1280px) and (min-height: 800px) {
+  .consent-feedback {
+    position: fixed;
+    z-index: 30;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    width: 22rem;
+    max-width: calc(100vw - 3rem);
+  }
+}
+
+@keyframes consent-feedback-enter {
+  from { opacity: 0; transform: translateX(1.5rem); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .consent-feedback { animation: none; }
+}

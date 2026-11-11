@@ -10,6 +10,7 @@ import type { ConsentsApi } from './api.ts';
 import type { ConsentDraft, ConsentEvent, ConsentSnapshot } from './types.ts';
 import { fieldMessages } from './types.ts';
 import { consentFieldMessage, registrationFields, validateConsentDraft } from './validation.ts';
+import { ConsentFeedback } from './ConsentFeedback.tsx';
 import { operationHandle } from './operation-handle.ts';
 import type { ConsentChange, DraftLease, StudentRefresh } from '../students/student-drafts.ts';
 
@@ -26,6 +27,8 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
   const [revoking, setRevoking] = useState(false);
   const cancel = useRef<HTMLButtonElement>(null), reasonInput = useRef<HTMLTextAreaElement>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [feedback, setFeedback] = useState<{ sequence: number; message: string }>();
+  const feedbackSequence = useRef(0);
   const [events, setEvents] = useState<ConsentEvent[]>([]), [cursor, setCursor] = useState<string | null>(null);
   const [historyState, setHistoryState] = useState<'loading' | 'ready' | 'unavailable'>('loading');
   const requests = useRef(new Set<AbortController>()), urls = useRef(new Set<string>()), alive = useRef(true);
@@ -36,6 +39,8 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
   function update(value: ConsentDraft) { if (authorized()) { currentDraft.current = value; slot.write(value); setDraft(value); } }
   function edit(value: ConsentDraft) { update({ ...value, baseVersion: value.baseVersion ?? snapshot?.consent.version }); }
   function editRegistration(value: ConsentDraft, field: typeof registrationFields[number]) {
+    if (!authorized()) return;
+    if (feedback) { setFeedback(undefined); setMessage(''); }
     edit(value);
     const issues = validateConsentDraft(value);
     setErrors(old => {
@@ -55,9 +60,11 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
       target?.focus(); target?.scrollIntoView({ block: 'center', behavior: 'instant' });
     });
   }
-  function registrationError(issues: Record<string, string>, fallback = 'Revisa la información y el formato del documento antes de continuar.') {
+  function registrationError(issues: Record<string, string>, fallback = 'Revisa la información y el formato del documento antes de continuar.', uncertain = Boolean(pendingId)) {
     setErrors(issues);
-    setMessage(`No se registró el consentimiento. ${Object.values(issues).filter(Boolean).join(' ') || fallback}`);
+    const text = `${uncertain ? 'El guardado anterior sigue por confirmar. No se volvió a enviar el documento.' : 'No se registró el consentimiento.'} ${Object.values(issues).filter(Boolean).join(' ') || fallback}`;
+    setMessage(text);
+    setFeedback({ sequence: ++feedbackSequence.current, message: text });
     focusRegistrationError(issues);
   }
   function controller() { const value = new AbortController(); requests.current.add(value); return value; }
@@ -65,6 +72,7 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
     alive.current = true;
     const stop = () => {
       alive.current = false;
+      setFeedback(undefined);
       for (const request of requests.current) request.abort(); requests.current.clear();
       for (const url of urls.current) URL.revokeObjectURL(url); urls.current.clear();
     };
@@ -82,6 +90,7 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
   }
   useEffect(() => { void history(); }, [refresh.revision]);
   function confirmed(requestId: string, action: 'REGISTER' | 'REVOKE' = 'REGISTER') {
+    setFeedback(undefined); setErrors({});
     handle.clear(); setPendingId(undefined); setRevoking(false);
     update(action === 'REVOKE' ? { ...currentDraft.current, revocation: undefined, operation: undefined, phase: undefined } : { signedOn: '', receivedOn: '' });
     if (action === 'REGISTER' && input.current) input.current.value = '';
@@ -120,6 +129,7 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
     const issues = validateConsentDraft(draft);
     setErrors(issues);
     if (Object.keys(issues).length) { registrationError(issues); return; }
+    setFeedback(undefined);
     const metadata = draft.operation ?? { requestId: crypto.randomUUID(), expectedVersion: draft.baseVersion ?? snapshot.consent.version, signedOn: draft.signedOn, receivedOn: draft.receivedOn };
     update({ ...draft, operation: metadata, phase: 'sending' }); setPendingId(metadata.requestId);
     handle.write({ actorId, studentId, requestId: metadata.requestId }); setBusy(true); setMessage('Estamos guardando el documento. Espera la confirmación.');
@@ -135,7 +145,7 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
     } else {
       handle.clear(); setPendingId(undefined); update({ ...currentDraft.current, operation: undefined, phase: undefined, reviewRequired: Boolean(conflict) });
       const issues = result.kind === 'error' ? Object.fromEntries((result.fields ?? []).map(field => [field.field, consentFieldMessage(field.field, field.reason)])) : {};
-      registrationError(issues, conflict ? fieldMessages[conflict] : undefined);
+      registrationError(issues, conflict ? fieldMessages[conflict] : undefined, false);
       if (result.kind === 'error' && [404, 409].includes(result.status)) recheck();
       return;
     }
@@ -150,7 +160,7 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
       update({ ...currentDraft.current, revocation: { expectedVersion: snapshot.consent.version,
         recordId: snapshot.consent.currentRecord.id, reason: currentDraft.current.revocation?.reason ?? '' } });
     }
-    setErrors(old => ({ ...old, reason: '' })); setMessage(''); setRevoking(true);
+    setFeedback(undefined); setErrors(old => ({ ...old, reason: '' })); setMessage(''); setRevoking(true);
   }
   async function revoke(event: FormEvent) {
     event.preventDefault();
@@ -202,10 +212,11 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
     <Button className="mt-4" variant="outline" disabled={refresh.status === 'checking'} onClick={recheck}>Actualizar estado</Button>
     {available && <p className="mt-4" role="status">Estado actual del estudiante: <strong>{snapshot!.student.isActive ? 'Activo' : 'Inactivo'}</strong>. {snapshot!.consent.state === 'NONE' ? 'Aún no tiene consentimiento registrado.' : snapshot!.consent.state === 'REVOKED' ? 'El consentimiento fue revocado. Necesita uno nuevo para iniciar actividades.' : 'Tiene consentimiento vigente.'}</p>}
     {!available && <p className="mt-5">Necesitamos comprobar la información antes de guardar. Pulsa Actualizar estado. Conservamos lo que completaste mientras mantengas acceso.</p>}
-    <p id="consent-result" ref={summary} tabIndex={-1} role="status" className="mt-5 text-sm empty:hidden">{message}</p>
+    <p id="consent-result" ref={summary} tabIndex={-1} role={feedback?.message === message ? undefined : 'status'} className="mt-5 text-sm empty:hidden">{message}</p>
     {pendingId && <div className="mt-4 rounded-lg border border-border p-4"><h3 className="font-semibold">Guardado por confirmar</h3><p className="mt-1 text-sm">Primero comprobaremos si se guardó para evitar duplicados. Si recargaste la página y podemos continuar el envío, te pediremos que selecciones otra vez el documento original.</p><Button className="mt-3" variant="outline" disabled={busy} onClick={() => void reconcile()}>Comprobar si se guardó</Button>
       {revokeAttempt && draft.phase === 'retry' && <Button className="mt-3 sm:ml-3" variant="outline" disabled={busy || !available} onClick={openRevocation}>Revisar reenvío de revocación</Button>}</div>}
     <form onSubmit={submit} noValidate className="mt-6 max-w-2xl space-y-5" onFocusCapture={event => { if (event.target.id) update({ ...currentDraft.current, focus: event.target.id }); }}>
+      {feedback && errors.file && authorized() && <ConsentFeedback key={feedback.sequence} message={feedback.message} />}
       <div className="space-y-2"><Label htmlFor="consent-file">Documento firmado</Label>
         <p id="consent-file-help" className="text-sm text-muted">PDF, PNG o JPEG, no vacío y de máximo 10 MiB. Revisa que el documento se pueda leer y corresponda al consentimiento firmado: el sistema solo comprueba el tipo y tamaño del archivo. Se conserva el original. Si el selector se cerró al comprobar tu acceso, vuelve a seleccionar el archivo.</p>
           <Input ref={input} id="consent-file" type="file" required className="scroll-mt-6 aria-invalid:border-foreground" accept=".pdf,.png,.jpg,.jpeg" disabled={busy || Boolean(revokeAttempt) || Boolean(pendingId && draft.phase !== 'retry')} aria-invalid={Boolean(errors.file)} aria-describedby="consent-file-help consent-file-error" onChange={event => {
@@ -216,6 +227,7 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
         {draft.file && <div className="flex flex-wrap items-center gap-3 text-sm"><FileText aria-hidden="true" className="size-4 shrink-0" /><span className="min-w-0 [overflow-wrap:anywhere]">Documento seleccionado: {draft.file.name} · {(draft.file.size / 1024).toFixed(1)} KiB. {pendingId ? 'El archivo seleccionado no confirma que se haya guardado.' : 'Aún no se ha registrado. Completa las fechas y pulsa Registrar consentimiento o Registrar nuevo documento.'}</span><Button type="button" variant="outline" disabled={frozen} onClick={() => { update({ ...draft, file: undefined }); if (input.current) input.current.value = ''; }}>Quitar archivo</Button></div>}
         <p id="consent-file-error" className="text-sm font-semibold empty:hidden">{errors.file}</p>
       </div>
+      {feedback && !errors.file && authorized() && <ConsentFeedback key={feedback.sequence} message={feedback.message} />}
       <div className="grid gap-5 sm:grid-cols-2">{(['signedOn', 'receivedOn'] as const).map(field => <div key={field} className="space-y-2"><Label htmlFor={`consent-${field}`}>{field === 'signedOn' ? 'Fecha de firma' : 'Fecha de recepción'}</Label>
         <Input id={`consent-${field}`} type="date" required className="scroll-mt-6 aria-invalid:border-foreground" value={draft[field]} disabled={frozen} aria-invalid={Boolean(errors[field])} aria-describedby={`consent-${field}-error consent-date-help`} onChange={event => editRegistration({ ...currentDraft.current, [field]: event.target.value }, field)} />
         <p id={`consent-${field}-error`} className="text-sm font-semibold empty:hidden">{errors[field]}</p></div>)}</div>
