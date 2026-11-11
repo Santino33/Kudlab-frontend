@@ -26,6 +26,8 @@ import type { ActivitiesApi } from '../../tareas/activities/api.ts';
 import { StudentAssignments } from '../../tareas/activities/Activities';
 import { StudentIndicatorsLink } from '../../indicadores/StudentIndicatorsLink';
 import { StudentObservations } from '../../seguimiento/observations/StudentObservations';
+import { StudentNotes } from '../notes/StudentNotes';
+import type { NotesApi } from '../notes/api.ts';
 import type { ObservationsApi } from '../../seguimiento/observations/api.ts';
 import { observationMatrixPath } from '../../seguimiento/observations/navigation.ts';
 
@@ -87,8 +89,8 @@ export function StudentRegistration() {
   </div>;
 }
 
-export function StudentDetail({ api, readApi, activities, consents, observations, drafts, actorId, apiOrigin, studentId, write, reviewed, group }: {
-  api: StudentsApi; readApi: StudentsApi; activities: ActivitiesApi; consents: ConsentsApi; observations: ObservationsApi; drafts: StudentDraftHost;
+export function StudentDetail({ api, readApi, activities, consents, observations, notes, drafts, actorId, apiOrigin, studentId, write, reviewed, group }: {
+  api: StudentsApi; readApi: StudentsApi; activities: ActivitiesApi; consents: ConsentsApi; observations: ObservationsApi; notes: NotesApi; drafts: StudentDraftHost;
   actorId: string; apiOrigin: string; studentId: string; write?: StudentWrite; reviewed(): void; group?: Group;
 }) {
   const [student, setStudent] = useState<Student>();
@@ -165,6 +167,7 @@ export function StudentDetail({ api, readApi, activities, consents, observations
         onChange={change => { if (activeSequence === sequence.current && lease.valid() && change.studentId === studentId) query.reload(); }} />}
       {lease && <StudentObservations key={`observations:${apiOrigin}:${actorId}:${student.id}:${student.groupId}`} api={observations} apiOrigin={apiOrigin} actorId={actorId} student={student} refresh={refresh} consentState={snapshot?.consent.state} draft={lease.slot('observations')} lease={lease} recheck={recheckSelection} onAccessLost={lostSelection} />}
       <StudentAssignments key={student.id} api={activities} student={student} refresh={refresh} />
+      <StudentNotes key={`notes:${student.id}`} api={notes} student={student} refresh={refresh} />
       <StudentIndicatorsLink student={student} />
       {student.isActive ? <Deactivate api={api} student={student} locked={Boolean(write) || refresh.status !== 'ready'} onSuccess={() => { setNotice('Estudiante inactivado'); query.reload(); }} review={check} /> : <p>Este registro está inactivo. Un nuevo consentimiento confirmado permite reactivarlo.</p>}
     </> : <><Heading>Ficha de estudiante</Heading>{query.fetching || !failure ? <Loading text="Consultando estudiante" /> : <Failure result={failure} retry={query.reload} />}</>}

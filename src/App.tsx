@@ -33,6 +33,7 @@ import { Recovery } from './features/usuarios/recovery/Recovery';
 import { Notice } from './features/usuarios/shared';
 import { createIndicatorsApi } from './features/indicadores/api.ts';
 import { createObservationsApi } from './features/seguimiento/observations/api.ts';
+import { createNotesApi, localNotesAccess } from './features/academico/notes/api.ts';
 import { ObservationMatrixRoute } from './features/seguimiento/observations/ObservationMatrixRoute';
 import { IndicatorCatalog } from './features/indicadores/IndicatorCatalog';
 import { IndicatorDefinitionView } from './features/indicadores/IndicatorDefinitionView';
@@ -112,6 +113,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
       return {
        consents: createConsentsApi(apiOrigin, controller, fetcher),
        observations: createObservationsApi(apiOrigin, controller, fetcher),
+       notes: createNotesApi(createHttpClient(apiOrigin, localNotesAccess(controller), fetcher)),
        matrixGroups: groupRead,
        academicRead: createStudentsApi(readHttp),
        academicForGroup: (id: string) => createStudentsApi(readHttp, undefined, id),
@@ -177,10 +179,10 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
         route.kind === 'groupNew' ? <GroupForm api={apis.groups} locked={Boolean(groupWrite)} /> :
         route.kind === 'groupEdit' ? <GroupContent api={apis.groups} groupId={route.groupId}>{group => <GroupForm api={apis.groups} before={group} locked={Boolean(groupWrite)} />}</GroupContent> :
         route.kind === 'groupDetail' ? <GroupContent api={apis.groups} groupId={route.groupId}>{group => user.role === 'ADMIN' ? <GroupAdministration group={group} api={apis.groups} locked={Boolean(groupWrite)} /> : <Students group={group} api={apis.studentsForGroup(group.id)} write={studentWrite} reviewed={() => setStudentWrite(undefined)} />}</GroupContent> :
-        students && selectedGroup ? <GroupContent api={route.kind === 'studentDetail' ? apis.groupsRead : apis.groups} groupId={selectedGroup}>{group => route.kind === 'studentNew' ? <Registration group={group} api={apis.studentsForGroup(group.id)} locked={Boolean(studentWrite)} /> : route.kind === 'studentDetail' ? <StudentDetail group={group} api={apis.studentsForGroup(group.id)} readApi={apis.academicRead} consents={apis.consents} observations={apis.observations} drafts={drafts.current!} actorId={user.id} apiOrigin={apiOrigin!} activities={apis.activities} studentId={route.studentId} write={studentWrite} reviewed={() => setStudentWrite(undefined)} /> : route.kind === 'studentEdit' ? <StudentEdit group={group} api={apis.studentsForGroup(group.id)} studentId={route.studentId} locked={Boolean(studentWrite)} /> : <Students group={group} api={apis.studentsForGroup(group.id)} />}</GroupContent> :
+        students && selectedGroup ? <GroupContent api={route.kind === 'studentDetail' ? apis.groupsRead : apis.groups} groupId={selectedGroup}>{group => route.kind === 'studentNew' ? <Registration group={group} api={apis.studentsForGroup(group.id)} locked={Boolean(studentWrite)} /> : route.kind === 'studentDetail' ? <StudentDetail group={group} api={apis.studentsForGroup(group.id)} readApi={apis.academicRead} consents={apis.consents} observations={apis.observations} notes={apis.notes} drafts={drafts.current!} actorId={user.id} apiOrigin={apiOrigin!} activities={apis.activities} studentId={route.studentId} write={studentWrite} reviewed={() => setStudentWrite(undefined)} /> : route.kind === 'studentEdit' ? <StudentEdit group={group} api={apis.studentsForGroup(group.id)} studentId={route.studentId} locked={Boolean(studentWrite)} /> : <Students group={group} api={apis.studentsForGroup(group.id)} />}</GroupContent> :
         route.kind === 'students' ? <Students api={apis.students} /> :
         route.kind === 'studentNew' ? <StudentRegistration /> :
-        route.kind === 'studentDetail' ? <StudentDetail api={apis.students} readApi={apis.academicRead} consents={apis.consents} observations={apis.observations} drafts={drafts.current!} actorId={user.id} apiOrigin={apiOrigin!} activities={apis.activities} studentId={route.studentId} write={studentWrite} reviewed={() => setStudentWrite(undefined)} /> :
+        route.kind === 'studentDetail' ? <StudentDetail api={apis.students} readApi={apis.academicRead} consents={apis.consents} observations={apis.observations} notes={apis.notes} drafts={drafts.current!} actorId={user.id} apiOrigin={apiOrigin!} activities={apis.activities} studentId={route.studentId} write={studentWrite} reviewed={() => setStudentWrite(undefined)} /> :
         route.kind === 'studentEdit' ? <StudentEdit api={apis.students} studentId={route.studentId} locked={Boolean(studentWrite)} /> :
         route.kind === 'tasks' ? <Catalog api={apis.tasks} /> :
         route.kind === 'taskDetail' ? <TaskDetail api={apis.tasks} taskId={route.taskId} /> :
