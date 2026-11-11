@@ -98,32 +98,32 @@ try {
   assert.equal(await page.eval(() => document.activeElement.id), 'consent-reason');
   const previousAssignments = assignments;
   await page.eval(() => { const form = document.getElementById('consent-reason').form; form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
-  await wait(() => document.body.textContent.includes('Revocación registrada.') && document.body.textContent.includes('Motivo: El acudiente'));
+  await wait(() => document.body.textContent.includes('La revocación se guardó.') && document.body.textContent.includes('Motivo: El acudiente'));
   assert.equal(writes.length, 1); assert.ok(assignments > previousAssignments);
-  assert.ok(await page.eval(() => document.body.textContent.includes('Archivo retenido: ficticio.png') && document.body.textContent.includes('El consentimiento cambió mientras')));
+  assert.ok(await page.eval(() => document.body.textContent.includes('Documento seleccionado: ficticio.png') && document.body.textContent.includes('El consentimiento cambió mientras')));
   assert.equal(await page.eval(() => [...document.querySelectorAll('button')].find(el => el.textContent === 'Registrar nuevo documento').disabled), true);
-  await click('Descargar'); await wait(() => document.body.textContent.includes('Su estado no ha cambiado.'));
+  await click('Descargar'); await wait(() => document.body.textContent.includes('Este problema de descarga no modifica el consentimiento registrado.'));
   assert.ok(await page.eval(() => [...document.querySelectorAll('.account-status')].some(el => el.textContent === 'Revocado')));
   // Another tab renews; a stale modal is rejected and must be deliberately reopened.
   state = 'CURRENT'; version++; await click('Actualizar estado'); await ready();
   await open(); await fill('consent-reason', 'Motivo ficticio de conflicto'); mode = 'stale'; await click('Confirmar revocación');
-  await wait(() => document.body.textContent.includes('El consentimiento cambió. Consulta'));
+  await wait(() => document.body.textContent.includes('La información cambió mientras completabas el formulario.'));
   await ready(); assert.equal(writes.length, 2);
   // Lost response after commit: same handle reconciles across a full reload, with no replay.
   mode = 'lost'; await open(); await fill('consent-reason', 'Motivo ficticio de respuesta perdida'); await click('Confirmar revocación');
-  await wait(() => document.body.textContent.includes('No pudimos confirmar la revocación'));
+  await wait(() => document.body.textContent.includes('No pudimos comprobar si la revocación se guardó'));
   const stored = await page.eval(() => JSON.parse(sessionStorage.getItem('kudlab.consent-operation')));
   assert.deepEqual(Object.keys(stored).sort(), ['actorId', 'requestId', 'studentId']); assert.equal(writes.length, 3);
   await page.goto(`${origin}/academico/estudiantes/${id}`, { settleMs: 100 });
-  await wait(() => document.body.textContent.includes('Revocación registrada.'));
+  await wait(() => document.body.textContent.includes('La revocación se guardó.'));
   assert.equal(writes.length, 3); assert.equal(reads, 1); assert.equal(await page.eval(() => sessionStorage.getItem('kudlab.consent-operation')), null);
   // Absent operation is uncertain, explicit retry retains the very same key and payload.
   state = 'CURRENT'; version++; await click('Actualizar estado'); await ready();
   mode = 'absent'; await open(); await fill('consent-reason', 'Motivo ficticio de reenvío'); await click('Confirmar revocación');
-  await wait(() => document.body.textContent.includes('No pudimos confirmar la revocación'));
-  await click('Comprobar intento'); await wait(() => document.body.textContent.includes('Revisar reenvío de revocación'));
+  await wait(() => document.body.textContent.includes('No pudimos comprobar si la revocación se guardó'));
+  await click('Comprobar si se guardó'); await wait(() => document.body.textContent.includes('Revisar reenvío de revocación'));
   assert.equal(writes.length, 4); mode = 'normal'; await click('Revisar reenvío de revocación'); await click('Reenviar la misma revocación');
-  await wait(() => document.body.textContent.includes('Revocación registrada.'));
+  await wait(() => document.body.textContent.includes('La revocación se guardó.'));
   assert.equal(writes.length, 5); assert.deepEqual(writes[3], writes[4]);
   // Suspension removes the dialog; same fresh scope restores reason but never auto-opens/auto-sends.
   state = 'CURRENT'; version++; await click('Actualizar estado'); await ready();
