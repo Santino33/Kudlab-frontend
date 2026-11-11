@@ -1,5 +1,5 @@
 export const reasonLabels = {
-  INTEGRATION_PENDING: 'Pendiente de integración: el juego aún no ha sido cotejado y validado con la plataforma.',
+  INTEGRATION_PENDING: 'Pendiente de preparación: falta una configuración compatible con el juego disponible.',
   CONFIGURATION_UNPUBLISHED: 'Sin configuración publicada.',
   TASK_DISABLED: 'La tarea está deshabilitada administrativamente.',
   CONFIGURATION_UNSUPPORTED: 'La configuración no es compatible con el juego disponible.',

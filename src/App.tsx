@@ -186,8 +186,8 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
         route.kind === 'studentNew' ? <StudentRegistration /> :
         route.kind === 'studentDetail' ? <StudentDetail api={apis.students} readApi={apis.academicRead} consents={apis.consents} observations={apis.observations} notes={apis.notes} annotations={apis.annotations} drafts={drafts.current!} actorId={user.id} apiOrigin={apiOrigin!} activities={apis.activities} studentId={route.studentId} write={studentWrite} reviewed={() => setStudentWrite(undefined)} /> :
         route.kind === 'studentEdit' ? <StudentEdit api={apis.students} studentId={route.studentId} locked={Boolean(studentWrite)} /> :
-        route.kind === 'tasks' ? <Catalog api={apis.tasks} /> :
-        route.kind === 'taskDetail' ? <TaskDetail api={apis.tasks} taskId={route.taskId} /> :
+        route.kind === 'tasks' ? <Catalog api={apis.tasks} admin={user.role === 'ADMIN'} /> :
+        route.kind === 'taskDetail' ? <TaskDetail key={route.taskId} api={apis.tasks} taskId={route.taskId} admin={user.role === 'ADMIN'} /> :
         route.kind === 'accounts' ? <Accounts api={apis.accounts} /> :
         route.kind === 'invite' ? <AccountForm api={apis.accounts} locked={uncertain} /> :
         route.kind === 'detail' ? <AccountDetail api={apis.accounts} accountId={route.accountId} revalidate={access.revalidate} locked={uncertain} /> :
