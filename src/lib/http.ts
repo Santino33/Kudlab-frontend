@@ -25,6 +25,7 @@ export function createHttpClient(origin: string, access: Pick<AuthController, 'g
   return {
     async request<T, Field extends string = UserField>(path: string, options: {
       method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'; body?: unknown; bodyAbsent?: boolean; signal: AbortSignal;
+      formData?: FormData; responseType?: 'json' | 'blob';
       decodeFields?(data: unknown): { field: Field; reason: string }[];
       localForbiddenCodes?: readonly 'PARTICIPATION_BLOCKED'[];
       decode(data: unknown, status: number): T | undefined;
@@ -33,6 +34,8 @@ export function createHttpClient(origin: string, access: Pick<AuthController, 'g
       const current = () => generation === access.getGeneration();
       const method = options.method ?? 'GET';
       const mutation = method !== 'GET';
+      if (options.formData && (!mutation || options.body !== undefined || options.bodyAbsent !== undefined))
+        return { kind: 'unavailable', uncertain: false };
       let url: URL;
       try { url = new URL(path, base); } catch { return { kind: 'unavailable', uncertain: false }; }
       if (!path.startsWith('/api/v1/') || url.origin !== base || url.hash ||
@@ -40,19 +43,40 @@ export function createHttpClient(origin: string, access: Pick<AuthController, 'g
       try {
         const response = await fetcher(url.href, {
           method, credentials: 'include', cache: 'no-store', redirect: 'error', signal: options.signal,
-          headers: { Accept: 'application/json', ...(mutation && !options.bodyAbsent ? { 'Content-Type': 'application/json' } : {}) },
-          ...(mutation && !options.bodyAbsent ? { body: JSON.stringify(options.body ?? {}) } : {}),
+          headers: { Accept: options.responseType === 'blob' ? 'application/pdf,image/png,image/jpeg' : 'application/json',
+            ...(mutation && !options.bodyAbsent && !options.formData ? { 'Content-Type': 'application/json' } : {}) },
+          ...(options.formData ? { body: options.formData } : mutation && !options.bodyAbsent ? { body: JSON.stringify(options.body ?? {}) } : {}),
         });
         if (response.redirected) throw new Error('Unexpected redirect');
         let data: unknown;
-        try { data = await response.json(); } catch { /* A non-JSON error is still classified by HTTP status. */ }
+        if (response.ok && options.responseType === 'blob') {
+          const mime = response.headers.get('content-type')?.toLowerCase();
+          const max = 10 * 1024 * 1024;
+          if (!mime || !['application/pdf', 'image/png', 'image/jpeg'].includes(mime) || !response.body ||
+            Number(response.headers.get('content-length')) > max) throw new Error('Invalid document');
+          const reader = response.body.getReader(), chunks: Uint8Array<ArrayBuffer>[] = [];
+          let size = 0;
+          try {
+            for (;;) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              size += value.byteLength;
+              if (size > max || options.signal.aborted || !current()) throw new Error('Document unavailable');
+              chunks.push(new Uint8Array(value));
+            }
+          } finally { await reader.cancel().catch(() => undefined); reader.releaseLock(); }
+          if (!size) throw new Error('Empty document');
+          data = new Blob(chunks, { type: mime });
+        } else {
+          try { data = await response.json(); } catch { /* A non-JSON error is still classified by HTTP status. */ }
+        }
         if (!current()) return { kind: 'obsolete' };
         if (options.signal.aborted) {
           if (mutation) onUncertain();
           return { kind: 'unavailable', uncertain: mutation };
         }
         if (response.ok) {
-          const parsed = response.headers.get('content-type')?.toLowerCase().includes('application/json') ?
+          const parsed = options.responseType === 'blob' || response.headers.get('content-type')?.toLowerCase().includes('application/json') ?
             options.decode(data, response.status) : undefined;
           if (parsed !== undefined) return { kind: 'success', data: parsed };
           if (mutation) onUncertain();

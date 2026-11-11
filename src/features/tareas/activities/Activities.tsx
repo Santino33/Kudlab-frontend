@@ -150,11 +150,12 @@ export function StudentActivities({ api, studentsApi, group, studentId }: { api:
   </div>;
 }
 /** Ficha del estudiante: asignaciones en las que es destinatario fijo (individuales o colectivas). */
-export function StudentAssignments({ api, student }: { api: ActivitiesApi; student: { id: string; groupId: string } }) {
+export function StudentAssignments({ api, student, refresh }: { api: ActivitiesApi; student: { id: string; groupId: string }; refresh?: { revision: number; status: 'ready' | 'checking' | 'unavailable' } }) {
   const [cursor, setCursor] = useState<string>();
-  const query = useQuery(signal => api.studentAssignments(student.id, signal, cursor), `${student.id}:${cursor ?? ''}`);
+  const query = useQuery(signal => api.studentAssignments(student.id, signal, cursor), `${student.id}:${cursor ?? ''}:${refresh?.revision ?? 0}`, true);
   return <section className="staff-stack" aria-labelledby="student-assignments-title"><h2 id="student-assignments-title" className="staff-section-title">Asignaciones</h2>
     <p>Actividades asignadas a este estudiante, solo o junto con otros. Las más recientes aparecen primero.</p>
+    {refresh && refresh.status !== 'ready' && <p role="status">Comprobación académica pendiente. Una asignación no autoriza por sí sola un nuevo inicio.</p>}
     {!query.result ? <Loading text="Consultando asignaciones del estudiante" /> : query.result.kind !== 'success' ? <ActivityFailure result={query.result} retry={query.reload} /> : !query.result.data.items.length ?
       <Notice title={cursor ? 'Página sin registros' : 'Sin asignaciones'}><p>{cursor ? 'No hay más asignaciones en esta página. Vuelve a la primera página.' : 'Este estudiante todavía no tiene asignaciones.'}</p></Notice> : <>
       <ActivityTable label="Asignaciones del estudiante"><TableCaption>Fechas en {Intl.DateTimeFormat().resolvedOptions().timeZone}</TableCaption><TableHeader><TableRow><TableHead>Actividad</TableHead><TableHead>Asignada el</TableHead><TableHead>Disponibilidad</TableHead><TableHead className="text-right">Intentos usados</TableHead><TableHead>Detalle</TableHead></TableRow></TableHeader>

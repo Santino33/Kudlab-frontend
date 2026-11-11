@@ -12,7 +12,7 @@ import { navigate } from '../../../lib/navigation.ts';
 
 type Action = 'reissue' | 'deactivate' | 'demote';
 const actions = {
-  reissue: { label: 'Reemitir invitación', title: '¿Reemitir la invitación?', description: 'El enlace anterior dejará de ser válido. La aceptación de invitaciones sigue bloqueada en esta versión.', icon: Mail },
+  reissue: { label: 'Reemitir invitación', title: '¿Reemitir la invitación?', description: 'El enlace anterior dejará de ser válido. El profesor recibirá otro para establecer su contraseña y activar su cuenta.', icon: Mail },
   deactivate: { label: 'Inactivar cuenta', title: '¿Inactivar esta cuenta?', description: 'El profesor perderá el acceso y sus sesiones serán revocadas. Si es tu cuenta, también perderás tu acceso. No se borra el historial y esta interfaz no ofrece reactivación.', icon: UserMinus },
   demote: { label: 'Cambiar a docente', title: '¿Retirar el acceso administrativo?', description: 'La cuenta pasará a rol docente y no podrá gestionar ni invitar profesores. Si es tu cuenta, dejarás de ver la administración.', icon: ShieldMinus },
 };
@@ -41,7 +41,7 @@ export function AccountDetail({ api, accountId, revalidate, locked = false }: { 
         {account.pendingEmail && <InlineHelp>El correo pendiente todavía no reemplaza al vigente. Su confirmación está bloqueada en esta versión; no se dispone de un estado de entrega de esa verificación.</InlineHelp>}
       </CardContent></Card>
       {(account.status === 'PENDIENTE' || account.deliveryStatus || account.invitationExpiresAt) && <Card><CardHeader><h2 className="staff-section-title">Invitación y entrega</h2></CardHeader><CardContent>
-        <Delivery account={account} /><InlineHelp>La aceptación pública de invitaciones no está habilitada. Una cuenta pendiente no puede iniciar sesión.</InlineHelp>
+        <Delivery account={account} /><InlineHelp>El profesor debe abrir la invitación y establecer su contraseña para activar la cuenta. Una cuenta pendiente no puede iniciar sesión.</InlineHelp>
         {account.status === 'PENDIENTE' && <div className="staff-actions"><Confirmation locked={locked} action="reissue" account={account} api={api} review={review} onSuccess={(data) => { setUpdated(data); setNotice(true); }} /></div>}
       </CardContent></Card>}
       {account.status === 'ACTIVA' && <Card><CardHeader><h2 className="staff-section-title">Administrar acceso</h2><p>Estas acciones requieren confirmación y se validan en el servidor.</p></CardHeader><CardContent>

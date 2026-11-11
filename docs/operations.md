@@ -16,7 +16,50 @@ El frontend no concede consentimiento, habilita menores reales ni convierte una 
 
 El correo y bootstrap pertenecen al backend. Invitaciones y recuperación requieren un proveedor SMTP configurado; un envío aceptado no acredita recepción. No colocar tokens o datos reales de menores en evidencias, logs o archivos versionados. No borrar IndexedDB ni cambiar orígenes si quedan evidencias pendientes en Play.
 
-## Pruebas
+## Cloudflare Pages (sesión por el mismo origen)
+
+Build Git: rama acordada, Node 24, `npm run build`, salida `dist`. Mantener
+previews y despliegues automáticos desactivados hasta verificar la release.
+Configurar producción:
+
+- `VITE_API_ORIGIN=https://kudlab-docente.pages.dev`
+- `VITE_PLAY_ORIGIN=https://kudlab-play.pages.dev`
+- binding servidor `API_UPSTREAM_ORIGIN=https://p01--kudlab-api--cqzkgf2p6mws.code.run`
+- Pages Runtime **Fail closed**, compatibility date `2026-11-10`.
+
+`functions/api/[[path]].js` reenvía únicamente `/api/*` al upstream fijo;
+`/api` responde JSON 404. `_routes.json` mantiene los assets fuera de Functions.
+El proxy requiere origen docente exacto para escrituras, elimina forwarded del
+cliente y conserva cookies y cuerpos sin buffering. Tiempo máximo de fetch:
+30 segundos; una respuesta incierta no implica rollback. Sin reintentos,
+seguimiento de redirects, caché API ni logs de credenciales. El frontend no usa
+previews contra la API productiva. Configuración ausente falla cerrada.
+
+Backend: `BETTER_AUTH_URL` y `SPA_ORIGIN` iguales al origen docente, runtime
+separado. Play continúa con API Northflank directa y `credentials: omit`.
+Verificar en entrega múltiples Set-Cookie host-only, Secure/HttpOnly/Lax,
+login/recarga/logout, permisos y CSP; no corregir incompatibilidades relajando cookies.
+
+`/acceso/invitacion?token=…` abre la activación pública: contraseña y confirmación,
+canje explícito y acceso al login tras recibir ACTIVA. Configurar Backend
+`INVITATION_BASE_URL=<origen-docente>/acceso/invitacion`; Compose local usa esa ruta.
+El token se retira de query/hash y se conserva solo en memoria hasta canje o
+abandono/suspensión. Al recargar una URL saneada, reabrir el correo. La invitación
+vence a los 7 días y es de un solo uso; un 410 agrupa enlaces inválidos, vencidos
+o usados. Si no sirve, consultar al ADMIN; no solicitar recuperación para activar.
+Un fallo de red puede ocurrir después de activar: comprobar el acceso sin repetir
+automáticamente. La activación no inicia ni reemplaza sesiones existentes.
+
+Por decisión temporal de producto, `/acceso/cambio-correo` continúa llevando al
+login y retirando query/hash sin confirmar el cambio de correo. Recuperación
+conserva `/recuperar-acceso/confirmar`.
+
+`npm run test:pages` verifica el transporte con upstream simulado. Tras build,
+`node tests/pages/runtime.smoke.mjs` ejecuta Pages/workerd local y un servidor
+sintético loopback, con puertos efímeros, sin API/BD reales. Usa Wrangler 4.160.0
+por `npx`, sin dependencia de aplicación. No acredita sesión real desplegada.
+
+## Pruebas de aplicación
 
 `npm test` comprueba tipos. `test:auth`, `test:usuarios`, `test:tareas` y `test:estudiantes` ejecutan regresión lógica con datos sintéticos, no validación contra servicios reales. `test:docker` verifica el generador de configuración sin arrancar Docker. `docker:check` requiere la composición autorizada en ejecución.
 

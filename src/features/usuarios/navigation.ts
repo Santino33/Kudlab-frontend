@@ -1,4 +1,6 @@
 import type { AccessState } from '../../auth/state.ts';
+import { indicatorRouteTitles, resolveIndicatorRoute, type IndicatorRoute } from '../indicadores/routes.ts';
+import { resolveObservationMatrix } from '../seguimiento/observations/navigation.ts';
 
 export const canManageAccounts = (state: AccessState) => state.kind === 'authenticated' && state.user.role === 'ADMIN' && !state.denied;
 export const canConsultTasks = (state: AccessState) => state.kind === 'authenticated' && !state.denied;
@@ -6,36 +8,41 @@ export const canManageStudents = (state: AccessState) => state.kind === 'authent
 
 export type Route =
   | { kind: 'entry' | 'access' | 'accounts' | 'invite' | 'recoveryRequest' |
-      'recoveryConfirm' | 'unavailable' | 'blockedLink' | 'tasks' | 'groups' | 'groupNew' }
+      'recoveryConfirm' | 'invitationAccept' | 'unavailable' | 'blockedLink' | 'tasks' | 'groups' | 'groupNew' }
   | { kind: 'students' | 'studentNew'; groupId?: string }
   | { kind: 'studentDetail' | 'studentEdit'; studentId: string; groupId?: string }
   | { kind: 'groupDetail' | 'groupEdit'; groupId: string }
+  | { kind: 'observationMatrix'; groupId: string }
   | { kind: 'taskDetail'; taskId: string }
   | { kind: 'assignments'; groupId: string }
   | { kind: 'assignmentDetail'; groupId: string; assignmentId: string }
   | { kind: 'supervisedExecution'; groupId: string; assignmentId: string; recipientId: string }
   | { kind: 'studentActivities'; groupId: string; studentId: string }
   | { kind: 'sessionResults' | 'submissionRecovery'; groupId: string; studentId: string; sessionId: string }
-  | { kind: 'detail' | 'edit'; accountId: string };
+  | { kind: 'detail' | 'edit'; accountId: string }
+  | IndicatorRoute;
 
 export const routeTitles: Record<Route['kind'], string> = {
   entry: 'Inicio', access: 'Acceso', accounts: 'Profesores', invite: 'Invitar profesor',
   detail: 'Cuenta de profesor', edit: 'Editar cuenta', recoveryRequest: 'Recuperar contraseña',
-  recoveryConfirm: 'Nueva contraseña', unavailable: 'Página no disponible', blockedLink: 'Enlace no disponible',
+  recoveryConfirm: 'Nueva contraseña', invitationAccept: 'Activar cuenta', unavailable: 'Página no disponible', blockedLink: 'Enlace no disponible',
   tasks: 'Tareas digitales', taskDetail: 'Ficha de tarea', students: 'Estudiantes',
   studentNew: 'Registrar estudiante', studentDetail: 'Ficha de estudiante', studentEdit: 'Editar estudiante',
   groups: 'Mis cursos', groupNew: 'Crear curso', groupDetail: 'Curso', groupEdit: 'Editar curso',
+  observationMatrix: 'Registrar observaciones',
   assignments: 'Asignaciones', assignmentDetail: 'Estudiantes y códigos', supervisedExecution: 'Actividad en Kudlab Play',
   studentActivities: 'Tareas del estudiante', sessionResults: 'Detalle de sesión', submissionRecovery: 'Recuperar envío',
+  ...indicatorRouteTitles,
 };
 
 export function resolveRoute(pathname: string, search: string): Route {
-  if (new URLSearchParams(search).has('token') && pathname !== '/recuperar-acceso/confirmar') {
+  if (new URLSearchParams(search).has('token') && !['/recuperar-acceso/confirmar', '/acceso/invitacion'].includes(pathname)) {
     return { kind: 'blockedLink' };
   }
   switch (pathname) {
     case '/': return { kind: 'entry' };
     case '/acceso': return { kind: 'access' };
+    case '/acceso/invitacion': return { kind: 'invitationAccept' };
     case '/usuarios': return { kind: 'accounts' };
     case '/tareas': return { kind: 'tasks' };
     case '/academico/cursos': return { kind: 'groups' };
@@ -52,6 +59,10 @@ export function resolveRoute(pathname: string, search: string): Route {
     if (studentId) return sessionId ? { kind: recovery ? 'submissionRecovery' : 'sessionResults', groupId: groupId!, studentId, sessionId } : { kind: 'studentActivities', groupId: groupId!, studentId };
     return assignmentId ? recipientId ? { kind: 'supervisedExecution', groupId: groupId!, assignmentId, recipientId } : { kind: 'assignmentDetail', groupId: groupId!, assignmentId } : { kind: 'assignments', groupId: groupId! };
   }
+  const indicators = resolveIndicatorRoute(pathname);
+  if (indicators) return indicators;
+  const matrix = resolveObservationMatrix(pathname);
+  if (matrix) return matrix;
   const course = /^\/academico\/cursos\/([^/]+)(?:\/(editar|estudiantes\/nuevo|estudiantes\/([^/]+)(\/editar)?))?$/.exec(pathname);
   if (course) {
     try {
@@ -86,11 +97,17 @@ export function resolveRoute(pathname: string, search: string): Route {
 
 export type RecoveryTicket = { read(): string | undefined; clear(): void };
 export function captureEntry(location: Pick<Location, 'pathname' | 'search' | 'hash'>,
-  history: Pick<History, 'replaceState'>): { route: Route; recovery: RecoveryTicket } {
+  history: Pick<History, 'replaceState'>): { route: Route; recovery: RecoveryTicket; invitation: RecoveryTicket } {
+  if (location.pathname === '/acceso/cambio-correo') {
+    history.replaceState(null, '', '/acceso');
+    return { route: { kind: 'access' }, recovery: { read: () => undefined, clear: () => {} }, invitation: { read: () => undefined, clear: () => {} } };
+  }
   const route = resolveRoute(location.pathname, location.search);
   const params = new URLSearchParams(location.search);
   const values = params.getAll('token');
   let token = route.kind === 'recoveryConfirm' && values.length === 1 && values[0] ? values[0] : undefined;
-  if (params.has('token')) history.replaceState(null, '', location.pathname);
-  return { route, recovery: { read: () => token, clear: () => { token = undefined; } } };
+  let invitation = route.kind === 'invitationAccept' && values.length === 1 && values[0]?.trim() ? values[0] : undefined;
+  if (params.has('token') || route.kind === 'invitationAccept') history.replaceState(null, '', location.pathname);
+  return { route, recovery: { read: () => token, clear: () => { token = undefined; } },
+    invitation: { read: () => invitation, clear: () => { invitation = undefined; } } };
 }

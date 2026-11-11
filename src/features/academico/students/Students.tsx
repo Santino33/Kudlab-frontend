@@ -1,4 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { StudentConsent } from '../consents/StudentConsent';
+import { operationHandle } from '../consents/operation-handle.ts';
+import type { ConsentsApi } from '../consents/api.ts';
+import type { ConsentSnapshot } from '../consents/types.ts';
+import type { DraftLease, StudentDraftHost, StudentRefresh } from './student-drafts.ts';
 import type { FormEvent, ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -9,7 +14,7 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 import { Loading, Notice } from '../../usuarios/shared';
 import { useMutation, useQuery } from '../../usuarios/hooks';
 import type { HttpResult } from '../../usuarios/types.ts';
-import { navigate } from '../../../lib/navigation.ts';
+import { navigate, replaceCurrentEntry, requestNavigation } from '../../../lib/navigation.ts';
 import type { StudentsApi, StudentWrite } from './api.ts';
 import { fieldLabels, studentChanges, studentFields, studentIssues } from './types.ts';
 import type { Student, StudentField, StudentInput } from './types.ts';
@@ -19,6 +24,10 @@ import { groupPath, groupStudentPath, groupsPath } from '../groups/navigation.ts
 import { assignmentPath } from '../../tareas/activities/types.ts';
 import type { ActivitiesApi } from '../../tareas/activities/api.ts';
 import { StudentAssignments } from '../../tareas/activities/Activities';
+import { StudentIndicatorsLink } from '../../indicadores/StudentIndicatorsLink';
+import { StudentObservations } from '../../seguimiento/observations/StudentObservations';
+import type { ObservationsApi } from '../../seguimiento/observations/api.ts';
+import { observationMatrixPath } from '../../seguimiento/observations/navigation.ts';
 
 export const studentsPath = '/academico/estudiantes';
 export const detailPath = (id: string, groupId?: string) => groupId ? groupStudentPath(groupId, id) : `${studentsPath}/${encodeURIComponent(id)}`;
@@ -51,7 +60,7 @@ export function Students({ api, group, write, reviewed }: { api: StudentsApi; gr
   return <div className="staff-stack">
     {group && <CourseBack />}
     <header className="staff-heading"><div className="workspace-page-heading"><Heading>{group?.name ?? 'Estudiantes'}</Heading><p>{group ? `Estudiantes · Grado ${group.grade} · Año ${group.schoolYear}` : 'Consulta y actualiza los registros de tus grupos, incluidos los inactivos.'}</p></div>{group && <Link href={`${groupPath(group.id)}/estudiantes/nuevo`} primary>Registrar estudiante</Link>}</header>
-    {group && <Link href={assignmentPath(group.id)}>Asignaciones de tareas digitales</Link>}
+    {group && <div className="staff-actions"><Link href={assignmentPath(group.id)}>Asignaciones de tareas digitales</Link><Link href={observationMatrixPath(group.id)}>Registrar observaciones</Link></div>}
     {!group && <p className="availability-note">Para registrar estudiantes, selecciona primero un curso en <a href={groupsPath} onClick={navigate}>Mis cursos</a>.</p>}
     {!query.result ? <Loading text="Consultando estudiantes" /> : query.result.kind !== 'success' ? <Failure result={query.result} retry={query.reload} /> : !query.result.data.items.length ?
       <Notice title={group ? 'Este curso aún no tiene estudiantes' : 'No hay estudiantes en tus grupos'}><p>{group ? 'Registra el primer estudiante con el botón Registrar estudiante.' : 'Los estudiantes de tus cursos aparecerán aquí.'}</p></Notice> :
@@ -78,15 +87,71 @@ export function StudentRegistration() {
   </div>;
 }
 
-export function StudentDetail({ api, activities, studentId, write, reviewed, group }: { api: StudentsApi; activities: ActivitiesApi; studentId: string; write?: StudentWrite; reviewed(): void; group?: Group }) {
-  const query = useQuery((signal) => api.detail(studentId, signal), studentId);
-  const student = !query.fetching && query.result?.kind === 'success' ? query.result.data : undefined;
+export function StudentDetail({ api, readApi, activities, consents, observations, drafts, actorId, apiOrigin, studentId, write, reviewed, group }: {
+  api: StudentsApi; readApi: StudentsApi; activities: ActivitiesApi; consents: ConsentsApi; observations: ObservationsApi; drafts: StudentDraftHost;
+  actorId: string; apiOrigin: string; studentId: string; write?: StudentWrite; reviewed(): void; group?: Group;
+}) {
+  const [student, setStudent] = useState<Student>();
+  const [snapshot, setSnapshot] = useState<ConsentSnapshot>();
+  const [refresh, setRefresh] = useState<StudentRefresh>({ revision: 0, status: 'checking' });
+  const [lease, setLease] = useState<DraftLease>();
+  const [failure, setFailure] = useState<HttpResult<unknown, StudentField>>();
+  const [queryKey, setQueryKey] = useState(0);
+  const sequence = useRef(0), sources = useRef({ readApi, consents }); sources.current = { readApi, consents };
+  const query = { fetching: refresh.status === 'checking', reload: () => setQueryKey(value => value + 1) };
+  useEffect(() => {
+    const request = new AbortController(), count = ++sequence.current, capture = drafts.capture();
+    const current = () => {
+      const now = drafts.capture();
+      return !request.signal.aborted && count === sequence.current && capture.generation === sources.current.consents.generation() && capture.generation === now.generation && capture.epoch === now.epoch;
+    };
+    setRefresh(old => ({ ...old, status: 'checking' })); setSnapshot(undefined);
+    void (async () => {
+      const result = await sources.current.consents.snapshot(studentId, request.signal);
+      if (!current()) return;
+      let academic: HttpResult<Student, StudentField>;
+      if (result.kind === 'success') academic = { kind: 'success', data: result.data.student };
+      else if (result.kind === 'error' && [401, 403, 404].includes(result.status)) academic = { ...result, fields: undefined };
+      else academic = await sources.current.readApi.detail(studentId, request.signal);
+      if (!current()) return;
+      if (academic.kind === 'success' && (academic.data.id !== studentId || group && academic.data.groupId !== group.id))
+        academic = { kind: 'error', status: 404, code: 'NOT_FOUND', uncertain: false };
+      if (academic.kind === 'success') {
+        if (student && student.groupId !== academic.data.groupId) operationHandle(sessionStorage).clear();
+        const nextLease = drafts.confirm({ apiOrigin, actorId, role: 'TEACHER', kind: 'student', studentId,
+          groupId: academic.data.groupId, ...(group ? { entryGroupId: group.id } : {}) }, capture.generation, capture.epoch);
+        if (!nextLease) return;
+        setLease(old => old?.valid() ? old : nextLease); setStudent(academic.data); setFailure(undefined);
+        setSnapshot(result.kind === 'success' ? result.data : undefined);
+        setRefresh(old => ({ revision: old.revision + 1, status: 'ready' }));
+      } else {
+        if (academic.kind === 'error' && [401, 403, 404].includes(academic.status)) { drafts.discard(); operationHandle(sessionStorage).clear(); setStudent(undefined); setLease(undefined); }
+        setFailure(academic); setRefresh(old => ({ ...old, status: 'unavailable' }));
+      }
+    })();
+    return () => request.abort();
+  }, [studentId, group?.id, actorId, apiOrigin, drafts, queryKey]);
   const [notice, setNotice] = useState(() => window.history.state?.studentNotice === 'updated' ? 'Datos actualizados' : window.history.state?.studentNotice === 'created' ? 'Estudiante registrado' : '');
   const [checking, setChecking] = useState(false);
-  useEffect(() => { if (window.history.state?.studentNotice) window.history.replaceState(null, ''); }, []);
-  useEffect(() => { if (student) document.getElementById('auth-title')?.focus(); }, [student]);
+  useEffect(() => {
+    const state: unknown = window.history.state;
+    if (state && typeof state === 'object' && !Array.isArray(state) && Object.hasOwn(state, 'studentNotice')) {
+      const { studentNotice: _notice, ...rest } = state as Record<string, unknown>;
+      replaceCurrentEntry(window.location.href, rest);
+    }
+  }, []);
+  const focused = useRef(false);
+  useEffect(() => { if (student && !focused.current) { focused.current = true; if (!lease?.slot('consent').read()?.focus && !lease?.slot('observations').read()?.focus) document.getElementById('auth-title')?.focus(); } }, [student, lease]);
   function check() { setChecking(true); query.reload(); }
-  return <div className="staff-stack"><Back groupId={group?.id} />
+  const activeSequence = sequence.current;
+  const currentSelection = () => activeSequence === sequence.current && Boolean(lease?.valid());
+  function recheckSelection() { if (currentSelection()) query.reload(); }
+  function lostSelection() {
+    if (!currentSelection()) return;
+    lease!.discard(); operationHandle(sessionStorage).clear(); setStudent(undefined); setLease(undefined); setSnapshot(undefined);
+    setFailure({ kind: 'error', status: 404, code: 'NOT_FOUND', uncertain: false }); setRefresh(old => ({ ...old, status: 'unavailable' }));
+  }
+  return <div className="staff-stack grid-cols-1 [overflow-wrap:anywhere] [&_.grid>*]:min-w-0"><Back groupId={group?.id} />
     {student ? <>
       <header className="staff-heading"><Heading>{student.firstName} {student.lastName}</Heading><Link href={`${detailPath(student.id, group?.id)}/editar`} primary>Editar estudiante</Link></header>
       <p role="status">{notice}</p><Facts student={student} group={group} />
@@ -95,9 +160,14 @@ export function StudentDetail({ api, activities, studentId, write, reviewed, gro
         <Button variant="outline" className="mt-4" onClick={check} disabled={query.fetching}>Comprobar estado actual</Button>
         {checking && !query.fetching && <div className="staff-stack mt-4"><p role="status">Estado confirmado por lectura: {student.isActive ? 'activo' : 'inactivo'}. Revisa también el código y los nombres antes de decidir otro guardado.</p><Button variant="outline" onClick={() => { reviewed(); setChecking(false); }}>Ya revisé el registro</Button></div>}
       </Notice>}
-      <StudentAssignments key={student.id} api={activities} student={student} />
-      {student.isActive ? <Deactivate api={api} student={student} locked={Boolean(write)} onSuccess={() => { setNotice('Estudiante inactivado'); query.reload(); }} review={check} /> : <p>Este registro está inactivo. La edición sigue permitida; esta pantalla no permite reactivarlo.</p>}
-    </> : <><Heading>Ficha de estudiante</Heading>{query.fetching || !query.result ? <Loading text="Consultando estudiante" /> : <Failure result={query.result} retry={query.reload} />}</>}
+      {refresh.status !== 'ready' && <p role="status">{query.fetching ? 'Comprobando el estado actual…' : 'La ficha no está actualizada. Las escrituras esperan una nueva comprobación.'}</p>}
+      {lease && <StudentConsent key={`${apiOrigin}:${actorId}:${student.id}:${student.groupId}`} api={consents} studentId={studentId} actorId={actorId} snapshot={snapshot} refresh={refresh} lease={lease} recheck={recheckSelection}
+        onChange={change => { if (activeSequence === sequence.current && lease.valid() && change.studentId === studentId) query.reload(); }} />}
+      {lease && <StudentObservations key={`observations:${apiOrigin}:${actorId}:${student.id}:${student.groupId}`} api={observations} apiOrigin={apiOrigin} actorId={actorId} student={student} refresh={refresh} consentState={snapshot?.consent.state} draft={lease.slot('observations')} lease={lease} recheck={recheckSelection} onAccessLost={lostSelection} />}
+      <StudentAssignments key={student.id} api={activities} student={student} refresh={refresh} />
+      <StudentIndicatorsLink student={student} />
+      {student.isActive ? <Deactivate api={api} student={student} locked={Boolean(write) || refresh.status !== 'ready'} onSuccess={() => { setNotice('Estudiante inactivado'); query.reload(); }} review={check} /> : <p>Este registro está inactivo. Un nuevo consentimiento confirmado permite reactivarlo.</p>}
+    </> : <><Heading>Ficha de estudiante</Heading>{query.fetching || !failure ? <Loading text="Consultando estudiante" /> : <Failure result={failure} retry={query.reload} />}</>}
   </div>;
 }
 
@@ -153,8 +223,7 @@ function EditForm({ api, student, locked, group }: { api: StudentsApi; student: 
     const result = await mutation.run((signal) => api.update(student, changes, signal));
     if (result?.kind === 'success') {
       setDone(true);
-      window.history.pushState({ studentNotice: 'updated' }, '', detailPath(student.id, group?.id));
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      void requestNavigation(detailPath(student.id, group?.id), { studentNotice: 'updated' });
     }
     else if (result?.kind === 'error') {
       if (result.status === 409) setIssues({ studentCode: 'Código de estudiante no disponible' });
