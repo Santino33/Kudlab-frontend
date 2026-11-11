@@ -153,8 +153,8 @@ export function StudentAnnotations({ api, student, refresh, draft, lease, rechec
           <div className="flex flex-wrap gap-3"><Button type="submit" disabled={!canSave}>{busy ? 'Guardando…' : value.mode === 'edit' ? 'Guardar cambios' : 'Guardar anotación'}</Button>
             {value.mode === 'edit' && <Button type="button" variant="outline" disabled={busy || Boolean(value.uncertain)} onClick={reset}>Cancelar edición</Button>}</div>
           {value.uncertain && <Alert><AlertDescription>Hay una operación sin confirmar. El borrador no demuestra que el servidor haya guardado o descartado el envío.
-            <div className="mt-4 flex flex-wrap gap-3"><Button type="button" variant="outline" onClick={() => setReload(n => n + 1)}>Consultar estado actual</Button>
-              <Button type="button" variant="outline" disabled={history.status !== 'ready' || busy} onClick={() => { update({ ...valueRef.current, uncertain: false }); setMessage('Revisa el historial antes de guardar de nuevo. Otra creación podría duplicar el contexto.'); }}>Ya revisé el historial</Button></div>
+            <span className="mt-4 flex flex-wrap gap-3"><Button type="button" variant="outline" onClick={() => setReload(n => n + 1)}>Consultar estado actual</Button>
+              <Button type="button" variant="outline" disabled={history.status !== 'ready' || busy} onClick={() => { update({ ...valueRef.current, uncertain: false }); setMessage('Revisa el historial antes de guardar de nuevo. Otra creación podría duplicar el contexto.'); }}>Ya revisé el historial</Button></span>
           </AlertDescription></Alert>}
         </form>
       </div>

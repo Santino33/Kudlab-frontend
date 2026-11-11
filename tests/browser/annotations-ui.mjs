@@ -31,6 +31,7 @@ try {
   await page.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
   await click('Guardar anotación');
   await wait(() => document.querySelector('ol')?.textContent.includes('Texto ficticio'));
+  assert.equal(await page.eval(() => Boolean(document.querySelector('p div'))), false, 'paragraphs cannot contain divs');
   assert.equal(await page.eval(() => annotationModel.items.length), 1);
   await click('Editar anotación'); await text('Contexto corregido'); await click('Guardar cambios');
   await wait(() => document.querySelector('ol')?.textContent.includes('Contexto corregido'));
