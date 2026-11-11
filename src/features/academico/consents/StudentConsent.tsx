@@ -184,7 +184,7 @@ export function StudentConsent({ api, studentId, actorId, snapshot, refresh, lea
       {revokeAttempt && draft.phase === 'retry' && <Button className="mt-3 sm:ml-3" variant="outline" disabled={busy || !available} onClick={openRevocation}>Revisar reenvío de revocación</Button>}</div>}
     <form onSubmit={submit} className="mt-6 max-w-2xl space-y-5" onFocusCapture={event => { if (event.target.id) update({ ...currentDraft.current, focus: event.target.id }); }}>
       <div className="space-y-2"><Label htmlFor="consent-file">Documento firmado</Label>
-        <p id="consent-file-help" className="text-sm text-muted">PDF sin contraseña (hasta 200 páginas), PNG o JPEG estático (hasta 40 millones de píxeles). Máximo 10 MiB. Se conserva el archivo original. Si el selector se cerró al comprobar tu acceso, vuelve a seleccionar el archivo.</p>
+        <p id="consent-file-help" className="text-sm text-muted">PDF, PNG o JPEG, no vacío y de máximo 10 MiB. Revisa que el documento se pueda leer y corresponda al consentimiento firmado: el sistema solo comprueba el tipo y tamaño del archivo. Se conserva el original. Si el selector se cerró al comprobar tu acceso, vuelve a seleccionar el archivo.</p>
          <Input ref={input} id="consent-file" type="file" accept=".pdf,.png,.jpg,.jpeg" disabled={busy || Boolean(revokeAttempt) || Boolean(pendingId && draft.phase !== 'retry')} aria-invalid={Boolean(errors.file)} aria-describedby="consent-file-help consent-file-error" onChange={event => {
           const file = event.target.files?.[0]; if (!file || !authorized()) return;
           if (file.size > 10485760 || !file.size) { setErrors(old => ({ ...old, file: 'Selecciona un archivo de hasta 10 MiB y no vacío.' })); event.target.value = ''; return; }
