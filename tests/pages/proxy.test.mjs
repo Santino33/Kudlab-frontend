@@ -6,6 +6,55 @@ const teacher = 'https://kudlab-docente.pages.dev';
 const upstream = 'https://upstream.example';
 const env = { VITE_API_ORIGIN: teacher, API_UPSTREAM_ORIGIN: upstream };
 const call = (path, init = {}, bindings = env) => onRequest({ request: new Request(teacher + path, init), env: bindings });
+const consentPath = '/api/v1/students/11111111-1111-4111-8111-111111111111/consents';
+
+test('only exact consent POST receives 110 seconds, after route and origin checks', async t => {
+  const budgets = [];
+  t.mock.method(AbortSignal, 'timeout', ms => { budgets.push(ms); return new AbortController().signal; });
+  t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 204 }));
+  for (const [path, method, budget] of [
+    [consentPath, 'POST', 110000], [consentPath, 'GET', 30000], [consentPath, 'DELETE', 30000],
+    [consentPath + '/revocations', 'POST', 30000], [consentPath + '/', 'POST', 30000],
+    ['/api/v1/students/not-a-uuid/consents', 'POST', 30000], ['/api/upload', 'POST', 30000],
+  ]) {
+    await call(path, { method, headers: { Origin: teacher } });
+    assert.equal(budgets.at(-1), budget);
+  }
+  const before = budgets.length;
+  assert.equal((await call(consentPath, { method: 'POST' })).status, 403);
+  assert.equal((await call(consentPath.replace('/consents', '%2fconsents'), { method: 'POST', headers: { Origin: teacher } })).status, 404);
+  assert.equal(budgets.length, before);
+});
+
+test('consent upload survives 31 seconds; deadline and client abort stay uncertain without retry', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  t.mock.method(AbortSignal, 'timeout', ms => {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(new DOMException('deadline', 'TimeoutError')), ms);
+    return controller.signal;
+  });
+  const fetch = t.mock.method(globalThis, 'fetch', async request => {
+    t.mock.timers.tick(31000);
+    assert.equal(request.signal.aborted, false);
+    return new Response('{}', { status: 201 });
+  });
+  const init = { method: 'POST', headers: { Origin: teacher } };
+  assert.equal((await call(consentPath, init)).status, 201);
+  fetch.mock.mockImplementation(async request => {
+    t.mock.timers.tick(110000);
+    request.signal.throwIfAborted();
+    throw Error('deadline did not abort');
+  });
+  assert.equal((await call(consentPath, init)).status, 503);
+  const controller = new AbortController();
+  fetch.mock.mockImplementation(async request => {
+    controller.abort();
+    request.signal.throwIfAborted();
+    throw Error('client abort not propagated');
+  });
+  assert.equal((await call(consentPath, { ...init, signal: controller.signal })).status, 503);
+  assert.equal(fetch.mock.callCount(), 3);
+});
 
 test('fixed upstream, body streaming, headers and independent Set-Cookie survive', async t => {
   const cookies = ['session=synthetic; Path=/; Secure; HttpOnly; SameSite=Lax', 'old=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; Secure; HttpOnly'];

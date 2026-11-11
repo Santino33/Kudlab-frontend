@@ -44,10 +44,11 @@ export async function onRequest({ request, env }) {
     if (name === 'host' || name === 'forwarded' || name.startsWith('x-forwarded-') || name === 'content-length') headers.delete(name);
   }
   headers.set('Cache-Control', 'no-store');
+  const consentUpload = request.method === 'POST' && /^\/api\/v1\/students\/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\/consents$/.test(incoming.pathname);
   try {
     const forwarded = new Request(new Request(target, request), {
       headers, redirect: 'manual', cache: 'no-store',
-      signal: AbortSignal.any([request.signal, AbortSignal.timeout(30_000)]),
+      signal: AbortSignal.any([request.signal, AbortSignal.timeout(consentUpload ? 110_000 : 30_000)]),
     });
     const response = await fetch(forwarded);
     const output = cleanHeaders(response.headers);
