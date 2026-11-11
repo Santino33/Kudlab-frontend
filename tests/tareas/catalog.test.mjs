@@ -37,6 +37,30 @@ test('empty is valid; malformed or duplicate rows and unknown reason codes fail 
   assert.equal(parseTaskDetail(task), undefined);
   assert.deepEqual(parseTaskDetail(detail), detail);
 });
+test('availability sends an explicit desired state and revision, decoding only the selected task', async () => {
+  const f = fixture(200, { ...task, isEnabled: true, revision: 2 });
+  const result = await f.api.setAvailability('TG-01', true, 1, signal());
+  assert.equal(result.kind, 'success');
+  assert.equal(result.data.assignable, false);
+  assert.equal(f.calls[0].url, 'http://localhost:3000/api/v1/tasks/TG-01/availability');
+  assert.equal(f.calls[0].init.method, 'PATCH');
+  assert.deepEqual(JSON.parse(f.calls[0].init.body), { isEnabled: true, expectedRevision: 1 });
+  assert.equal(f.calls[0].init.credentials, 'include');
+  const bad = fixture(200, { ...task, id: 'TG-02' });
+  assert.equal((await bad.api.setAvailability('TG-01', true, 1, signal())).uncertain, true);
+});
+test('availability conflict and lost response never replay a mutation', async () => {
+  const conflict = fixture(409, { code: 'CONFLICT' });
+  assert.deepEqual(await conflict.api.setAvailability('TG-01', true, 1, signal()), { kind: 'error', status: 409, code: 'CONFLICT', uncertain: false });
+  assert.equal(conflict.calls.length, 1);
+  const lost = fixture(200, {});
+  assert.deepEqual(await lost.api.setAvailability('TG-01', true, 1, signal()), { kind: 'unavailable', uncertain: true });
+  assert.equal(lost.calls.length, 1);
+  const invalid = fixture(200, task);
+  for (const [id, enabled, revision] of [['../', true, 1], ['TG-01', 'yes', 1], ['TG-01', true, 0]])
+    assert.equal((await invalid.api.setAvailability(id, enabled, revision, signal())).status, 400);
+  assert.equal(invalid.calls.length, 0);
+});
 test('published version and assignable are taken from server, never inferred from administrative availability', () => {
   const value = { ...task, isEnabled: true };
   assert.equal(parseTask(value).assignable, false);

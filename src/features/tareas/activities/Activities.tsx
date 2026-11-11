@@ -84,6 +84,7 @@ function AssignmentForm({ api, studentsApi, tasksApi, group, actorId }: { api: A
     } else if (result?.kind === 'error' && ([400, 409].includes(result.status) || result.status === 403 && result.code === 'PARTICIPATION_BLOCKED')) {
       sessionStorage.removeItem(key); submitting.current = false; setFrozen(undefined);
       if (result.code === 'PARTICIPATION_BLOCKED') studentQuery.reload();
+      if (result.status === 409) taskQuery.reload();
     }
   }
   function submit(event: FormEvent<HTMLFormElement>) {
