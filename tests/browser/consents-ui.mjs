@@ -66,6 +66,14 @@ try {
   await wait(() => document.body.textContent.includes('No pudimos comprobar si el documento se guardó'));
   assert.ok(await page.eval(() => document.body.textContent.includes('El archivo seleccionado no confirma que se haya guardado.')));
   assert.equal(writes, 1, 'same-turn duplicate submit is blocked');
+  await page.eval(() => [...document.querySelectorAll('button')].find(e => e.textContent === 'Comprobar si se guardó').click());
+  await wait(() => !document.getElementById('consent-file').disabled);
+  await writeFile(`${output}/empty.png`, '');
+  const retryDoc = await page.send('DOM.getDocument'), retryInput = await page.send('DOM.querySelector', { nodeId: retryDoc.root.nodeId, selector: '#consent-file' });
+  await page.send('DOM.setFileInputFiles', { nodeId: retryInput.nodeId, files: [`${output}/empty.png`] });
+  await wait(() => document.body.textContent.includes('El guardado anterior sigue por confirmar. No se volvió a enviar el documento.'));
+  assert.equal(writes, 1, 'invalid retry cannot resend or turn the original uncertain result into failure');
+  assert.notEqual(await page.eval(() => sessionStorage.getItem('kudlab.consent-operation')), null);
   student = { ...student, groupId: '00000000-0000-4000-8000-000000000003' };
   await wait(() => ![...document.querySelectorAll('button')].find(e => e.textContent === 'Actualizar estado')?.disabled);
   await page.eval(() => [...document.querySelectorAll('button')].find(e => e.textContent === 'Actualizar estado').click());
@@ -84,7 +92,7 @@ try {
   await wait(() => document.getElementById('consent-title').closest('section').textContent.includes('Estado actual del estudiante: Inactivo'));
   assert.equal(await page.eval(() => sessionStorage.getItem('kudlab.consent-operation')), null);
   assert.equal(await page.eval(() => document.getElementById('consent-file').files.length), 0);
-  assert.equal(lookups, 2); assert.equal(writes, 1);
+  assert.equal(lookups, 3); assert.equal(writes, 1);
   console.log(JSON.stringify({ ok: true, backendRequests: 0, checks: ['history 404 bounded', 'duplicate submit blocked', 'changed group purges File/dates/handle', 'full reload reconciles minimal handle after fresh scope without POST replay'] }));
 } finally {
   stopIntercepting?.(); await Promise.allSettled([...inFlight]); await browser.close();
