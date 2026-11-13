@@ -120,7 +120,7 @@ export function AssignmentDetail({ api, group, assignmentId, actorId }: { api: A
   const a = query.result?.kind === 'success' && query.result.data.groupId === group.id ? query.result.data : undefined;
   const mutation = useMutation<Assignment>(), [requestId] = useState(() => operationId(`cancel:${actorId}:${assignmentId}`));
   async function cancel() { const result = await mutation.run(signal => api.cancel(assignmentId, requestId, signal)); if (result?.kind === 'success') query.reload(); }
-  return <div className="staff-stack assignment-detail"><ActivityLink href={assignmentPath(group.id)}>Volver a asignaciones</ActivityLink>
+  return <div className="staff-stack assignment-detail"><a className="staff-back-link" href={assignmentPath(group.id)} onClick={navigate}>Volver a asignaciones</a>
     {!a && <ActivityHeading>Asignación</ActivityHeading>}
     {!query.result ? <Loading text="Consultando asignación" /> : !a ? <ActivityFailure result={query.result} retry={query.reload} /> : <>
       <header className="assignment-heading"><ActivityHeading>{a.title}</ActivityHeading><p>{group.name} · {a.availability === 'CURRENT' ? 'Disponible ahora' : a.availability === 'FUTURE' ? 'Programada' : a.availability === 'CANCELLED' ? 'Cancelada' : 'Finalizada'}</p></header>
