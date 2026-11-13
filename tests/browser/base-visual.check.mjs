@@ -20,6 +20,9 @@ try {
     assert.equal((await read('#primary')).color, 'rgb(255, 255, 255)');
     assert.equal((await read('[data-slot="switch"]')).bg, 'rgb(83, 192, 243)', 'Switch not recoloured by action tokens');
     const field = await read('#sample-field');
+    assert.equal(field.bg, 'rgb(246, 248, 251)', 'approved subtle control surface');
+    assert.equal((await read('#sample-select')).bg, field.bg);
+    assert.notEqual((await read('#panel')).bg, field.bg, 'field differs from white panel');
     assert.equal(field.left, '2px');
     assert.equal(field.right, 'rgba(0, 0, 0, 0)');
     assert.ok(field.height >= 44);
@@ -116,6 +119,23 @@ try {
     assert.equal(await page.eval(() => document.querySelector('[data-slot="sheet-content"]').getBoundingClientRect().left), 0);
     await page.screenshot({ path: `${output}/nav-${role}-390.png`, fullPage: true });
     results.push({ role, nav: 'desktop/current/focus/mobile surface', permissions: 'unchanged' });
+  }
+  for (const [path, query, selector] of [
+    ['/acceso', '&access=absent', '#email'],
+    ['/recuperar-acceso', '', '#recovery-email'],
+    ['/usuarios/nueva', '', '#account-name'],
+  ]) {
+    await page.goto(`${origin}/tests/browser/usuarios-harness.html?role=ADMIN&path=${encodeURIComponent(path)}${query}`, { settleMs: 500 });
+    assert.equal((await read(selector)).bg, 'rgb(246, 248, 251)', `${path}: subtle control background`);
+    const cardBg = await page.eval(selector => getComputedStyle(document.querySelector(selector).closest('[data-slot="card"]')).backgroundColor, selector);
+    assert.equal(cardBg, 'rgb(255, 255, 255)', `${path}: white containing card`);
+    await page.eval(async selector => {
+      const field = document.querySelector(selector); field.disabled = true;
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      await Promise.all(field.getAnimations().map(a => a.finished.catch(() => {})));
+    }, selector);
+    assert.equal((await read(selector)).bg, 'rgb(242, 242, 242)', `${path}: disabled remains separate`);
+    results.push({ path, background: 'subtle field / white card / disabled preserved' });
   }
   assert.deepEqual(page.consoleErrors, []);
   writeFileSync(`${output}/results.json`, JSON.stringify(results, null, 2));

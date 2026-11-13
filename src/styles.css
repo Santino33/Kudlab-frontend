@@ -179,7 +179,7 @@
 .account-status { display: inline-block; font-size: .875rem; font-weight: 500; white-space: nowrap; }
 .accounts-toolbar, .accounts-pagination { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1.5rem; }
 .accounts-total, .accounts-pagination { font-variant-numeric: tabular-nums; }
-.staff-input, .staff-select { font: inherit; min-height: 2.75rem; min-width: 0; max-width: 100%; padding: .5rem .75rem; color: var(--foreground); background: var(--background); border: 2px solid transparent; border-left-color: var(--input); border-radius: .5rem; }
+.staff-input, .staff-select { font: inherit; min-height: 2.75rem; min-width: 0; max-width: 100%; padding: .5rem .75rem; color: var(--foreground); background: var(--surface-subtle); border: 2px solid transparent; border-left-color: var(--input); border-radius: .5rem; }
 .staff-input { font-weight: 500; }
 .staff-select { width: 100%; }
 .staff-input[aria-invalid='true'], .staff-select[aria-invalid='true'] { border-color: var(--input); }
