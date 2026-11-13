@@ -20,8 +20,12 @@ try {
     assert.equal((await read('#primary')).bg, 'rgb(20, 38, 77)', 'approved action background');
     assert.equal((await read('#primary')).color, 'rgb(255, 255, 255)');
     const toggle = await read('[data-slot="switch"]');
-    assert.equal(toggle.bg, 'rgb(31, 59, 115)', 'explicitly approved Switch active token');
-    assert.equal(toggle.width, 56, 'colour change does not shrink the target');
+    const track = await read('[data-slot="switch-track"]');
+    assert.equal(track.bg, 'rgb(31, 59, 115)', 'explicitly approved Switch active token');
+    assert.equal(track.width, 40, 'approved compact visual track');
+    assert.equal(track.height, 24);
+    assert.equal((await read('[data-slot="switch-thumb"]')).width, 20);
+    assert.equal(toggle.width, 44, 'visual reduction keeps a real comfortable target');
     assert.equal(toggle.height, 44);
     assert.equal(await page.eval(() => getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()), '#53c0f3', 'legacy brand token is unchanged');
     const field = await read('#sample-field');
@@ -129,7 +133,7 @@ try {
   await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 });
   await page.eval(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   assert.equal(await page.eval(() => document.querySelector('[data-slot="switch"]').getAttribute('aria-checked')), 'false');
-  assert.equal((await read('[data-slot="switch"]')).bg, 'rgb(82, 98, 122)', 'off style unchanged');
+  assert.equal((await read('[data-slot="switch-track"]')).bg, 'rgb(82, 98, 122)', 'off style unchanged');
   assert.equal((await read('[data-slot="switch"]')).outline, '2px');
   const force = async (selector, pseudoClasses) => {
     const { root } = await page.send('DOM.getDocument');

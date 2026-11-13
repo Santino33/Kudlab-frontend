@@ -51,13 +51,13 @@ export function TaskAvailability({ task, admin, control, fetching }: {
   task: TaskSummary; admin: boolean; control: ReturnType<typeof useAvailability>; fetching: boolean;
 }) {
   const id = useId(), notice = control.notice?.id === task.id ? control.notice : undefined;
-  return <div className="grid gap-3 whitespace-normal">
-    <span className="task-state w-fit">{task.isEnabled ? 'Habilitada' : 'Deshabilitada'}</span>
+  return <div className="grid min-w-0 gap-3 whitespace-normal [overflow-wrap:anywhere]">
+    <span className="task-state w-fit">Estado: {task.isEnabled ? 'Habilitada' : 'Deshabilitada'}</span>
     {admin ? <>
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 flex-wrap items-center gap-3">
         <Switch id={id} checked={task.isEnabled} disabled={control.locked || fetching}
           aria-describedby={`${id}-help`} onCheckedChange={enabled => { void control.change(task, enabled); }} />
-        <label htmlFor={id} className="cursor-pointer text-sm">Habilitar {task.title} para nuevas asignaciones</label>
+        <label htmlFor={id} className="min-w-0 flex-1 basis-48 cursor-pointer text-sm">Habilitar {task.title} para nuevas asignaciones</label>
       </div>
       <p id={`${id}-help`} className="text-sm">Las asignaciones existentes podrán completarse.</p>
       <p role="status" aria-live="polite" className="text-sm">{notice?.text}</p>

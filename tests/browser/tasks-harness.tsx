@@ -20,23 +20,55 @@ async function until(check: () => boolean) {
   for (let n = 0; n < 150; n++) { if (check()) return; await new Promise(done => setTimeout(done, 20)); }
   throw new Error(`DOM timeout: ${text().slice(0, 200)}`);
 }
-function fixture(options: { role?: 'ADMIN' | 'TEACHER'; path?: string; empty?: boolean; status?: number; pending?: boolean; noSession?: boolean } = {}) {
+function fixture(options: { role?: 'ADMIN' | 'TEACHER'; path?: string; empty?: boolean; status?: number; pending?: boolean; noSession?: boolean;
+  enabled?: boolean; longText?: boolean; mutation?: 'hold' | 'conflict' | 'lost' | 'invalid' | 'failure' } = {}) {
   let status = options.status ?? 200, session = !options.noSession;
   const calls: string[] = [];
+  const writes: { isEnabled: boolean; expectedRevision: number }[] = [];
+  let current = { ...task, isEnabled: options.enabled ?? false };
+  let mutation = options.mutation;
+  let readFailure = false;
+  let releaseMutation: (() => void) | undefined;
+  const summary = () => ({ ...current,
+    title: options.longText ? 'Actividad pedagógica de prueba con un nombre suficientemente largo para revisar el ajuste de línea' : current.title,
+    unavailableReasons: current.isEnabled ? ['INTEGRATION_PENDING', 'CONFIGURATION_UNPUBLISHED'] : task.unavailableReasons });
   let resolveLate: ((response: Response) => void) | undefined;
-  const fetcher: typeof fetch = async (input) => {
+  const fetcher: typeof fetch = async (input, init) => {
     const path = new URL(String(input)).pathname;
     calls.push(path);
     if (path === '/api/auth/get-session') return session ? Response.json({ user: { id: 'synthetic', name: 'Profesor de prueba', email: 'test@example.edu.co', role: options.role ?? 'TEACHER' }, session: { id: 'synthetic-session', expiresAt: '2027-01-01T00:00:00Z' } }) : Response.json({ code: 'UNAUTHENTICATED' }, { status: 401 });
     if (path === '/api/auth/sign-out') { session = false; return Response.json({ success: true }); }
+    if (path === '/api/v1/tasks/TG-01/availability' && init?.method === 'PATCH') {
+      if (options.role !== 'ADMIN') return Response.json({ code: 'FORBIDDEN' }, { status: 403 });
+      const body = JSON.parse(String(init.body)) as { isEnabled: boolean; expectedRevision: number };
+      writes.push(body);
+      if (mutation === 'conflict') {
+        mutation = undefined;
+        current = { ...current, isEnabled: true, revision: current.revision + 1 };
+        return Response.json({ code: 'CONFLICT' }, { status: 409 });
+      }
+      if (body.expectedRevision !== current.revision) return Response.json({ code: 'CONFLICT' }, { status: 409 });
+      if (mutation === 'failure') return Response.json({ code: 'UNAVAILABLE' }, { status: 503 });
+      const commit = () => {
+        current = { ...current, isEnabled: body.isEnabled, revision: current.revision + Number(current.isEnabled !== body.isEnabled) };
+        return Response.json(summary());
+      };
+      if (mutation === 'hold') return new Promise<Response>(done => { releaseMutation = () => { mutation = undefined; done(commit()); }; });
+      const response = commit();
+      if (mutation === 'lost') { mutation = undefined; throw new TypeError('Synthetic lost reply after commit'); }
+      if (mutation === 'invalid') { mutation = undefined; return Response.json({}); }
+      return response;
+    }
     if (options.pending && path === '/api/v1/tasks') return new Promise(done => { resolveLate = done; });
     if (status !== 200) return Response.json({ code: status === 401 ? 'UNAUTHENTICATED' : status === 403 ? 'FORBIDDEN' : 'UNAVAILABLE' }, { status });
-    if (path === '/api/v1/tasks') return Response.json({ items: options.empty ? [] : [task] });
-    return path === '/api/v1/tasks/TG-01' ? Response.json({ ...task, purpose: 'Observar atención', pedagogicalNotice: 'No es un diagnóstico' }) : Response.json({ code: 'NOT_FOUND' }, { status: 404 });
+    if (readFailure && path === '/api/v1/tasks/TG-01') return Response.json({ code: 'INVALID_INPUT' }, { status: 400 });
+    if (path === '/api/v1/tasks') return Response.json({ items: options.empty ? [] : [summary()] });
+    return path === '/api/v1/tasks/TG-01' ? Response.json({ ...summary(), purpose: 'Observar atención', pedagogicalNotice: 'No es un diagnóstico' }) : Response.json({ code: 'NOT_FOUND' }, { status: 404 });
   };
   const controller = createAuthController(createAuthClient('http://localhost:3000', fetcher));
   flushSync(() => root.render(<StrictMode><App key={++key} controller={controller} apiOrigin="http://localhost:3000" fetcher={fetcher} pathname={options.path ?? '/tareas'} search="" /></StrictMode>));
-  return { calls, controller, recover: () => { status = 200; }, expire: () => { session = false; }, late: () => resolveLate?.(Response.json({ items: [task] })) };
+  return { calls, writes, controller, snapshot: summary, release: () => releaseMutation?.(), failReads: (fail: boolean) => { readFailure = fail; },
+    recover: () => { status = 200; }, expire: () => { session = false; }, late: () => resolveLate?.(Response.json({ items: [summary()] })) };
 }
 const clickText = (label: string) => {
   const control = [...host().querySelectorAll<HTMLButtonElement | HTMLAnchorElement>('button,a')].find(item => item.textContent?.trim() === label);
@@ -122,5 +154,6 @@ export async function runMobileTaskChecks() {
   assert(document.querySelector('[data-slot="sidebar-trigger"]')?.getAttribute('aria-expanded') === 'false', 'Mobile navigation closes');
   return 'navegación móvil cierra Sheet tras cambio de ruta sin desmontar acceso';
 }
-Object.assign(window, { runTaskChecks, runMobileTaskChecks });
-fixture();
+Object.assign(window, { runTaskChecks, runMobileTaskChecks, mountTaskFixture: fixture });
+const params = new URLSearchParams(location.search);
+fixture({ role: params.get('role') === 'admin' ? 'ADMIN' : 'TEACHER', path: params.get('view') === 'detail' ? '/tareas/TG-01' : '/tareas' });

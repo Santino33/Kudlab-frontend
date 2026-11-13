@@ -48,6 +48,30 @@ permite escenarios `close=absent|unconfirmed|network|recover|lost-response|timeo
 Timeout usa reloj corto solo de test; pending no liquida la petición. No confundir
 AX/reflujo con lector, zoom real 400%, BFCache o revocación probada en servidor.
 
+## Tareas digitales: disponibilidad y detalle (feature 07)
+
+`KUDLAB_TEST_ORIGIN=http://127.0.0.1:5387 node tests/browser/task-availability.check.mjs`
+usa exclusivamente `tasks-harness.html` y fetch sintético sin fallback a API.
+`KUDLAB_BROWSER_OUTPUT` permite elegir la carpeta privada de resultados/capturas;
+`TASTE_SKILL_TMP` debe señalar un directorio exclusivo de perfiles desechables.
+Incluye la suite DOM anterior, PATCH mutable con revisión, guardado pendiente,
+409/reconsulta/nueva intención, error incierto/reconciliación sin replay y respuesta
+tardía tras suspensión; además texto, panel, roles y seis anchos con teclado/AX.
+`--behavior-only` ejecuta solo la regresión funcional sintética (útil antes del
+restyling), sin acreditar geometría ni presentación nueva.
+El informe siempre separa las dimensiones globales observadas de la cobertura local:
+`--require-dimensions` exige además pista40×24/thumb20 en todas las vistas y objetivo
+real44×44. El responsable reasignó explícitamente ese bloque global a feature07;
+la pista visual está dentro de la raíz operable Base UI, no sustituye su objetivo.
+No llamar CA-01 completo al éxito de un subconjunto de comprobaciones.
+`?view=detail&role=admin` abre directamente la ficha sintética para inspección visual.
+El check verifica contenido local al200% y declara aparte el desbordamiento del
+encabezado global de cuenta a320px; `--require-page-reflow` exige también esa
+condición global. Comparar scrollWidth con el ancho solicitado, no solo innerWidth:
+un viewport móvil puede ensanchar su área de layout y ocultar el fallo a esa comparación.
+No acredita API/BD/Play reales, continuidad por código/acuse, lector ni zoom400 real.
+Los harnesses y fixtures no se publican como sitio: el artefacto público es solo dist.
+
 ## Base visual compartida
 
 `base-visual.check.mjs` usa `KUDLAB_TEST_ORIGIN` y el driver CDP existente, sin API/BD.
@@ -81,5 +105,6 @@ Contrato para consumidores (sin lógica de negocio nueva):
   y el controlador de navegación. No cambiar Cancel/acciones o ActivityLink globalmente.
 - Tokens `action-primary-*` y `navigation-*` no sustituyen `primary`/`brand-hover`
   de marca. Switch tiene `switch-active: #1F3B73`, aprobado específicamente, sin
-  cambiar sus dimensiones ni el estado apagado. Los estilos oscuros están
+  alterar el estado apagado. Su pista40×24/thumb20 conserva raíz operable44×44
+  tras la reasignación autorizada a feature07. Los estilos oscuros están
   acotados al sidebar y su Sheet.

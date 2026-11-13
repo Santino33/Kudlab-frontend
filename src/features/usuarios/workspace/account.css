@@ -15,3 +15,10 @@
 @media (max-width: 639px) {
   .workspace-toolbar.workspace-toolbar-account { grid-template-columns: auto minmax(0, 1fr) auto; }
 }
+@media (max-width: 479px) {
+  /* Give the location its own row before zoomed controls exhaust the viewport. */
+  .workspace-toolbar.workspace-toolbar-account { grid-template-columns: minmax(0, 1fr) auto; }
+  .workspace-toolbar-account > [data-slot='sidebar-trigger'] { grid-column: 1; grid-row: 1; justify-self: start; }
+  .workspace-toolbar-account > .workspace-account-trigger { grid-column: 2; grid-row: 1; }
+  .workspace-toolbar-account > .workspace-location { grid-column: 1 / -1; grid-row: 2; }
+}
