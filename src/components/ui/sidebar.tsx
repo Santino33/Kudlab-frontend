@@ -5,7 +5,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { ComponentProps, RefObject } from 'react';
 import { mergeProps } from '@base-ui/react/merge-props';
 import { useRender } from '@base-ui/react/use-render';
-import { PanelLeft } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
@@ -61,7 +61,7 @@ function SidebarTrigger({ className, onClick, ...props }: ComponentProps<typeof 
   return <Button ref={trigger} data-slot="sidebar-trigger" variant="outline" className={className}
     aria-label={isMobile ? 'Abrir navegación' : 'Alternar barra lateral'} aria-expanded={isMobile ? openMobile : open}
     onClick={event => { onClick?.(event); if (!event.defaultPrevented) toggleSidebar(); }} {...props}>
-    <PanelLeft aria-hidden="true" /><span>Menú</span>
+    <Menu aria-hidden="true" /><span>Menú</span>
   </Button>;
 }
 

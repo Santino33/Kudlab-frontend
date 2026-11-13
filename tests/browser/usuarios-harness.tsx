@@ -39,6 +39,10 @@ const accounts: Account[] = [
 const businessFetch: typeof fetch = async (input, init) => {
   const target = new URL(String(input));
   calls.push({ path: target.pathname, method: init?.method ?? 'GET' });
+  if (scenario.has('navigation') && target.pathname === '/api/v1/indicator-definitions') {
+    if (scenario.get('navigation') === 'unavailable') return Response.json({ code: 'UNAVAILABLE' }, { status: 503 });
+    return Response.json({ items: [{ metricCode: 'accuracy_pct', taskId: 'TG-01', label: 'Precisión', description: 'Definición sintética para navegación.', calculation: 'Ensayos correctos / ensayos válidos.', unit: '%', scopes: ['SESSION'], inputs: 'Ensayos válidos', unavailabilityReasons: ['NO_VALID_TARGETS'], exclusions: 'Sin ensayos válidos', rule: null }] });
+  }
   if (target.pathname === '/api/v1/account-invitations/accept') {
     document.body.dataset.invitationSubmissions = String(Number(document.body.dataset.invitationSubmissions ?? 0) + 1);
     if (scenario.get('invitation') === 'unavailable') throw new TypeError('Synthetic unavailable');

@@ -1,4 +1,4 @@
-import type { AccessState } from '../../auth/state.ts';
+import type { AccessState, Identity } from '../../auth/state.ts';
 import { indicatorRouteTitles, resolveIndicatorRoute, type IndicatorRoute } from '../indicadores/routes.ts';
 import { resolveObservationMatrix } from '../seguimiento/observations/navigation.ts';
 
@@ -34,6 +34,61 @@ export const routeTitles: Record<Route['kind'], string> = {
   studentActivities: 'Tareas del estudiante', sessionResults: 'Detalle de sesión', submissionRecovery: 'Recuperar envío',
   ...indicatorRouteTitles,
 };
+
+export type WorkspaceSection = 'home' | 'accounts' | 'invite' | 'tasks' | 'groups' | 'indicators';
+export type WorkspaceNavigation = {
+  section: WorkspaceSection | undefined;
+  breadcrumbs: { label: string; href?: string }[];
+};
+
+// Present only confirmed routes; authorization and data loading stay with App and the server.
+export function workspaceNavigation(route: Route, role: Identity['role'], denied = false): WorkspaceNavigation {
+  const current = { label: routeTitles[route.kind] };
+  const deniedLocation: WorkspaceNavigation = { section: undefined, breadcrumbs: [{ label: 'Sección no disponible' }] };
+  if (denied) return deniedLocation;
+  const link = (kind: Route['kind'], href: string) => ({ label: routeTitles[kind], href });
+  const accounts = link('accounts', '/usuarios');
+  const courses = link('groups', '/academico/cursos');
+  const groupPath = 'groupId' in route && route.groupId ? `/academico/cursos/${encodeURIComponent(route.groupId)}` : undefined;
+  const course = groupPath ? [link('groupDetail', groupPath)] : [];
+  const studentsPath = groupPath ? `${groupPath}/estudiantes` : '/academico/estudiantes';
+  const studentPath = 'studentId' in route ? `${studentsPath}/${encodeURIComponent(route.studentId)}` : undefined;
+  const student = studentPath ? [link('studentDetail', studentPath)] : [];
+  const teacher = role === 'TEACHER';
+  switch (route.kind) {
+    case 'entry': case 'access': return { section: 'home', breadcrumbs: [{ label: 'Inicio' }] };
+    case 'accounts': case 'invite': case 'detail': case 'edit':
+      if (teacher) return deniedLocation;
+      return { section: route.kind === 'invite' ? 'invite' : 'accounts', breadcrumbs: [
+        ...(route.kind === 'accounts' ? [] : [accounts]),
+        ...(route.kind === 'edit' ? [link('detail', `/usuarios/${encodeURIComponent(route.accountId)}`)] : []), current,
+      ] };
+    case 'tasks': case 'taskDetail':
+      return { section: 'tasks', breadcrumbs: [...(route.kind === 'tasks' ? [] : [link('tasks', '/tareas')]), current] };
+    case 'groups': case 'groupNew': case 'groupDetail': case 'groupEdit':
+      if (teacher && (route.kind === 'groupNew' || route.kind === 'groupEdit')) return deniedLocation;
+      return { section: 'groups', breadcrumbs: [...(route.kind === 'groups' ? [] : [courses]),
+        ...(route.kind === 'groupEdit' ? course : []), current] };
+    case 'indicatorCatalog': case 'indicatorDetail':
+      if (!teacher) return deniedLocation;
+      return { section: 'indicators', breadcrumbs: [...(route.kind === 'indicatorDetail' ? [link('indicatorCatalog', '/indicadores')] : []), current] };
+    case 'studentIndicators':
+      if (!teacher) return deniedLocation;
+      return { section: 'indicators', breadcrumbs: [courses, ...course, ...student, current] };
+    case 'students': case 'studentNew': case 'studentDetail': case 'studentEdit': case 'observationMatrix':
+    case 'assignments': case 'assignmentDetail': case 'supervisedExecution':
+    case 'studentActivities': case 'sessionResults': case 'submissionRecovery': {
+      if (!teacher) return deniedLocation;
+      const ancestors = groupPath ? [courses, ...course] : route.kind === 'students' ? [] : [link('students', '/academico/estudiantes')];
+      if (route.kind === 'studentEdit' || ['studentActivities', 'sessionResults', 'submissionRecovery'].includes(route.kind)) ancestors.push(...student);
+      if ((route.kind === 'sessionResults' || route.kind === 'submissionRecovery') && studentPath) ancestors.push(link('studentActivities', `${studentPath}/tareas`));
+      if (groupPath && (route.kind === 'assignmentDetail' || route.kind === 'supervisedExecution')) ancestors.push(link('assignments', `${groupPath}/asignaciones`));
+      if (groupPath && route.kind === 'supervisedExecution') ancestors.push(link('assignmentDetail', `${groupPath}/asignaciones/${encodeURIComponent(route.assignmentId)}`));
+      return { section: 'groups', breadcrumbs: [...ancestors, current] };
+    }
+    default: return { section: 'home', breadcrumbs: [current] };
+  }
+}
 
 export function resolveRoute(pathname: string, search: string): Route {
   if (new URLSearchParams(search).has('token') && !['/recuperar-acceso/confirmar', '/acceso/invitacion'].includes(pathname)) {

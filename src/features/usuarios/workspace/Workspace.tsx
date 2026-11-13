@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ArrowRight, Database, Home, LogOut, Users, UserPlus, BookOpen } from 'lucide-react';
+import { ArrowRight, ChartNoAxesCombined, Database, Home, LogOut, Users, UserPlus, BookOpen } from 'lucide-react';
 import { navigate } from '../../../lib/navigation.ts';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,15 +7,18 @@ import { Sidebar, SidebarProvider, SidebarTrigger, SidebarInset, SidebarHeader, 
 import type { Identity } from '../../../auth/state.ts';
 import { dashboardFeatures } from './dashboard.ts';
 import { ActionLink, roleLabel } from '../shared';
+import type { WorkspaceNavigation } from '../navigation.ts';
+import logo from '@/assets/kudlab-logo-oscuro.png';
 
-export function Workspace({ user, section, signOut, children }: {
-  user: Identity; section: 'home' | 'accounts' | 'invite' | 'tasks' | 'groups'; signOut(): void; children: ReactNode;
+export function Workspace({ user, navigation, signOut, children }: {
+  user: Identity; navigation: WorkspaceNavigation; signOut(): void; children: ReactNode;
 }) {
+  const { section, breadcrumbs } = navigation;
   return <SidebarProvider>
     <a className="workspace-skip" href="#workspace-content">Saltar al contenido</a>
       <Sidebar aria-label="Espacio de trabajo">
         <SidebarHeader>
-          <div><a href="/" onClick={navigate} className="auth-brand workspace-brand">Kudlab<span className="brand-dot" aria-hidden="true" /></a><p className="text-sm text-muted">Espacio de profesores</p></div>
+          <div><a href="/" onClick={navigate} className="auth-brand workspace-brand" aria-label="Kudlab · Inicio"><img src={logo} alt="" width={2400} height={1200} className="workspace-brand-image" /></a><p className="text-sm text-muted">Espacio de profesores</p></div>
         </SidebarHeader>
         <SidebarContent><SidebarGroup>
           <nav aria-label="Navegación principal"><SidebarMenu>
@@ -26,6 +29,7 @@ export function Workspace({ user, section, signOut, children }: {
             </>}
             <SidebarMenuItem><SidebarMenuButton isActive={section === 'groups'} render={<a href="/academico/cursos" onClick={navigate} aria-current={section === 'groups' ? 'page' : undefined} />}><BookOpen aria-hidden="true" />Mis cursos</SidebarMenuButton></SidebarMenuItem>
             <SidebarMenuItem><SidebarMenuButton isActive={section === 'tasks'} render={<a href="/tareas" onClick={navigate} aria-current={section === 'tasks' ? 'page' : undefined} />}><Database aria-hidden="true" />Tareas digitales</SidebarMenuButton></SidebarMenuItem>
+            {user.role === 'TEACHER' && <SidebarMenuItem><SidebarMenuButton isActive={section === 'indicators'} render={<a href="/indicadores" onClick={navigate} aria-current={section === 'indicators' ? 'page' : undefined} />}><ChartNoAxesCombined aria-hidden="true" />Indicadores</SidebarMenuButton></SidebarMenuItem>}
           </SidebarMenu></nav>
         </SidebarGroup></SidebarContent>
           <SidebarFooter>
@@ -34,9 +38,14 @@ export function Workspace({ user, section, signOut, children }: {
           </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="workspace-toolbar"><SidebarTrigger id="workspace-menu-toggle" /><span className="text-sm">{section === 'home' ? 'Inicio' : section === 'invite' ? 'Profesores / Invitar profesor' : section === 'groups' ? 'Mis cursos' : section === 'tasks' ? 'Tareas digitales' : 'Profesores'}</span><span className="workspace-scope">Espacio docente</span></header>
+        <header className="workspace-toolbar"><SidebarTrigger id="workspace-menu-toggle" />
+          <nav aria-label="Ubicación" className="workspace-location"><ol>{breadcrumbs.map((crumb, index) => <li key={`${index}:${crumb.label}`}>
+            {index > 0 && <span aria-hidden="true" className="workspace-location-separator">/</span>}
+            {crumb.href ? <a href={crumb.href} onClick={navigate}>{crumb.label}</a> : <span aria-current={index === breadcrumbs.length - 1 ? 'page' : undefined}>{crumb.label}</span>}
+          </li>)}</ol></nav>
+          <span className="workspace-scope">Espacio docente</span></header>
       <div id="workspace-content" className="workspace-content" tabIndex={-1}>{children}</div>
-        <footer className="workspace-footer">Kudlab · Apoyo al seguimiento pedagógico</footer>
+        <footer className="workspace-footer"><div className="workspace-footer-inner">Kudlab · Apoyo al seguimiento pedagógico</div></footer>
       </SidebarInset>
   </SidebarProvider>;
 }

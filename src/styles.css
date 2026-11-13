@@ -131,6 +131,14 @@
 .course-card [data-slot='card-footer'] { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; margin-top: auto; padding: 1rem 1.5rem; }
 
 .workspace-brand { display: inline-flex; min-height: 44px; align-items: center; text-decoration: none; }
+.workspace-brand-image { display: block; width: 100%; height: auto; object-fit: contain; }
+[data-mobile='true'] [data-slot='sidebar-header'] { padding-top: 4rem; }
+.workspace-location { flex: 1 1 16rem; min-width: 0; font-size: 1rem; line-height: 1.5; }
+.workspace-location ol { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .5rem; }
+.workspace-location li { display: flex; min-width: 0; gap: .5rem; overflow-wrap: anywhere; }
+.workspace-location a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: underline; text-underline-offset: .2em; }
+.workspace-location [aria-current='page'] { font-weight: 600; }
+.workspace-location-separator { align-self: center; }
 .brand-dot { width: .5rem; height: .5rem; margin-left: .25rem; border-radius: 50%; background: var(--primary); }
 .workspace-person { display: grid; gap: .25rem; }
 .workspace-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 1rem 2rem; border-bottom: 1px solid var(--border); background: var(--card); }
@@ -153,7 +161,8 @@
 .workspace-content { width: 100%; max-width: 75rem; min-width: 0; margin-inline: auto; padding: 2rem; flex: 1; }
 .workspace-content, .workspace-footer { background: var(--surface-subtle); }
 [data-slot='sidebar-inset'] { background: var(--surface-subtle); }
-.workspace-footer { padding: 1rem 2rem; font-size: .875rem; line-height: 1.5; }
+.workspace-footer { font-size: .875rem; line-height: 1.5; }
+.workspace-footer-inner { width: 100%; max-width: 75rem; margin-inline: auto; padding: 1rem 2rem; }
 .workspace-content > div > .staff-stack { gap: 2rem; }
 .workspace-page-heading { display: grid; gap: .75rem; }
 .workspace-page-heading > p:last-child { max-width: 65ch; }
@@ -247,7 +256,7 @@
   .auth-main { align-content: start; padding: 2rem 1rem; }
   .auth-footer { padding-inline: 1rem; }
   .workspace-content { padding: 1.5rem 1rem; }
-  .workspace-toolbar, .workspace-footer { padding: 1rem; }
+  .workspace-toolbar, .workspace-footer-inner { padding: 1rem; }
   .workspace-scope { display: none; }
   .staff-actions { align-items: stretch; flex-direction: column; }
 }
