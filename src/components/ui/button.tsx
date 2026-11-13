@@ -1,6 +1,7 @@
 // Adapted from ui.shadcn.com/r/styles/base-nova/button.json (MIT; see LICENSE).
 // Only approved variants; Kudlab colours, 44px targets and no reduced text opacity.
 import { Button as ButtonPrimitive } from '@base-ui/react/button';
+import { LoaderCircle } from 'lucide-react';
 import { cva } from 'class-variance-authority';
 import type { VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
@@ -18,8 +19,20 @@ const buttonVariants = cva(
   },
 );
 
-function Button({ className, variant, ...props }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
-  return <ButtonPrimitive data-slot="button" className={cn(buttonVariants({ variant }), className)} {...props} />;
+type ButtonProps = ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & {
+  loading?: boolean;
+  loadingLabel?: string;
+};
+
+function Button({ className, variant, loading, loadingLabel = 'Cargando…', disabled, children, ...props }: ButtonProps) {
+  return <ButtonPrimitive {...props} data-slot="button" data-loading={loading || undefined}
+    aria-busy={loading || props['aria-busy']} disabled={disabled || loading}
+    className={cn(buttonVariants({ variant }), className)}>
+    {loading === undefined ? children : <span className="staff-button-labels">
+      <span aria-hidden={loading} style={{ visibility: loading ? 'hidden' : 'visible' }}>{children}</span>
+      <span aria-hidden={!loading} style={{ visibility: loading ? 'visible' : 'hidden' }}><LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" />{loadingLabel}</span>
+    </span>}
+  </ButtonPrimitive>;
 }
 
 export { Button, buttonVariants };

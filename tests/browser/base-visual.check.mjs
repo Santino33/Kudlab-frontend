@@ -37,6 +37,19 @@ try {
     assert.equal((await read('#sample-select')).border, '2px');
     assert.equal((await read('#sample-field')).width, field.width, 'error does not move field');
     assert.equal(await page.eval(() => document.getElementById('sample-field').value), 'Texto sintético conservado');
+    const loadingWidth = (await read('#loading')).width;
+    await page.eval(() => document.getElementById('loading').click());
+    await page.eval(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal((await read('#loading')).width, loadingWidth, 'loading reserves both labels');
+    assert.equal(await page.eval(() => document.getElementById('loading').getAttribute('aria-busy')), 'true');
+    assert.equal(await page.eval(() => document.getElementById('loading').disabled), true);
+    await page.eval(() => document.getElementById('loading').click());
+    assert.equal(await page.eval(() => document.getElementById('submits').textContent), 'Envíos sintéticos: 1');
+    assert.equal(await page.eval(() => [...document.querySelectorAll('#loading .staff-button-labels > span')].filter(e => e.getAttribute('aria-hidden') === 'false').length), 1);
+    await page.eval(() => document.getElementById('finish').click());
+    await page.eval(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal((await read('#loading')).width, loadingWidth);
+    assert.equal(await page.eval(() => document.getElementById('loading').disabled), false);
     if ([390, 1440].includes(width)) await page.screenshot({ path: `${output}/base-${width}.png`, fullPage: true });
     results.push({ width, padding, controls: 'pass' });
   }

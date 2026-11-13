@@ -11,6 +11,8 @@ if (!import.meta.env.DEV) throw new Error('Test harness requires development mod
 function Sample() {
   const [invalid, setInvalid] = useState(false);
   const [value, setValue] = useState('Texto sintético conservado');
+  const [loading, setLoading] = useState(false);
+  const [submits, setSubmits] = useState(0);
   return <main className="staff-main"><div className="staff-content staff-stack">
     <h1 className="auth-heading">Base visual compartida</h1>
     <a className="staff-back-link" href="#form">Volver al formulario</a>
@@ -23,6 +25,8 @@ function Sample() {
         <div className="auth-field"><label htmlFor="sample-select">Selector nativo</label><select id="sample-select" className="staff-select" aria-invalid={invalid} aria-describedby={invalid ? 'select-error' : undefined}><option>Opción de prueba</option><option>Otra opción</option></select>{invalid && <p id="select-error">Selecciona un dato válido.</p>}</div>
         <div className="staff-actions"><Button id="primary">Guardar cambios</Button><Button id="secondary" variant="outline" onClick={() => setInvalid(v => !v)}>Alternar error</Button><Button id="disabled" disabled>Acción no disponible</Button></div>
         <p>La acción no está disponible en esta muestra.</p>
+        <div className="staff-actions"><Button id="loading" loading={loading} loadingLabel="Guardando cambios de ejemplo…" onClick={() => { setSubmits(n => n + 1); setLoading(true); }}>Guardar</Button><Button id="finish" variant="outline" onClick={() => setLoading(false)}>Finalizar carga sintética</Button></div>
+        <p id="submits" role="status">Envíos sintéticos: {submits}</p>
         <Input id="sample-date" type="date" aria-label="Fecha sintética" />
         <Input id="sample-file" type="file" aria-label="Archivo sintético" />
       </form>
