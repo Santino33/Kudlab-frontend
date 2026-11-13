@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ArrowRight, ChartNoAxesCombined, Database, Home, LogOut, Users, UserPlus, BookOpen } from 'lucide-react';
+import { ArrowRight, ChartNoAxesCombined, Database, Home, LogOut, Users, UserPlus, BookOpen, UserRound } from 'lucide-react';
 import { navigate } from '../../../lib/navigation.ts';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { dashboardFeatures } from './dashboard.ts';
 import { ActionLink, roleLabel } from '../shared';
 import type { WorkspaceNavigation } from '../navigation.ts';
 import logo from '@/assets/kudlab-logo-oscuro.png';
+import { AccountMenu } from './AccountMenu';
+import './account.css';
 
 export function Workspace({ user, navigation, signOut, children }: {
   user: Identity; navigation: WorkspaceNavigation; signOut(): void; children: ReactNode;
@@ -38,12 +40,12 @@ export function Workspace({ user, navigation, signOut, children }: {
           </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="workspace-toolbar"><SidebarTrigger id="workspace-menu-toggle" />
+        <header className="workspace-toolbar workspace-toolbar-account"><SidebarTrigger id="workspace-menu-toggle" />
           <nav aria-label="Ubicación" className="workspace-location"><ol>{breadcrumbs.map((crumb, index) => <li key={`${index}:${crumb.label}`}>
             {index > 0 && <span aria-hidden="true" className="workspace-location-separator">/</span>}
             {crumb.href ? <a href={crumb.href} onClick={navigate}>{crumb.label}</a> : <span aria-current={index === breadcrumbs.length - 1 ? 'page' : undefined}>{crumb.label}</span>}
           </li>)}</ol></nav>
-          <span className="workspace-scope">Espacio docente</span></header>
+          <span className="workspace-scope">Espacio docente</span><AccountMenu signOut={signOut} /></header>
       <div id="workspace-content" className="workspace-content" tabIndex={-1}>{children}</div>
         <footer className="workspace-footer"><div className="workspace-footer-inner">Kudlab · Apoyo al seguimiento pedagógico</div></footer>
       </SidebarInset>
@@ -66,7 +68,7 @@ export function Dashboard({ user }: { user: Identity }) {
         </div>)}</div>
         {user.role === 'ADMIN' && <p className="dashboard-note">Las cuentas nuevas quedan pendientes: la activación por invitación aún no está disponible.</p>}
       </section>}
-      <Card className="dashboard-account"><CardHeader><h2 className="staff-section-title">Tu cuenta</h2></CardHeader>
+      <Card className="dashboard-account" aria-labelledby="dashboard-account-title"><CardHeader><h2 id="dashboard-account-title" className="staff-section-title">Tu cuenta</h2><UserRound className="dashboard-account-icon" aria-hidden="true" /></CardHeader>
         <CardContent><dl className="account-facts"><div><dt>Nombre</dt><dd>{user.name}</dd></div><div><dt>Correo</dt><dd>{user.email}</dd></div><div><dt>Rol</dt><dd>{roleLabel[user.role]}</dd></div></dl>
         </CardContent></Card>
     </div>

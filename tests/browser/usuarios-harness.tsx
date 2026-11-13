@@ -5,19 +5,27 @@ import { createAuthClient } from '../../src/auth/client.ts';
 import { createAuthController } from '../../src/auth/controller.ts';
 import { resolveRoute } from '../../src/features/usuarios/navigation.ts';
 import type { Account } from '../../src/features/usuarios/types.ts';
+import { registerLeaveGuard } from '../../src/lib/navigation.ts';
 import '../../src/styles.css';
 
 // Test-only fake transport; no network fallback or retained credentials.
 const scenario = new URLSearchParams(window.location.search);
 if (!import.meta.env.DEV) throw new Error('Test harness requires development mode');
 const calls: { path: string; method: string }[] = [];
-const user = { id: 'identity-example', name: 'Profesor de ejemplo',
-  email: 'profesor@example.edu.co', role: scenario.get('role') === 'ADMIN' ? 'ADMIN' : 'TEACHER' };
+const user = { id: 'identity-example', name: scenario.get('account') === 'long' ? 'Profesora de ejemplo con nombre compuesto y apellidos extensos para comprobar lectura completa' : 'Profesor de ejemplo',
+  email: scenario.get('account') === 'long' ? `${'correo-docente-sintetico'.repeat(3)}@example.edu.co` : 'profesor@example.edu.co', role: scenario.get('role') === 'ADMIN' ? 'ADMIN' : 'TEACHER' };
+let sessionActive = true, closeAttempts = 0, guardDecisions = 0;
 const controller = createAuthController(createAuthClient('http://localhost:3000', async (url) => {
   calls.push({ path: new URL(url).pathname, method: url.endsWith('/get-session') ? 'GET' : 'POST' });
   if (url.endsWith('/sign-out')) {
-    if (scenario.get('close') === 'pending') return new Promise<Response>(() => {});
+    closeAttempts++;
+    if (['pending', 'timeout'].includes(scenario.get('close') ?? '')) return new Promise<Response>(() => {});
     if (scenario.get('close') === 'unconfirmed') return Response.json({ code: 'UNAVAILABLE' }, { status: 503 });
+    if (scenario.get('close') === 'network') throw new TypeError('Synthetic lost connection');
+    if (scenario.get('close') === 'recover' && closeAttempts === 1) return Response.json({ code: 'UNAVAILABLE' }, { status: 503 });
+    sessionActive = false;
+    if (scenario.get('close') === 'lost-response') throw new TypeError('Synthetic lost response after revocation');
+    if (scenario.get('close') === 'absent') return Response.json({ code: 'UNAUTHENTICATED' }, { status: 401 });
     return Response.json({ success: true });
   }
   if (url.endsWith('/sign-in/email') && scenario.get('login') === 'invalid') {
@@ -25,10 +33,12 @@ const controller = createAuthController(createAuthClient('http://localhost:3000'
   }
   if (scenario.get('access') === 'unavailable') return Response.json({ code: 'UNAVAILABLE' }, { status: 503 });
   if (scenario.get('access') === 'absent') return Response.json({ code: 'UNAUTHENTICATED' }, { status: 401 });
-  if (url.endsWith('/get-session')) return Response.json({ user,
-    session: { id: 'session-example', expiresAt: '2027-01-01T00:00:00.000Z' } });
+  if (url.endsWith('/get-session')) return sessionActive ? Response.json({ user,
+    session: { id: 'session-example', expiresAt: '2027-01-01T00:00:00.000Z' } }) : Response.json({ code: 'UNAUTHENTICATED' }, { status: 401 });
   return Response.json({ user });
-}));
+}), scenario.get('close') === 'timeout' ? {
+  setTimeout: (callback) => setTimeout(callback, 100), clearTimeout: (id) => clearTimeout(id as ReturnType<typeof setTimeout>),
+} : undefined);
 
 const accounts: Account[] = [
   { id: 'cuenta-lucia', name: 'Lucía Martínez', email: 'lucia@ejemplo.edu.co', role: 'TEACHER', status: 'ACTIVA', createdAt: '2026-10-20T14:00:00Z' },
@@ -96,7 +106,12 @@ let recoveryToken = scenario.get('ticket') === 'valid' ? 'synthetic-recovery-onl
 let invitationToken = scenario.get('ticket') === 'valid' ? 'synthetic-invitation-only' : undefined;
 const path = scenario.get('path') ?? '/';
 history.replaceState(null, '', path);
-Object.assign(window, { usuarioCalls: calls });
+Object.assign(window, { usuarioCalls: calls, accountHarness: {
+  suspend: () => controller.suspend(), resume: () => controller.resume(),
+  installGuard: () => registerLeaveGuard({ dirty: () => true, valid: () => controller.getSnapshot().kind === 'authenticated',
+    decide: async () => { guardDecisions++; return false; }, cancel() {}, discard() {}, unavailable() {} }),
+  guardDecisions: () => guardDecisions,
+} });
 const initialEntry = path.startsWith('/recuperar-acceso') || path === '/acceso/invitacion' ? {
   route: resolveRoute(path, ''), recovery: { read: () => recoveryToken, clear: () => { recoveryToken = undefined; } }, invitation: { read: () => invitationToken, clear: () => { invitationToken = undefined; } },
 } : undefined;

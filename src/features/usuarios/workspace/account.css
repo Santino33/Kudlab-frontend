@@ -1,0 +1,17 @@
+.workspace-toolbar.workspace-toolbar-account {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+}
+.workspace-account-trigger { width: 2.75rem; min-width: 44px; padding-inline: 0; }
+.workspace-account-popup { width: 14rem; }
+.workspace-account-popup > button { width: 100%; }
+.dashboard .dashboard-account-icon { width: 1.5rem; height: 1.5rem; }
+.dashboard .dashboard-features { container-type: inline-size; }
+.dashboard .dashboard-task { display: grid; grid-template-columns: minmax(0, 1fr); }
+.dashboard .dashboard-task > a { width: 100%; min-width: 0; }
+@container (min-width: 32rem) {
+  .dashboard .dashboard-task { grid-template-columns: minmax(0, 1fr) 12rem; }
+}
+@media (max-width: 639px) {
+  .workspace-toolbar.workspace-toolbar-account { grid-template-columns: auto minmax(0, 1fr) auto; }
+}

@@ -26,6 +26,19 @@ Los scripts declaran sus fixtures y URL al inicio: revisar cada uno antes de eje
 
 `tests/browser/*.tsx` son harnesses de desarrollo: se comprueban tipos, pero no se publican en `dist/`. La validación de producción sigue siendo `npm run build` y la verificación de sus cabeceras en el hosting real.
 
+## Inicio y Tu cuenta
+
+`inicio-cuenta.check.mjs` usa `KUDLAB_TEST_ORIGIN`, `KUDLAB_BROWSER_OUTPUT` y el
+driver desechable existente. Comprueba ambos roles/siete anchos, tarjeta de solo
+lectura/datos largos, accesos alineados y menú global con solo Cerrar sesión.
+Incluye teclado/foco/AX/táctil, suspensión, cierre confirmado/ausente/incierto,
+reconciliación y retorno por historial con transporte sintético, sin API/BD real.
+`KUDLAB_EXPECT_LEGACY=1` verifica la versión transitoria con cierre lateral aún
+disponible; por defecto exige su retirada. El harness mantiene sesión mutable y
+permite escenarios `close=absent|unconfirmed|network|recover|lost-response|timeout|pending`.
+Timeout usa reloj corto solo de test; pending no liquida la petición. No confundir
+AX/reflujo con lector, zoom real 400%, BFCache o revocación probada en servidor.
+
 ## Base visual compartida
 
 `base-visual.check.mjs` usa `KUDLAB_TEST_ORIGIN` y el driver CDP existente, sin API/BD.
