@@ -17,6 +17,7 @@ import { IndicatorChart } from './IndicatorChart';
 import { PedagogicalNotice } from './PedagogicalNotice';
 import { buildRows } from './rows.ts';
 import { metricCodes, scopes, type MetricCode, type Scope } from './types.ts';
+import { MentalistaHistory } from './MentalistaHistory';
 
 type Filters = { metric: MetricCode | 'all'; scope: Scope; from: string; to: string };
 const defaults: Filters = { metric: 'all', scope: 'SESSION', from: '', to: '' };
@@ -28,6 +29,14 @@ const rangeMessages = { range: 'La fecha inicial no puede ser posterior a la fin
 
 // Historia descriptiva de indicadores de un estudiante (D-1…D-8). Solo lectura; no compara ni calcula diferencias entre sesiones.
 export function StudentIndicators({ api, studentId, studentName, groupId, onRevalidate }: { api: IndicatorsApi; studentId: string; studentName: string; groupId: string; onRevalidate(): void }) {
+  const [taskId, setTaskId] = useState('TG-01'), taskSelect = useId();
+  const props = { api, studentId, studentName, groupId, onRevalidate };
+  return <div className="staff-stack"><Heading>Historia de indicadores</Heading>
+    <div className="grid gap-2"><Label htmlFor={taskSelect}>Tarea digital</Label><select id={taskSelect} className="staff-select" value={taskId} onChange={e => setTaskId(e.target.value)}><option value="TG-01">TG-01 · Lluvia de estrellas</option><option value="TG-03">TG-03 · Mentalista</option></select></div>
+    {taskId === 'TG-03' ? <MentalistaHistory key={`${studentId}:TG-03`} {...props} /> : <LegacyStudentIndicators key={`${studentId}:TG-01`} {...props} />}
+  </div>;
+}
+function LegacyStudentIndicators({ api, studentId, studentName, groupId, onRevalidate }: { api: IndicatorsApi; studentId: string; studentName: string; groupId: string; onRevalidate(): void }) {
   const ids = { metric: useId(), scope: useId(), from: useId(), to: useId(), err: useId() };
   const [filters, setFilters] = useState<Filters>(defaults);
   const apiFilter = toFilter(filters), invalid = filterError(apiFilter), key = `${studentId}|${JSON.stringify(apiFilter)}`;
@@ -48,7 +57,6 @@ export function StudentIndicators({ api, studentId, studentName, groupId, onReva
   const change = (patch: Partial<Filters>) => setFilters(f => ({ ...f, ...patch }));
   const isDefault = filters.metric === defaults.metric && filters.scope === defaults.scope && !filters.from && !filters.to;
   return <div className="staff-stack">
-    <Heading>Historia de indicadores</Heading>
     <p>{studentName} · Tarea TG-01</p>
     <PedagogicalNotice />
     <form className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Filtros de la historia" onSubmit={e => e.preventDefault()}>

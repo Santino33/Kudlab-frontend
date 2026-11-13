@@ -19,6 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { assignmentPath, studentTasksPath, executionPath, executionLabels, processingLabels, metricLabels, unavailableLabels, type Assignment, type AssignmentSummary, type SessionDetail } from './types.ts';
 import { AssignmentAccess, RecoveryAccess } from './AccessCodes';
 import { newPreparation, preparationKey, readPreparation, savePreparation } from './code-preparation';
+import { MentalistaResults } from './MentalistaResults';
 
 export function ActivityLink({ href, children, primary = false }: { href: string; children: ReactNode; primary?: boolean }) {
   return <a href={href} onClick={navigate} className={cn(buttonVariants({ variant: primary ? 'default' : 'outline' }), 'w-fit max-w-full whitespace-normal text-left [overflow-wrap:anywhere]')}>{children}</a>;
@@ -60,7 +61,9 @@ export function Assignments({ api, studentsApi, tasksApi, group, actorId }: { ap
   </div>;
 }
 function AssignmentForm({ api, studentsApi, tasksApi, group, actorId }: { api: ActivitiesApi; studentsApi: StudentsApi; tasksApi: TasksApi; group: Group; actorId: string }) {
-  const studentQuery = useQuery(signal => studentsApi.list(signal), group.id), taskQuery = useQuery(signal => tasksApi.detail('TG-01', signal), 'TG-01');
+  const [taskId, setTaskId] = useState<'TG-01' | 'TG-03'>(() => { try { return JSON.parse(sessionStorage.getItem(`kudlab:j02:assignment:${actorId}:${group.id}`) ?? 'null')?.taskId === 'TG-03' ? 'TG-03' : 'TG-01'; } catch { return 'TG-01'; } });
+  const catalog = useQuery(signal => tasksApi.list(signal), 'assignment-catalog');
+  const studentQuery = useQuery(signal => studentsApi.list(signal), group.id), taskQuery = useQuery(signal => tasksApi.detail(taskId, signal), taskId);
   const [selected, setSelected] = useState<string[]>([]), [error, setError] = useState('');
   const key = `kudlab:j02:assignment:${actorId}:${group.id}`;
   const [frozen, setFrozen] = useState<AssignmentInput | undefined>(() => { try { const v = JSON.parse(sessionStorage.getItem(key) ?? 'null'); return v?.groupId === group.id && typeof v.requestId === 'string' ? v : undefined; } catch { return; } });
@@ -70,8 +73,15 @@ function AssignmentForm({ api, studentsApi, tasksApi, group, actorId }: { api: A
   const task = taskQuery.result?.kind === 'success' ? taskQuery.result.data : undefined;
   const students = studentQuery.result?.kind === 'success' ? studentQuery.result.data.items : undefined;
   const selectedIds = selected.filter(id => students?.some(s => s.id === id && s.isActive));
-  async function send(input: AssignmentInput) {
-    const result = created ? { kind: 'success' as const, data: created } : await mutation.run(signal => api.create(input, signal));
+  async function send(input: AssignmentInput, verify = false) {
+    const result = created ? { kind: 'success' as const, data: created } : await mutation.run(async signal => {
+      if (verify) {
+        const latest = await tasksApi.detail(input.taskId, signal);
+        if (latest.kind !== 'success') return latest;
+        if (!latest.data.assignable || latest.data.publishedVersion?.id !== input.publishedVersionId) return { kind: 'error' as const, status: 409, code: 'CONFLICT' as const, uncertain: false };
+      }
+      return api.create(input, signal);
+    });
     if (result?.kind === 'success') {
       setCreated(result.data);
       try {
@@ -91,12 +101,16 @@ function AssignmentForm({ api, studentsApi, tasksApi, group, actorId }: { api: A
     event.preventDefault(); if (submitting.current || mutation.pending || frozen || !task?.publishedVersion) return;
     const values = new FormData(event.currentTarget), start = new Date(String(values.get('startsAt'))), end = new Date(String(values.get('endsAt'))), maxAttempts = Number(values.get('maxAttempts'));
     if (!selectedIds.length || !Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end || !Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 10) { setError('Selecciona estudiantes activos, un periodo válido y entre 1 y 10 intentos.'); return; }
-    const input: AssignmentInput = { requestId: crypto.randomUUID(), taskId: 'TG-01', publishedVersionId: task.publishedVersion.id, groupId: group.id, studentIds: selectedIds, startsAt: start.toISOString(), endsAt: end.toISOString(), maxAttempts };
+    if (task.id !== taskId) return;
+    const input: AssignmentInput = { requestId: crypto.randomUUID(), taskId, publishedVersionId: task.publishedVersion.id, groupId: group.id, studentIds: selectedIds, startsAt: start.toISOString(), endsAt: end.toISOString(), maxAttempts };
     submitting.current = true;
     try { sessionStorage.setItem(key, JSON.stringify(input)); } catch { submitting.current = false; setError('No podemos conservar la solicitud para reconciliarla. Habilita el almacenamiento de este sitio antes de guardar.'); return; }
-    setError(''); setFrozen(input); void send(input);
+    setError(''); setFrozen(input); void send(input, true);
   }
-  return <section className="staff-stack activity-form" aria-labelledby="assignment-form-title"><h2 id="assignment-form-title" className="staff-section-title">Asignar Lluvia de estrellas</h2>
+  return <section className="staff-stack activity-form" aria-labelledby="assignment-form-title"><h2 id="assignment-form-title" className="staff-section-title">Asignar {taskId === 'TG-03' ? 'Mentalista' : 'Lluvia de estrellas'}</h2>
+    <div className="auth-field"><Label htmlFor="assignment-task">Tarea digital</Label><select id="assignment-task" className="staff-select" value={taskId} disabled={Boolean(frozen) || mutation.pending} onChange={e => { if (e.target.value === 'TG-01' || e.target.value === 'TG-03') { setTaskId(e.target.value); setSelected([]); setError(''); } }}>
+      {catalog.result?.kind === 'success' ? catalog.result.data.items.filter(t => t.id === 'TG-01' || t.id === 'TG-03').map(t => <option key={t.id} value={t.id}>{t.id} · {t.title}</option>) : <option value="TG-01">TG-01 · Lluvia de estrellas</option>}
+    </select>{catalog.result && catalog.result.kind !== 'success' && <ActivityFailure result={catalog.result} retry={catalog.reload} />}</div>
     <p>Los destinatarios quedan fijados al guardar. El límite de intentos lo decide el profesor; no es un umbral científico.</p>
     {frozen ? <Notice title={created ? 'Asignación creada' : mutation.pending ? 'Creando asignación…' : 'Hay una creación por confirmar'}><p>{frozen.studentIds.length} destinatarios · {date(frozen.startsAt)} – {date(frozen.endsAt)} · {frozen.maxAttempts} intentos. Conservamos la misma solicitud, sin duplicar la asignación.</p><Button className="mt-4" disabled={mutation.pending} onClick={() => void send(frozen)}>{mutation.pending ? 'Creando asignación…' : created ? 'Continuar con los códigos' : 'Comprobar creación'}</Button></Notice> : !task || !students ? (!studentQuery.result || !taskQuery.result ? <Loading text="Preparando formulario" /> : <ActivityFailure retry={() => { studentQuery.reload(); taskQuery.reload(); }} />) : <form onSubmit={submit} className="auth-form">
       <p>{task.pedagogicalNotice}</p>{!task.assignable && <Notice title="Actividad no disponible"><ul>{task.unavailableReasons.map(r => <li key={r}>{r === 'METHODOLOGY_PENDING' ? 'Método pendiente de aprobación' : r === 'TASK_DISABLED' ? 'Tarea deshabilitada' : 'Configuración o integración pendiente'}</li>)}</ul></Notice>}
@@ -146,7 +160,7 @@ export function StudentActivities({ api, studentsApi, group, studentId }: { api:
   const s = student.result?.kind === 'success' && student.result.data.groupId === group.id ? student.result.data : undefined;
   return <div className="staff-stack"><ActivityLink href={`${groupPath(group.id)}/estudiantes/${encodeURIComponent(studentId)}`}>Volver a la ficha</ActivityLink><ActivityHeading>Tareas digitales</ActivityHeading>
     {!student.result ? <Loading text="Consultando estudiante" /> : !s ? <ActivityFailure result={student.result} /> : <><p>{s.firstName} {s.lastName} · {group.name}</p><ActivityLink href={assignmentPath(group.id)}>Ver asignaciones del curso</ActivityLink>
-      {!query.result ? <Loading text="Consultando sesiones" /> : query.result.kind !== 'success' ? <ActivityFailure result={query.result} retry={query.reload} /> : !query.result.data.items.length ? <Notice title="Sin sesiones en esta página"><p>No hay resultados de desempeño que mostrar. Una ausencia de sesión no equivale a cero.</p></Notice> : <><ActivityTable label="Sesiones del estudiante"><TableHeader><TableRow><TableHead>Preparación</TableHead><TableHead>Intento</TableHead><TableHead>Ejecución y entrega</TableHead><TableHead>Detalle</TableHead></TableRow></TableHeader><TableBody>{query.result.data.items.map(v => <TableRow key={v.id}><TableCell>{date(v.preparedAt)}<p>TG-01 · Versión {v.configVersion}</p></TableCell><TableCell className="text-right tabular-nums">{v.attemptNumber ?? 'Sin consumir'}</TableCell><TableCell>{executionLabels[v.executionStatus]}<p>{processingLabels[v.processingStatus]}</p></TableCell><TableCell><a className="staff-link" href={studentTasksPath(group.id, studentId, v.id)} onClick={navigate}>Ver sesión</a></TableCell></TableRow>)}</TableBody></ActivityTable><Next cursor={query.result.data.nextCursor} next={setCursor} /></>}
+      {!query.result ? <Loading text="Consultando sesiones" /> : query.result.kind !== 'success' ? <ActivityFailure result={query.result} retry={query.reload} /> : !query.result.data.items.length ? <Notice title="Sin sesiones en esta página"><p>No hay resultados de desempeño que mostrar. Una ausencia de sesión no equivale a cero.</p></Notice> : <><ActivityTable label="Sesiones del estudiante"><TableHeader><TableRow><TableHead>Preparación</TableHead><TableHead>Intento</TableHead><TableHead>Ejecución y entrega</TableHead><TableHead>Detalle</TableHead></TableRow></TableHeader><TableBody>{query.result.data.items.map(v => <TableRow key={v.id}><TableCell>{date(v.preparedAt)}<p>{v.taskId} · Versión {v.configVersion}</p></TableCell><TableCell className="text-right tabular-nums">{v.attemptNumber ?? 'Sin consumir'}</TableCell><TableCell>{executionLabels[v.executionStatus]}<p>{processingLabels[v.processingStatus]}</p></TableCell><TableCell><a className="staff-link" href={studentTasksPath(group.id, studentId, v.id)} onClick={navigate}>Ver sesión</a></TableCell></TableRow>)}</TableBody></ActivityTable><Next cursor={query.result.data.nextCursor} next={setCursor} /></>}
       <div className="staff-actions"><Button variant="outline" onClick={query.reload}>Actualizar sesiones</Button>{cursor && <Button variant="outline" onClick={() => setCursor(undefined)}>Primera página</Button>}</div></>}
   </div>;
 }
@@ -183,12 +197,12 @@ export function SessionResults({ api, group, studentId, sessionId, actorId }: { 
       </section>
       <div className="staff-actions"><Button variant="outline" onClick={query.reload}>Actualizar sesión</Button><ActivityLink href={assignmentPath(group.id, s.assignmentId)}>Ver asignación</ActivityLink>{s.attemptNumber !== null && <ActivityLink href={executionPath(`${studentTasksPath(group.id, studentId, sessionId)}/recuperacion`)}>Recuperar envío en este navegador</ActivityLink>}{s.processingStatus === 'FAILED' && <Button disabled={mutation.pending} onClick={() => void retry()}>{mutation.pending ? 'Solicitando cálculo…' : 'Reintentar procesamiento'}</Button>}</div>
       {mutation.result && mutation.result.kind !== 'success' && <ActivityFailure result={mutation.result} retry={() => void retry()} />}
-      <IndicatorResults session={s} />
-      {s.attemptNumber !== null && !s.receipt && <details><summary>Resolver un envío pendiente</summary><RecoveryAccess api={api} sessionId={sessionId} actorId={actorId} /></details>}
+      {s.taskId === 'TG-03' ? <MentalistaResults session={s} api={api} /> : <IndicatorResults session={s} />}
+      {s.attemptNumber !== null && !s.receipt && <details><summary>Resolver un envío pendiente</summary><RecoveryAccess api={api} sessionId={sessionId} actorId={actorId} taskTitle={s.taskId === 'TG-03' ? 'Mentalista' : 'Lluvia de estrellas'} /></details>}
     </>}
   </div>;
 }
-function IndicatorResults({ session }: { session: SessionDetail }) {
+function IndicatorResults({ session }: { session: Extract<SessionDetail, { taskId: 'TG-01' }> }) {
   const c = session.calculation;
   return <section className="staff-stack" aria-labelledby="session-results-title"><h2 id="session-results-title" className="staff-section-title">Resultados por sesión y partes</h2>{!c || c.status !== 'SUCCEEDED' ? <p>No hay indicadores disponibles todavía. {processingLabels[session.processingStatus]}</p> : <>
     <p>Ensayos observados: {c.summary.observed ?? '—'}; incluidos: {c.summary.included ?? '—'}; excluidos: {c.summary.excluded ?? '—'}.</p>
