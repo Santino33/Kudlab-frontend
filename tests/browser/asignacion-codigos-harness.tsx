@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client';
+import { flushSync } from 'react-dom';
 import { AssignmentDetail } from '../../src/features/tareas/activities/Activities';
 import { createActivitiesApi } from '../../src/features/tareas/activities/api';
 import type { Assignment, CodeMetadata } from '../../src/features/tareas/activities/types';
@@ -47,7 +48,7 @@ function mount(scenario: Scenario = 'normal') {
     throw new Error('Unexpected synthetic request');
   };
   const api = createActivitiesApi(createHttpClient('http://synthetic.invalid', { getGeneration: () => 1, notify() {} }, fetcher));
-  root.render(<main className="staff-content"><AssignmentDetail key={++sequence} api={api} group={group} assignmentId={assignment.id} actorId={group.teacherId} /></main>);
+  flushSync(() => root.render(<main className="staff-content"><AssignmentDetail key={++sequence} api={api} group={group} assignmentId={assignment.id} actorId={group.teacherId} /></main>));
 }
 declare global {
   interface Window {

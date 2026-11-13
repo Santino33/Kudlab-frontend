@@ -7,6 +7,7 @@ const output = process.env.KUDLAB_BROWSER_OUTPUT ?? '/tmp/opencode/front-asignac
 mkdirSync(output, { recursive: true });
 const browser = await Browser.launch();
 const results = [];
+const failures = [];
 try {
   const page = await browser.newPage({ width: 1440, height: 900, reducedMotion: true });
   const until = async (fn, message) => {
@@ -16,10 +17,11 @@ try {
   const click = label => page.eval(label => {
     const button = [...document.querySelectorAll('button')].find(e => e.textContent.trim() === label || e.getAttribute('aria-label') === label);
     if (!button) throw new Error(`Missing control: ${label}`);
-    button.click();
+    button.focus(); button.click();
   }, label);
   const key = async (name, code, vk) => {
-    await page.send('Input.dispatchKeyEvent', { type: 'keyDown', key: name, code, windowsVirtualKeyCode: vk });
+    await page.send('Page.bringToFront');
+    await page.send('Input.dispatchKeyEvent', { type: 'keyDown', key: name, code, windowsVirtualKeyCode: vk, ...(name === 'Enter' ? { text: '\r' } : name === ' ' ? { text: ' ' } : {}) });
     await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: name, code, windowsVirtualKeyCode: vk });
   };
   const mount = async scenario => {
@@ -44,6 +46,11 @@ try {
   assert.ok(back.className.includes('staff-back-link'), 'Return uses shared text-link pattern');
   assert.equal(back.underline, 'underline'); assert.equal(back.border, '0px'); assert.ok(back.height >= 44);
   results.push('CA-01: return text link, destination and target');
+  await page.eval(() => document.querySelector('.assignment-detail > a').focus());
+  await key('Enter', 'Enter', 13);
+  await until(() => location.pathname.endsWith('/80000000-0000-4000-8000-000000000001/asignaciones'), 'Return did not navigate to the course assignments');
+  await page.goto(`${origin}/tests/browser/asignacion-codigos-harness.html`, { settleMs: 300 });
+  await until(() => !!document.querySelector('#access-title'), 'Harness not ready after return');
   if (process.env.KUDLAB_BACK_ONLY !== '1') {
     for (const width of [320, 390, 768, 1024, 1280, 1440]) {
       await page.setViewport({ width, height: 900 }); await mount('long');
@@ -60,11 +67,14 @@ try {
     }
     await page.eval(() => document.querySelector('.assignment-options > summary').focus());
     await key('Enter', 'Enter', 13);
+    await until(() => document.querySelector('.assignment-options').open, 'Keyboard did not expand options');
     assert.equal(await page.eval(() => document.querySelector('.assignment-options').open), true);
     await key(' ', 'Space', 32);
+    await until(() => !document.querySelector('.assignment-options').open, 'Keyboard did not collapse options');
     assert.equal(await page.eval(() => document.querySelector('.assignment-options').open), false);
     await page.eval(() => document.querySelector('.assignment-management > summary').focus());
     await key(' ', 'Space', 32);
+    await until(() => document.querySelector('.assignment-management').open, 'Keyboard did not expand management');
     assert.equal(await page.eval(() => document.querySelector('.assignment-management').open), true);
     results.push('CA-01: native keyboard disclosure');
     await page.setViewport({ width: 1440, height: 900 }); await mount('normal'); await ready();
@@ -73,8 +83,11 @@ try {
     assert.equal(await page.eval(() => document.querySelector('dialog').contains(document.activeElement)), true);
     await key('Escape', 'Escape', 27);
     await until(() => !document.querySelector('dialog[open]'), 'Projection not closed');
-    assert.equal(await page.eval(() => document.activeElement?.textContent), 'Proyectar códigos');
+    assert.equal(await page.eval(() => document.activeElement === document.querySelector('.assignment-tools button')), true, 'Projection restores trigger focus');
     await hide(); await click('Mostrar códigos'); await ready();
+    await page.eval(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => {} } }));
+    await click('Copiar código de Participante sintético');
+    await until(() => [...document.querySelectorAll('[role="status"]')].some(e => e.textContent.includes('Copiado.')), 'Copy success not confirmed');
     await page.eval(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('Synthetic clipboard denial'); } } }));
     await click('Copiar código de Participante sintético');
     await until(() => !!document.querySelector('.access-copy-text'), 'Manual copy missing');
@@ -84,7 +97,7 @@ try {
     await hide(); await page.eval(() => window.assignmentTest.release());
     await new Promise(done => setTimeout(done, 100));
     assert.equal(await page.eval(() => document.querySelector('.classroom-code').textContent), 'Oculto');
-    results.push('CA-02: projection/Escape/focus, copy fallback/cleanup, late reveal hidden');
+    results.push('CA-02: projection/Escape/focus, copy success/fallback/cleanup, late reveal hidden');
     await mount('normal');
     await page.eval(() => { document.querySelector('.assignment-options').open = true; });
     await click('Actualizar asignación y códigos');
@@ -117,14 +130,17 @@ try {
     await mount('long');
     await page.setViewport({ width: 320, height: 900 });
     await page.eval(() => { document.documentElement.style.fontSize = '200%'; });
-    assert.equal(await page.eval(() => document.documentElement.scrollWidth > innerWidth), false);
+    const reflow = await page.eval(() => ({ viewport: innerWidth, width: document.documentElement.scrollWidth }));
+    try { assert.ok(reflow.width <= reflow.viewport, 'No general overflow at 320px/text200'); }
+    catch { failures.push({ case: 'CA-01 text200/reflow320', ...reflow }); }
     await screenshot('text-200');
     await page.eval(() => { document.documentElement.style.fontSize = ''; });
     await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'forced-colors', value: 'active' }, { name: 'prefers-reduced-motion', value: 'reduce' }] });
     assert.equal(await page.eval(() => getComputedStyle(document.querySelector('summary')).listStyleType !== 'none'), true);
     await screenshot('forced-colors');
-    results.push('CA-01: text200/reflow320 and forced-colors/reduced-motion; not real zoom400 or screen reader');
+    results.push('CA-01: forced-colors/reduced-motion; text200/reflow320 reported separately, not real zoom400 or screen reader');
   }
-  writeFileSync(`${output}/results.json`, JSON.stringify({ results, limitations: ['Mock API only', 'Chromium only', 'No screen reader or real 400% browser zoom'] }, null, 2));
-  console.log(`${results.length} groups passed; mock transport, Chromium only`);
+  writeFileSync(`${output}/results.json`, JSON.stringify({ results, failures, limitations: ['Mock API only', 'Chromium only', 'No screen reader or real 400% browser zoom'] }, null, 2));
+  console.log(`${results.length} groups passed, ${failures.length} failed; mock transport, Chromium only`);
+  if (failures.length) { console.error(JSON.stringify(failures)); process.exitCode = 1; }
 } finally { await browser.close(); }
