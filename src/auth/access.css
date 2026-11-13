@@ -26,6 +26,13 @@
 }
 
 @media (max-width: 639px) {
+  /* Keep enlarged text usable: spacing must not consume the narrow viewport. */
+  .auth-page--access .auth-main { padding-inline: min(1rem, 16px); }
+  .access-card [data-slot='card-header'],
+  .access-card [data-slot='card-content'] { padding-inline: min(1.5rem, 24px); }
+  .access-password { grid-template-columns: minmax(0, 1fr) max(44px, 1.75rem); gap: min(.5rem, 8px); }
+  .access-password-toggle { width: max(44px, 1.75rem); padding: .25rem; }
+  .access-card button[type='submit'] { padding-inline: min(1rem, 16px); }
   .auth-page--access .auth-footer,
   .auth-page--recovery .auth-footer { padding-bottom: 2rem; }
 }

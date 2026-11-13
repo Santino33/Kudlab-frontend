@@ -114,6 +114,26 @@ try {
     assert(await page.eval(() => document.documentElement.scrollWidth <= innerWidth), `text200 ${width}: reflow`);
     assert(await page.eval(() => document.querySelector('.auth-footer').getBoundingClientRect().y >= document.querySelector('.access-card').getBoundingClientRect().bottom));
     await page.screenshot({ path: `${dir}/text200-${width}.png`, format: 'png', fullPage: true });
+    const readability = await page.eval(() => {
+      const input = document.getElementById('password');
+      const style = getComputedStyle(input);
+      const fragmented = [];
+      for (const selector of ['h1', 'button[type="submit"]']) {
+        const walker = document.createTreeWalker(document.querySelector(selector), NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+          const node = walker.currentNode;
+          for (const match of node.textContent.matchAll(/\S+/g)) {
+            const range = document.createRange();
+            range.setStart(node, match.index); range.setEnd(node, match.index + match[0].length);
+            if (new Set([...range.getClientRects()].map(rect => Math.round(rect.y))).size > 1) fragmented.push(match[0]);
+          }
+        }
+      }
+      return { usefulWidth: input.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight), fragmented };
+    });
+    console.log(`text200 ${width}: ${JSON.stringify(readability)}`);
+    assert(readability.usefulWidth >= 100, `text200 ${width}: at least 100px of editable password area`);
+    assert.deepEqual(readability.fragmented, [], `text200 ${width}: intact title and submit words`);
   }
   await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'forced-colors', value: 'active' }, { name: 'prefers-reduced-motion', value: 'reduce' }] });
   await open('/acceso', '&access=absent');
@@ -130,10 +150,19 @@ try {
   const answer = async text => { await page.eval(text => [...document.querySelectorAll('aside li:last-child button')].find(button => button.textContent === text).click(), text); await flush(); };
   assert.equal(await page.eval(() => !!document.querySelector('.auth-header')), true);
   await answer('401');
+  await page.setViewport({ width: 320, height: 480 });
+  await page.eval(() => { document.documentElement.style.fontSize = '200%'; });
   await fill(); await flush();
   await page.eval(() => { window.accessPasswordElement = document.getElementById('password'); document.getElementById('password').focus(); });
   await press('Tab', 'Tab', 9);
   assert.equal(await page.eval(() => document.activeElement.getAttribute('aria-controls')), 'password');
+  assert(await page.eval(() => {
+    const style = getComputedStyle(document.activeElement);
+    const toggle = document.activeElement.getBoundingClientRect();
+    const icon = document.activeElement.querySelector('svg').getBoundingClientRect();
+    return style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) >= 2 &&
+      toggle.width >= 44 && toggle.height >= 44 && icon.left >= toggle.left && icon.right <= toggle.right;
+  }), 'text200 320: visible focus and unclipped eye');
   await press(' ', 'Space', 32);
   assert.equal(await page.eval(() => document.getElementById('password').type), 'text');
   const ax = await page.send('Accessibility.getFullAXTree');
@@ -142,6 +171,7 @@ try {
   await page.setViewport({ width: 390, height: 900 }); await flush();
   assert(await page.eval(() => document.getElementById('password') === window.accessPasswordElement && document.getElementById('password').value.length > 0));
   assert.equal(await page.eval(() => document.querySelectorAll('aside li').length), callsBeforeResize);
+  await page.setViewport({ width: 320, height: 480 }); await flush();
   await press('Tab', 'Tab', 9);
   assert.equal(await page.eval(() => document.activeElement.getAttribute('href')), '/recuperar-acceso');
   await press('Tab', 'Tab', 9);
