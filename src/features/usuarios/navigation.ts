@@ -37,14 +37,14 @@ export const routeTitles: Record<Route['kind'], string> = {
 
 export type WorkspaceSection = 'home' | 'accounts' | 'invite' | 'tasks' | 'groups' | 'indicators';
 export type WorkspaceNavigation = {
-  section: WorkspaceSection;
+  section: WorkspaceSection | undefined;
   breadcrumbs: { label: string; href?: string }[];
 };
 
 // Present only confirmed routes; authorization and data loading stay with App and the server.
 export function workspaceNavigation(route: Route, role: Identity['role'], denied = false): WorkspaceNavigation {
   const current = { label: routeTitles[route.kind] };
-  const deniedLocation: WorkspaceNavigation = { section: 'home', breadcrumbs: [{ label: 'Sección no disponible' }] };
+  const deniedLocation: WorkspaceNavigation = { section: undefined, breadcrumbs: [{ label: 'Sección no disponible' }] };
   if (denied) return deniedLocation;
   const link = (kind: Route['kind'], href: string) => ({ label: routeTitles[kind], href });
   const accounts = link('accounts', '/usuarios');

@@ -18,7 +18,7 @@ import { createAuthController } from './auth/controller.ts';
 import { createAuthClient } from './auth/client.ts';
 import { Alert, AlertDescription } from './components/ui/alert';
 import { Card, CardContent, CardHeader } from './components/ui/card';
-import { canConsultTasks, canManageAccounts, canManageStudents, resolveRoute, routeTitles } from './features/usuarios/navigation.ts';
+import { canConsultTasks, canManageAccounts, canManageStudents, resolveRoute, routeTitles, workspaceNavigation } from './features/usuarios/navigation.ts';
 import type { captureEntry } from './features/usuarios/navigation.ts';
 import { AcceptInvitation } from './features/usuarios/invitations/AcceptInvitation';
 import { StaffLayout } from './components/StaffLayout';
@@ -167,7 +167,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
     <p>No la repitas sin revisar el estado actual de la cuenta. El fallo no demuestra que se haya deshecho.</p>
     <Button variant="outline" className="mt-4" onClick={() => setUncertain(false)}>Ya revisé el estado actual</Button>
   </Notice> : undefined} renderAuthenticated={
-    (user, access, generation) => <Workspace user={user} section={students || courses || activities || indicators ? 'groups' : tasks ? 'tasks' : route.kind === 'invite' ? 'invite' : management ? 'accounts' : 'home'} signOut={access.signOut}>
+    (user, access, generation) => <Workspace user={user} navigation={workspaceNavigation(route, user.role, !canConsultTasks(access.getSnapshot()))} signOut={access.signOut}>
       {groupWrite && <div className="mb-6"><GroupWriteNotice write={groupWrite} /></div>}
       {studentWrite && canManageStudents(access.getSnapshot()) && <div className="mb-6"><StudentWriteNotice write={studentWrite} /></div>}
       <div key={`${generation}:${route.kind}:${selectedGroup ?? ''}:${'studentId' in route ? route.studentId : 'accountId' in route ? route.accountId : route.kind === 'taskDetail' ? route.taskId : ''}:${'sessionId' in route ? route.sessionId : ''}:${'assignmentId' in route ? route.assignmentId : ''}:${'recipientId' in route ? route.recipientId : ''}`}>{(management && !canManageAccounts(access.getSnapshot())) || (tasks && !canConsultTasks(access.getSnapshot())) || ((students || activities) && !canManageStudents(access.getSnapshot())) || (courses && !canConsultTasks(access.getSnapshot())) || (['groupNew', 'groupEdit'].includes(route.kind) && !canManageAccounts(access.getSnapshot())) ? <DestinationNotice denied /> :

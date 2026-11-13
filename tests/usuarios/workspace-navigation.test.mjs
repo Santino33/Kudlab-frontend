@@ -48,7 +48,7 @@ test('Indicators is selected for its three routes, including student context', (
 
 test('denied destinations expose neither ancestors nor identifiers', () => {
   const location = workspaceNavigation({ kind: 'studentIndicators', groupId, studentId }, 'TEACHER', true);
-  assert.deepEqual(location, { section: 'home', breadcrumbs: [{ label: 'Sección no disponible' }] });
+  assert.deepEqual(location, { section: undefined, breadcrumbs: [{ label: 'Sección no disponible' }] });
 });
 
 test('account identifiers are encoded in href, never labels; no query or hash is copied', () => {
