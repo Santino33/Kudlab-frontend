@@ -1,8 +1,9 @@
 import type { HttpClient } from '../../../lib/http.ts';
 import { isId, object, parseAssignment, parseAssignmentSummary, parseStudentAssignment, parseGrant, parsePage, parseSession, parseSessionSummary, parseCode, parseRevealedCode, parseTrial, parseIncident, type Evidence } from './types.ts';
 import type { HttpResult } from '../../usuarios/types.ts';
+import { parseMentalistaTrial } from './mentalista-types.ts';
 
-export type AssignmentInput = { requestId: string; taskId: 'TG-01'; publishedVersionId: string; groupId: string; studentIds: string[]; startsAt: string; endsAt: string; maxAttempts: number };
+export type AssignmentInput = { requestId: string; taskId: 'TG-01' | 'TG-03'; publishedVersionId: string; groupId: string; studentIds: string[]; startsAt: string; endsAt: string; maxAttempts: number };
 export function createActivitiesApi(http: HttpClient) {
   const request = <T>(path: string, signal: AbortSignal, decode: (value: unknown) => T | undefined, body?: unknown): Promise<HttpResult<T>> => {
     const resourceId = path.split('?')[0]!.split('/')[4], groupId = new URLSearchParams(path.split('?')[1]).get('groupId');
@@ -35,8 +36,8 @@ export function createActivitiesApi(http: HttpClient) {
     }),
     sessions: (studentId: string, signal: AbortSignal, cursor?: string) => request(`/api/v1/students/${id(studentId)}/task-sessions?limit=25${paging(cursor)}`, signal, v => { const page = parsePage(v, parseSessionSummary); return page?.items.every(s => s.studentId === studentId) ? page : undefined; }),
     session: (sessionId: string, signal: AbortSignal) => request(`/api/v1/task-sessions/${id(sessionId)}`, signal, v => { const s = parseSession(v); return s?.id === sessionId ? s : undefined; }),
-    evidence: (sessionId: string, kind: 'trials' | 'incidents', signal: AbortSignal, cursor?: string) => request(`/api/v1/task-sessions/${id(sessionId)}/evidence?kind=${kind}${paging(cursor)}`, signal, v => {
-      const page = parsePage<Evidence>(v, kind === 'trials' ? parseTrial : parseIncident);
+    evidence: (sessionId: string, kind: 'trials' | 'incidents', signal: AbortSignal, cursor?: string, taskId: 'TG-01' | 'TG-03' = 'TG-01') => request(`/api/v1/task-sessions/${id(sessionId)}/evidence?kind=${kind}${paging(cursor)}`, signal, v => {
+      const page = parsePage<Evidence>(v, kind === 'trials' ? taskId === 'TG-03' ? parseMentalistaTrial : parseTrial : parseIncident);
       if (!page) return;
       const positions = page.items.map(x => 'trial' in x ? x.trial : x.sequence);
       return positions.every((n, i) => i === 0 || n > positions[i - 1]!) ? page : undefined;
