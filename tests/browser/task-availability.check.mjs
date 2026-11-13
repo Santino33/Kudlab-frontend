@@ -94,6 +94,16 @@ try {
     assert.equal((await writes()).length, 1);
     assert.equal(await page.eval(() => document.body.textContent.includes('Disponibilidad guardada.')), false);
   });
+  await run('shared textual state in desktop/mobile/detail and TEACHER read-only', async () => {
+    for (const width of [390, 1440]) {
+      await page.setViewport({ width, height: 900 });
+      for (const path of ['/tareas', '/tareas/TG-01']) for (const role of ['ADMIN', 'TEACHER']) {
+        await mount({ path, role });
+        assert.ok(await page.eval(() => [...document.querySelectorAll('.task-state')].filter(el => el.getClientRects().length).some(el => el.textContent === 'Estado: Deshabilitada')));
+        assert.equal(await page.eval(() => [...document.querySelectorAll('[data-slot="switch"]')].some(el => el.getClientRects().length)), role === 'ADMIN');
+      }
+    }
+  });
   // Separate gates: local presentation must pass; approved global dimensions may
   // remain blocked on the producer, never silently treated as delivered.
   if (!process.argv.includes('--behavior-only')) {

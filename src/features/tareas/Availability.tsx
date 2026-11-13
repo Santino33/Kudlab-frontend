@@ -52,7 +52,7 @@ export function TaskAvailability({ task, admin, control, fetching }: {
 }) {
   const id = useId(), notice = control.notice?.id === task.id ? control.notice : undefined;
   return <div className="grid gap-3 whitespace-normal">
-    <span className="task-state w-fit">{task.isEnabled ? 'Habilitada' : 'Deshabilitada'}</span>
+    <span className="task-state w-fit">Estado: {task.isEnabled ? 'Habilitada' : 'Deshabilitada'}</span>
     {admin ? <>
       <div className="flex items-center gap-3">
         <Switch id={id} checked={task.isEnabled} disabled={control.locked || fetching}
