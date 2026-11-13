@@ -120,7 +120,7 @@ export function AssignmentDetail({ api, group, assignmentId, actorId }: { api: A
   const a = query.result?.kind === 'success' && query.result.data.groupId === group.id ? query.result.data : undefined;
   const mutation = useMutation<Assignment>(), [requestId] = useState(() => operationId(`cancel:${actorId}:${assignmentId}`));
   async function cancel() { const result = await mutation.run(signal => api.cancel(assignmentId, requestId, signal)); if (result?.kind === 'success') query.reload(); }
-  return <div className="staff-stack assignment-detail"><ActivityLink href={assignmentPath(group.id)}>Volver a asignaciones</ActivityLink>
+  return <div className="staff-stack assignment-detail"><a className="staff-back-link" href={assignmentPath(group.id)} onClick={navigate}>Volver a asignaciones</a>
     {!a && <ActivityHeading>Asignación</ActivityHeading>}
     {!query.result ? <Loading text="Consultando asignación" /> : !a ? <ActivityFailure result={query.result} retry={query.reload} /> : <>
       <header className="assignment-heading"><ActivityHeading>{a.title}</ActivityHeading><p>{group.name} · {a.availability === 'CURRENT' ? 'Disponible ahora' : a.availability === 'FUTURE' ? 'Programada' : a.availability === 'CANCELLED' ? 'Cancelada' : 'Finalizada'}</p></header>
@@ -129,7 +129,7 @@ export function AssignmentDetail({ api, group, assignmentId, actorId }: { api: A
         <div><dt>Máximo de intentos</dt><dd>{a.maxAttempts} por estudiante</dd></div><div><dt>Estudiantes asignados</dt><dd>{a.recipientCount}</dd></div>
       </dl><p>Zona horaria: {Intl.DateTimeFormat().resolvedOptions().timeZone}</p></section>
       <AssignmentAccess key={a.id} api={api} assignment={a} groupId={group.id} actorId={actorId} reloadAssignment={query.reload} />
-      <details className="assignment-management"><summary>Detalles técnicos y gestión</summary><div className="staff-stack mt-4"><p>Versión {a.configVersion} · Las condiciones y los destinatarios quedan fijados al guardar.</p>
+      <details className="assignment-management"><summary className="staff-section-title min-h-11 py-2 cursor-pointer">Detalles técnicos y gestión</summary><div className="staff-stack mt-4"><p>Versión {a.configVersion} · Las condiciones y los destinatarios quedan fijados al guardar.</p>
       {a.status === 'OPEN' && <AlertDialog><AlertDialogTrigger render={<Button variant="outline" className="w-fit" />}>Cancelar nuevos inicios</AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Cancelar nuevos inicios?</AlertDialogTitle><AlertDialogDescription>Se conservarán las sesiones, la evidencia y los destinatarios. No se podrán comenzar nuevas actividades de esta asignación.</AlertDialogDescription></AlertDialogHeader>{mutation.result && mutation.result.kind !== 'success' && <ActivityFailure result={mutation.result} />}<AlertDialogFooter><AlertDialogCancel disabled={mutation.pending}>Volver</AlertDialogCancel><Button onClick={() => void cancel()} disabled={mutation.pending}>{mutation.pending ? 'Cancelando…' : 'Cancelar nuevos inicios'}</Button></AlertDialogFooter></AlertDialogContent></AlertDialog>}
       </div></details>
     </>}
