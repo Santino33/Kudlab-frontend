@@ -39,6 +39,23 @@ permite escenarios `close=absent|unconfirmed|network|recover|lost-response|timeo
 Timeout usa reloj corto solo de test; pending no liquida la petición. No confundir
 AX/reflujo con lector, zoom real 400%, BFCache o revocación probada en servidor.
 
+## Tareas digitales: disponibilidad y detalle (feature 07)
+
+`KUDLAB_TEST_ORIGIN=http://127.0.0.1:5387 node tests/browser/task-availability.check.mjs`
+usa exclusivamente `tasks-harness.html` y fetch sintético sin fallback a API.
+`KUDLAB_BROWSER_OUTPUT` permite elegir la carpeta privada de resultados/capturas;
+`TASTE_SKILL_TMP` debe señalar un directorio exclusivo de perfiles desechables.
+Incluye la suite DOM anterior, PATCH mutable con revisión, guardado pendiente,
+409/reconsulta/nueva intención, error incierto/reconciliación sin replay y respuesta
+tardía tras suspensión; además texto, panel, roles y seis anchos con teclado/AX.
+`--behavior-only` ejecuta solo la regresión funcional sintética (útil antes del
+restyling), sin acreditar geometría ni presentación nueva.
+El informe siempre separa las dimensiones globales observadas de la cobertura local:
+`--require-dimensions` exige además pista40×24/thumb20 y falla mientras el productor2
+no entregue ese cambio. No llamar CA-01 completo al éxito del bloque local.
+No acredita API/BD/Play reales, continuidad por código/acuse, lector ni zoom400 real.
+Los harnesses y fixtures no se publican como sitio: el artefacto público es solo dist.
+
 ## Base visual compartida
 
 `base-visual.check.mjs` usa `KUDLAB_TEST_ORIGIN` y el driver CDP existente, sin API/BD.
