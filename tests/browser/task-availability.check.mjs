@@ -124,7 +124,7 @@ try {
           const reading = panel?.querySelector('.staff-detail-content');
           return { states, switchCount: switches.length, scrollWidth: document.documentElement.scrollWidth,
             switch: el && { width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height,
-              thumb: el.querySelector('[data-slot="switch-thumb"]').getBoundingClientRect().width, bg: getComputedStyle(el).backgroundColor,
+              thumb: el.querySelector('[data-slot="switch-thumb"]').getBoundingClientRect().width, bg: getComputedStyle(track ?? el).backgroundColor,
               track: track ? [track.getBoundingClientRect().width, track.getBoundingClientRect().height] : pseudo?.content !== 'none' && pseudo?.content !== 'normal' ? [parseFloat(pseudo.width), parseFloat(pseudo.height)] : [el.getBoundingClientRect().width, el.getBoundingClientRect().height],
               label: document.getElementById(el.getAttribute('aria-labelledby'))?.textContent,
               help: document.getElementById(el.getAttribute('aria-describedby'))?.textContent },
@@ -142,7 +142,8 @@ try {
           assert.equal(view.switch.bg, 'rgb(31, 59, 115)');
           assert.match(view.switch.label, /^Habilitar .* para nuevas asignaciones$/);
           assert.equal(view.switch.help, 'Las asignaciones existentes podrán completarse.');
-          dimensions = { status: view.switch.track[0] === 40 && view.switch.track[1] === 24 && view.switch.thumb === 20 ? 'pass' : 'blocked', observedRoot: [view.switch.width, view.switch.height], observedTrack: view.switch.track, observedThumb: view.switch.thumb, expectedTrack: [40, 24], expectedThumb: 20, expectedTargetMinimum: [44, 44], owner: 'front-base-visual' };
+          dimensions = { status: view.switch.track[0] === 40 && view.switch.track[1] === 24 && view.switch.thumb === 20 ? 'pass' : 'blocked', observedRoot: [view.switch.width, view.switch.height], observedTrack: view.switch.track, observedThumb: view.switch.thumb, expectedTrack: [40, 24], expectedThumb: 20, expectedTargetMinimum: [44, 44], owner: 'front-tareas-digitales (explicit reassignment)' };
+          if (process.argv.includes('--require-dimensions')) assert.equal(dimensions.status, 'pass', `global dimensions ${width}/${path}`);
         }
         if (path !== '/tareas') {
           assert.ok(view.panel); assert.equal(view.panel.bg, 'rgb(255, 255, 255)');
@@ -207,7 +208,7 @@ try {
       assert.equal(await page.eval(() => matchMedia('(forced-colors: active)').matches && matchMedia('(prefers-reduced-motion: reduce)').matches), true);
     });
   }
-  const report = { results, dimensions: dimensions ?? { status: 'not-evaluated' }, reflow, limitations: ['Synthetic fetch only; no API/DB/Play continuity evidence', 'Global track dimension delivery remains with producer 2', 'Global account header can overflow at text 200%/320px; not changed by feature 07', 'Real 400% zoom, screen reader and other browsers not covered'] };
+  const report = { results, dimensions: dimensions ?? { status: 'not-evaluated' }, reflow, limitations: ['Synthetic fetch only; no API/DB/Play continuity evidence', ...(dimensions?.status === 'pass' ? [] : ['Approved global dimensions not verified']), ...(reflow.some(view => view.pageStatus !== 'pass') ? ['Global account header reflow still blocked; see measured widths'] : []), 'Real 400% zoom, screen reader and other browsers not covered'] };
   writeFileSync(`${output}/results.json`, JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
   if (process.argv.includes('--require-dimensions')) assert.equal(dimensions?.status, 'pass', 'T-02: approved global dimensions must be delivered; see results.json');

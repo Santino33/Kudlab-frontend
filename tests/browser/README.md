@@ -51,8 +51,10 @@ tardía tras suspensión; además texto, panel, roles y seis anchos con teclado/
 `--behavior-only` ejecuta solo la regresión funcional sintética (útil antes del
 restyling), sin acreditar geometría ni presentación nueva.
 El informe siempre separa las dimensiones globales observadas de la cobertura local:
-`--require-dimensions` exige además pista40×24/thumb20 y falla mientras el productor2
-no entregue ese cambio. No llamar CA-01 completo al éxito del bloque local.
+`--require-dimensions` exige además pista40×24/thumb20 en todas las vistas y objetivo
+real44×44. El responsable reasignó explícitamente ese bloque global a feature07;
+la pista visual está dentro de la raíz operable Base UI, no sustituye su objetivo.
+No llamar CA-01 completo al éxito de un subconjunto de comprobaciones.
 `?view=detail&role=admin` abre directamente la ficha sintética para inspección visual.
 El check verifica contenido local al200% y declara aparte el desbordamiento del
 encabezado global de cuenta a320px; `--require-page-reflow` exige también esa
@@ -94,5 +96,6 @@ Contrato para consumidores (sin lógica de negocio nueva):
   y el controlador de navegación. No cambiar Cancel/acciones o ActivityLink globalmente.
 - Tokens `action-primary-*` y `navigation-*` no sustituyen `primary`/`brand-hover`
   de marca. Switch tiene `switch-active: #1F3B73`, aprobado específicamente, sin
-  cambiar sus dimensiones ni el estado apagado. Los estilos oscuros están
+  alterar el estado apagado. Su pista40×24/thumb20 conserva raíz operable44×44
+  tras la reasignación autorizada a feature07. Los estilos oscuros están
   acotados al sidebar y su Sheet.
