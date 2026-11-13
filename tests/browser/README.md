@@ -41,6 +41,16 @@ Contrato para consumidores (sin lógica de negocio nueva):
   Los consumidores sin loading mantienen children/props y buttonVariants existentes.
 - Input sigue nativo; select usa `staff-select`. Conservar aria-invalid,
   aria-describedby, etiquetas, required, ref y autocompletado.
+  Para type=file, Input presenta una zona con borde discontinuo y el input nativo
+  cubre el objetivo completo: admite clic, teclado y drop nativos, sin subir nada.
+  El FileList y el ref siguen siendo nativos; solo se refleja el nombre para mostrarlo.
+  Al quitar/confirmar, limpiar input.value y actualizar el estado del consumidor,
+  como hace Consentimiento; también se conserva form.reset(). No añadir otro almacén
+  de File, validación de tipo/tamaño o envío dentro de la primitiva.
+- TableHead/TableCell tienen padding 16px estrecho y 24px desde 640px; TableCaption
+  separa el título del borde. Conservar componentes Table en las muestras: HTML
+  sin esas primitivas no representa el espaciado real. Overrides de tablas de
+  códigos/container queries mantienen su layout específico y deben verificarse.
 - `staff-panel` define superficie; `staff-panel-body` define padding responsive.
   Se puede aplicar a CardContent para sustituir su padding, no anidar ambos cuerpos.
   `staff-form-fields` limita campos a 32rem y `staff-detail-content` lectura a 65ch;

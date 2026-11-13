@@ -187,6 +187,18 @@
 .staff-input[aria-invalid='true'], .staff-select[aria-invalid='true'] { border-color: var(--input); }
 .staff-input:focus-visible, .staff-select:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .staff-input:disabled, .staff-select:disabled { background: var(--disabled); color: var(--foreground); cursor: not-allowed; }
+.staff-file-drop { position: relative; display: grid; min-width: 0; width: 100%; min-height: 8rem; justify-items: center; align-content: center; gap: .75rem; padding: 1.5rem 1rem; border: 2px dashed var(--muted-foreground); border-radius: .5rem; color: var(--foreground); background: var(--surface-subtle); text-align: center; }
+.staff-file-icon { width: 2rem; height: 2rem; }
+.staff-file-prompt, .staff-file-name { max-width: 100%; overflow-wrap: anywhere; }
+.staff-file-name { font-weight: 500; }
+/* Native file input covers the entire target: click, keyboard and real OS drop
+   retain the browser's picker/FileList. No synthetic upload or copied File store. */
+.staff-file-input { position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.staff-file-drop:focus-within { outline: 2px solid var(--ring); outline-offset: 2px; }
+.staff-file-drop[data-dragging] { background: var(--surface-active); border-color: var(--foreground); }
+.staff-file-drop[data-invalid] { border-style: solid; border-color: var(--foreground); }
+.staff-file-drop[data-disabled] { background: var(--disabled); cursor: not-allowed; }
+.staff-file-input:disabled { cursor: not-allowed; }
 .staff-panel { width: 100%; max-width: 75rem; min-width: 0; border: 1px solid var(--border); border-radius: .75rem; background: var(--card); color: var(--card-foreground); }
 .staff-panel-body { min-width: 0; padding: 1rem; }
 .staff-form-fields { width: 100%; max-width: 32rem; min-width: 0; }
@@ -246,6 +258,8 @@
   :focus-visible, [tabindex='-1']:focus { outline-color: Highlight; }
   .staff-input, .staff-select { border-left-color: ButtonText; }
   .staff-input[aria-invalid='true'], .staff-select[aria-invalid='true'] { border-color: ButtonText; }
+  .staff-file-drop { border-color: ButtonText; }
+  .staff-file-drop:focus-within { outline-color: Highlight; }
   [data-slot='sidebar-inner'] [data-slot='sidebar-menu-button']:focus-visible,
   [data-slot='sheet-content'][data-sidebar='sidebar'] > [data-slot='button']:focus-visible { outline-color: Highlight; }
   [data-slot='sidebar-inner'] [data-slot='sidebar-menu-button'][data-active]::before { background: Highlight; }

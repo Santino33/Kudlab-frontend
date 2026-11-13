@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 const { Browser } = await import(process.env.KUDLAB_CDP_DRIVER ?? './vendor/cdp.mjs');
 const origin = process.env.KUDLAB_TEST_ORIGIN ?? 'http://127.0.0.1:5282';
 const output = process.env.KUDLAB_BROWSER_OUTPUT ?? '/tmp/opencode/front-base-visual';
@@ -11,7 +12,7 @@ try {
   const page = await browser.newPage({ reducedMotion: true });
   const read = selector => page.eval(selector => {
     const e = document.querySelector(selector), s = getComputedStyle(e), r = e.getBoundingClientRect();
-    return { bg: s.backgroundColor, color: s.color, left: s.borderLeftWidth, right: s.borderRightColor, border: s.borderRightWidth, width: r.width, height: r.height, padding: s.paddingLeft, outline: s.outlineWidth, offset: s.outlineOffset };
+    return { bg: s.backgroundColor, color: s.color, left: s.borderLeftWidth, right: s.borderRightColor, border: s.borderRightWidth, width: r.width, height: r.height, padding: s.paddingLeft, paddingTop: s.paddingTop, outline: s.outlineWidth, offset: s.outlineOffset };
   }, selector);
   for (const width of [320, 390, 768, 1024, 1280, 1440]) {
     await page.setViewport({ width, height: 800 });
@@ -35,6 +36,9 @@ try {
     assert.equal((await read('#panel-body')).padding, `${padding}px`);
     assert.ok((await read('#form')).width <= 512);
     assert.ok((await read('#panel')).width <= 1200);
+    assert.equal((await read('#table-region td')).padding, width < 640 ? '16px' : '24px');
+    assert.equal((await read('#table-region td')).paddingTop, width < 640 ? '16px' : '24px');
+    assert.equal((await read('#table-region th')).padding, width < 640 ? '16px' : '24px');
     assert.equal(await page.eval(() => document.documentElement.scrollWidth > innerWidth), false, `overflow ${width}`);
     await page.eval(() => document.getElementById('sample-field').focus());
     assert.equal((await read('#sample-field')).outline, '2px');
@@ -61,6 +65,65 @@ try {
     if ([390, 1440].includes(width)) await page.screenshot({ path: `${output}/base-${width}.png`, fullPage: true });
     results.push({ width, padding, controls: 'pass' });
   }
+  await page.goto(`${origin}/tests/browser/base-visual-harness.html`, { settleMs: 300 });
+  const filePath = resolve(output, 'archivo-sintetico.txt');
+  writeFileSync(filePath, 'Archivo local sintetico para comprobar el selector. No subir.');
+  await page.send('DOM.enable');
+  const { root: fileRoot } = await page.send('DOM.getDocument');
+  const { nodeId: fileNode } = await page.send('DOM.querySelector', { nodeId: fileRoot.nodeId, selector: '#sample-file' });
+  await page.send('DOM.setFileInputFiles', { nodeId: fileNode, files: [filePath] });
+  await page.eval(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal(await page.eval(() => document.querySelector('.staff-file-name').textContent), 'archivo-sintetico.txt');
+  assert.equal(await page.eval(() => document.getElementById('form-submits').textContent), 'Envíos del formulario: 0', 'selecting a file never submits');
+  await page.eval(() => document.getElementById('clear-file').click());
+  await page.eval(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal(await page.eval(() => document.getElementById('sample-file').files.length), 0);
+  assert.equal(await page.eval(() => Boolean(document.querySelector('.staff-file-name'))), false, 'imperative clear plus consumer render clears display');
+  const dropPoint = await page.eval(() => {
+    const e = document.getElementById('sample-file'); e.scrollIntoView({ block: 'center' });
+    const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  });
+  const drag = { items: [], files: [filePath], dragOperationsMask: 1 };
+  await page.send('Input.dispatchDragEvent', { type: 'dragEnter', ...dropPoint, data: drag });
+  await page.send('Input.dispatchDragEvent', { type: 'dragOver', ...dropPoint, data: drag });
+  await page.send('Input.dispatchDragEvent', { type: 'drop', ...dropPoint, data: drag });
+  await page.eval(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal(await page.eval(() => document.getElementById('sample-file').files[0]?.name), 'archivo-sintetico.txt', 'real browser drop populates native FileList');
+  assert.equal(await page.eval(() => document.querySelector('.staff-file-name')?.textContent), 'archivo-sintetico.txt');
+  assert.equal(await page.eval(() => document.getElementById('form-submits').textContent), 'Envíos del formulario: 0', 'dropping a file never submits');
+  await page.eval(() => document.getElementById('sample-file').focus());
+  assert.equal(await page.eval(() => getComputedStyle(document.querySelector('[data-slot="file-drop"]')).outlineWidth), '2px');
+  await page.eval(() => document.getElementById('secondary').click());
+  await page.eval(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal(await page.eval(() => getComputedStyle(document.querySelector('[data-slot="file-drop"]')).borderStyle), 'solid');
+  await page.eval(() => document.getElementById('reset-form').click());
+  await page.eval(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal(await page.eval(() => document.getElementById('sample-file').files.length), 0);
+  assert.equal(await page.eval(() => Boolean(document.querySelector('.staff-file-name'))), false, 'native form reset clears filename');
+  await page.send('Page.setInterceptFileChooserDialog', { enabled: true });
+  await page.send('Page.bringToFront');
+  let removeChooser;
+  const chooser = new Promise(resolve => { removeChooser = browser.on(page.sessionId, 'Page.fileChooserOpened', resolve); });
+  await page.eval(() => document.getElementById('sample-file').focus());
+  await page.send('Input.dispatchKeyEvent', { type: 'keyDown', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 });
+  await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 });
+  let timeout;
+  try {
+    const event = await Promise.race([chooser, new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error('Native file chooser did not open from keyboard')), 5000); })]);
+    assert.equal(event.mode, 'selectSingle');
+  } finally {
+    clearTimeout(timeout); removeChooser();
+    await page.send('Page.setInterceptFileChooserDialog', { enabled: false });
+  }
+  await page.eval(() => document.getElementById('disable-file').click());
+  await page.eval(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal((await read('[data-slot="file-drop"]')).bg, 'rgb(242, 242, 242)');
+  assert.equal(await page.eval(() => document.getElementById('sample-file').disabled), true);
+  await page.send('Input.dispatchDragEvent', { type: 'dragEnter', ...dropPoint, data: drag });
+  await page.send('Input.dispatchDragEvent', { type: 'dragOver', ...dropPoint, data: drag });
+  await page.send('Input.dispatchDragEvent', { type: 'drop', ...dropPoint, data: drag });
+  assert.equal(await page.eval(() => document.getElementById('sample-file').files.length), 0, 'disabled drop is ignored');
+  results.push({ file: 'native selection/drop/name/reset/imperative clear/error/focus/keyboard picker/disabled/no-submit', table: '16px narrow / 24px wide padding, shared Table in sample' });
   await page.eval(() => document.querySelector('[data-slot="switch"]').focus());
   await page.send('Input.dispatchKeyEvent', { type: 'keyDown', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 });
   await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 });
