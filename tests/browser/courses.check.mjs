@@ -37,10 +37,14 @@ try {
     }, values); await flush();
   };
   const login = async role => {
-    if (await page.eval(() => [...document.querySelectorAll('button')].some(el => el.textContent === 'Cerrar sesión'))) await click('Cerrar sesión', true);
+    if (await page.eval(() => !!document.querySelector('[aria-label="Menú de cuenta"]'))) {
+      await click('[aria-label="Menú de cuenta"]'); await click('Cerrar sesión', true);
+    }
     await waitText('Iniciar sesión');
     await fill({ email: role === 'ADMIN' ? 'admin@pilot.edu.co' : role === 'A' ? 'teacher-a@pilot.edu.co' : 'teacher-b@pilot.edu.co', password: role === 'ADMIN' ? 'TestingA123' : 'TeacherPass1' });
-    await click('form button[type=submit]'); await waitText('Cerrar sesión');
+    await click('form button[type=submit]');
+    await click('[aria-label="Menú de cuenta"]'); await waitText('Cerrar sesión');
+    await click('[aria-label="Menú de cuenta"]');
     await click('nav[aria-label="Navegación principal"] a[href="/academico/cursos"]');
     await waitText(role === 'ADMIN' ? 'Organiza los cursos' : 'Selecciona un curso');
   };
