@@ -25,7 +25,7 @@ type ButtonProps = ButtonPrimitive.Props & VariantProps<typeof buttonVariants> &
 };
 
 function Button({ className, variant, loading, loadingLabel = 'Cargando…', disabled, children, ...props }: ButtonProps) {
-  return <ButtonPrimitive {...props} data-slot="button" data-loading={loading || undefined}
+  return <ButtonPrimitive data-slot="button" {...props} data-loading={loading || undefined}
     aria-busy={loading || props['aria-busy']} disabled={disabled || loading}
     className={cn(buttonVariants({ variant }), className)}>
     {loading === undefined ? children : <span className="staff-button-labels">
