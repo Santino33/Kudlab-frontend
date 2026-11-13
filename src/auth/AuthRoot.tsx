@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { StaffLayout } from '@/components/StaffLayout';
 import type { AuthController } from './controller.ts';
 import type { Identity } from './state.ts';
+import isotipo from '@/assets/kudlab-isotipo.png';
+import './access.css';
 
 const subscribeOnline = (notify: () => void) => { window.addEventListener('online', notify); window.addEventListener('offline', notify); return () => { window.removeEventListener('online', notify); window.removeEventListener('offline', notify); }; };
 
@@ -19,10 +21,11 @@ const errorMessages = {
   loginUnconfirmed: 'No pudimos confirmar el inicio de sesión',
 };
 
-export function AuthRoot({ controller, renderAuthenticated, publicContent, onSuspend, notice }: {
+export function AuthRoot({ controller, renderAuthenticated, publicContent, publicView, onSuspend, notice }: {
   controller: AuthController;
   renderAuthenticated?: (user: Identity, controller: AuthController, generation: number) => ReactNode;
   publicContent?: () => ReactNode;
+  publicView?: 'recovery';
   onSuspend?: () => void;
   notice?: ReactNode;
 }) {
@@ -107,11 +110,14 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, onSus
 
   const authenticatedContent = !publicOnly && state.kind === 'authenticated' ?
     renderAuthenticated?.(state.user, controller, state.generation) : undefined;
+  const accessForm = !publicOnly && (state.kind === 'signedOut' || signingIn);
 
-  return <StaffLayout wide={authenticatedContent !== undefined}>
+  return <StaffLayout wide={authenticatedContent !== undefined} publicView={accessForm ? 'access' : publicOnly && !publicPage.hidden ? publicView : undefined}>
       <section ref={content} className={authenticatedContent !== undefined ? 'staff-content' : 'auth-content'} aria-labelledby="auth-title">
-        {notice && <div className="mb-6">{notice}</div>}
-        {publicOnly ? <div key={publicPage.epoch}>{publicPage.hidden ? <Card><CardHeader><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Acceso en pausa</h1><p>El enlace y las contraseñas fueron retirados.</p></CardHeader></Card> : publicContent?.()}</div> : authenticatedContent ?? <Card>
+        {notice && <div className="auth-notice mb-6">{notice}</div>}
+        {publicOnly ? <div key={publicPage.epoch}>{publicPage.hidden ? <Card><CardHeader><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Acceso en pausa</h1><p>El enlace y las contraseñas fueron retirados.</p></CardHeader></Card> : publicContent?.()}</div> : authenticatedContent ?? <>
+          {accessForm && <img className="access-brand-image" src={isotipo} width={1200} height={1200} alt="KudLab" />}
+          <Card className={accessForm ? 'access-card' : undefined}>
           <CardHeader>
             <h1 id="auth-title" className="auth-heading" ref={title} tabIndex={-1}>{heading}</h1>
             <p>{description}</p>
@@ -138,13 +144,16 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, onSus
               </div>
               <div className="auth-field">
                 <Label htmlFor="password">Contraseña</Label>
-                <Input id="password" ref={passwordInput} name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required disabled={signingIn}
-                  aria-invalid={Boolean(invalid.password)} aria-describedby={invalid.password ? 'password-error' : undefined} />
+                <div className="access-password">
+                  <Input id="password" ref={passwordInput} name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required disabled={signingIn}
+                    aria-invalid={Boolean(invalid.password)} aria-describedby={invalid.password ? 'password-error' : undefined} />
+                  <Button type="button" variant="outline" className="access-password-toggle" aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={showPassword} aria-controls="password" disabled={signingIn} onClick={() => setShowPassword(value => !value)}>
+                    {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                  </Button>
+                </div>
                 {invalid.password && <p id="password-error" className="auth-field-error" role="alert"><CircleAlert size={20} aria-hidden="true" />{invalid.password}</p>}
-                <Button type="button" variant="outline" className="w-fit" aria-pressed={showPassword} aria-controls="password" disabled={signingIn} onClick={() => setShowPassword(value => !value)}>
-                  {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}{showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                </Button>
               </div>
+              <a href="/recuperar-acceso" className="staff-link access-recovery-link">¿Olvidaste tu contraseña?</a>
               <div className="grid gap-2">
                 <Button className="w-full" type="submit" disabled={signingIn}>
                   <span className="min-w-0 [overflow-wrap:anywhere]">{signingIn ? 'Iniciando sesión' : 'Iniciar sesión'}</span>
@@ -152,7 +161,6 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, onSus
                 </Button>
                 {signingIn && <p className="auth-caption">Espera a que termine este intento antes de volver a enviar.</p>}
               </div>
-            <a href="/recuperar-acceso" className="staff-link w-fit">¿Olvidaste tu contraseña?</a>
             </form>}
             {state.kind === 'authenticated' && <>
               <div className="flex items-center gap-2"><CircleCheck size={20} aria-hidden="true" /><p>Sesión iniciada</p></div>
@@ -168,7 +176,7 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, onSus
               <Button variant="outline" className="w-full" onClick={controller.retry}><RotateCcw aria-hidden="true" /><span className="min-w-0 [overflow-wrap:anywhere]">Reintentar</span></Button>}
           </CardContent>
           <CardFooter>Acceso exclusivo para profesores con cuenta habilitada.</CardFooter>
-        </Card>}
+        </Card></>}
       </section>
   </StaffLayout>;
 }

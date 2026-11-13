@@ -153,7 +153,7 @@ export function App({ controller: injected, apiOrigin, pathname = window.locatio
       <AcceptInvitation api={apis.recovery} ticket={entry.invitation} />} />;
   }
   if (route.kind === 'recoveryRequest' || route.kind === 'recoveryConfirm') {
-    return <AuthRoot controller={controller} onSuspend={entry.recovery.clear} publicContent={() =>
+    return <AuthRoot controller={controller} publicView="recovery" onSuspend={entry.recovery.clear} publicContent={() =>
       <Recovery api={apis.recovery} confirm={route.kind === 'recoveryConfirm'} ticket={entry.recovery} />} />;
   }
   const management = ['accounts', 'invite', 'detail', 'edit'].includes(route.kind);

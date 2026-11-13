@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 
-export function StaffLayout({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
-  return <div className={wide ? 'auth-page workspace-page' : 'auth-page'}>
-    {!wide && <header className="auth-header">
+export function StaffLayout({ children, wide = false, publicView }: { children: ReactNode; wide?: boolean; publicView?: 'access' | 'recovery' }) {
+  return <div className={wide ? 'auth-page workspace-page' : `auth-page${publicView ? ` auth-page--${publicView}` : ''}`}>
+    {!wide && !publicView && <header className="auth-header">
       <div className="auth-header-inner">
         <p className="auth-brand">Kudlab</p>
         <p className="auth-caption">Acceso del profesorado</p>
