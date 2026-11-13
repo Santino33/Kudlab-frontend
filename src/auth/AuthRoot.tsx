@@ -112,7 +112,7 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, publi
     renderAuthenticated?.(state.user, controller, state.generation) : undefined;
   const accessForm = !publicOnly && (state.kind === 'signedOut' || signingIn);
 
-  return <StaffLayout wide={authenticatedContent !== undefined} publicView={accessForm ? 'access' : publicOnly ? publicView : undefined}>
+  return <StaffLayout wide={authenticatedContent !== undefined} publicView={accessForm ? 'access' : publicOnly && !publicPage.hidden ? publicView : undefined}>
       <section ref={content} className={authenticatedContent !== undefined ? 'staff-content' : 'auth-content'} aria-labelledby="auth-title">
         {notice && <div className="auth-notice mb-6">{notice}</div>}
         {publicOnly ? <div key={publicPage.epoch}>{publicPage.hidden ? <Card><CardHeader><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Acceso en pausa</h1><p>El enlace y las contraseñas fueron retirados.</p></CardHeader></Card> : publicContent?.()}</div> : authenticatedContent ?? <>
@@ -153,7 +153,7 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, publi
                 </div>
                 {invalid.password && <p id="password-error" className="auth-field-error" role="alert"><CircleAlert size={20} aria-hidden="true" />{invalid.password}</p>}
               </div>
-              <a href="/recuperar-acceso" className="staff-link w-fit">¿Olvidaste tu contraseña?</a>
+              <a href="/recuperar-acceso" className="staff-link access-recovery-link">¿Olvidaste tu contraseña?</a>
               <div className="grid gap-2">
                 <Button className="w-full" type="submit" disabled={signingIn}>
                   <span className="min-w-0 [overflow-wrap:anywhere]">{signingIn ? 'Iniciando sesión' : 'Iniciar sesión'}</span>

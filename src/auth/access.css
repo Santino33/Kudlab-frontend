@@ -14,13 +14,14 @@
 .access-brand-image { display: block; width: 100%; max-width: 10rem; height: auto; }
 .access-card { width: 100%; max-width: 32rem; min-width: 0; }
 .access-card .auth-heading { text-align: center; }
+.access-recovery-link { justify-self: end; text-align: right; max-width: 100%; }
 .access-password { display: grid; grid-template-columns: minmax(0, 1fr) 2.75rem; gap: .5rem; align-items: center; min-width: 0; }
 .access-password-toggle { width: 2.75rem; min-height: 2.75rem; padding: .5rem; border: 0; background: transparent; }
 .access-password-toggle:hover { background: var(--surface-active); }
 .access-password-toggle:disabled { background: var(--disabled); }
 
 @media (min-width: 1024px) {
-  .auth-page--access .auth-content { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .auth-page--access .auth-content { grid-template-columns: minmax(0, 45fr) minmax(0, 55fr); }
   .access-brand-image { max-width: none; }
 }
 

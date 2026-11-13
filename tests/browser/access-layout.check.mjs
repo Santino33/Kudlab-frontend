@@ -23,13 +23,26 @@ try {
       const input = document.getElementById(id); setter.call(input, value); input.dispatchEvent(new Event('input', { bubbles: true }));
     }
   });
-  const open = (path, query = '') => page.goto(`${origin}/tests/browser/usuarios-harness.html?path=${encodeURIComponent(path)}${query}`, { settleMs: 250 });
+  const open = async (path, query = '') => {
+    await page.goto(`${origin}/tests/browser/usuarios-harness.html?path=${encodeURIComponent(path)}${query}`, { settleMs: 250 });
+    // Wait for the synthetic initial session check, not an assumed compilation/paint duration.
+    await page.eval(() => new Promise((resolve, reject) => {
+      const deadline = performance.now() + 5000;
+      function ready() {
+        const heading = document.querySelector('h1')?.textContent;
+        if (heading && heading !== 'Comprobando acceso') { resolve(); return; }
+        if (performance.now() > deadline) { reject(new Error('Synthetic route did not finish its initial check')); return; }
+        requestAnimationFrame(ready);
+      }
+      ready();
+    }));
+  };
   for (const width of [320, 390, 768, 1023, 1024, 1280, 1440]) {
     await page.setViewport({ width, height: 900 });
     for (const [path, query, variant, header] of [
       ['/acceso', '&access=absent', 'access', false],
-      ['/recuperar-acceso', '', 'recovery', true],
-      ['/recuperar-acceso/confirmar', '&ticket=valid', 'recovery', true],
+      ['/recuperar-acceso', '', 'recovery', false],
+      ['/recuperar-acceso/confirmar', '&ticket=valid', 'recovery', false],
       ['/acceso/invitacion', '&ticket=valid', undefined, true],
       ['/ruta-inexistente', '', undefined, true],
       ['/acceso', '&access=unavailable', undefined, true],
@@ -44,7 +57,7 @@ try {
         overflow: document.documentElement.scrollWidth > innerWidth,
         footerAlign: getComputedStyle(document.querySelector('.auth-footer')).textAlign,
       }));
-      assert.equal(state.access, variant === 'access', `${path}: access`);
+      assert.equal(state.access, variant === 'access', `${path} ${width}: access`);
       assert.equal(state.recovery, variant === 'recovery', `${path}: recovery`);
       assert.equal(state.header, header, `${path}: header`);
       assert.equal(state.mains, 1);
@@ -60,13 +73,14 @@ try {
             toggle: rect('.access-password-toggle'), border: getComputedStyle(document.querySelector('.access-password-toggle')).borderWidth,
             order: !!(document.querySelector('a[href="/recuperar-acceso"]').compareDocumentPosition(document.querySelector('button[type="submit"]')) & Node.DOCUMENT_POSITION_FOLLOWING),
             autocomplete: [document.getElementById('email').autocomplete, document.getElementById('password').autocomplete],
+            recovery: rect('.access-recovery-link'), submit: rect('button[type="submit"]'),
           };
         });
         assert(geometry.section.width <= 960.1);
         assert.deepEqual(geometry.imageSize, [1200, 1200]);
         assert(Math.abs(geometry.image.width - geometry.image.height) < .1);
         if (width >= 1024) {
-          assert(Math.abs(geometry.image.width - geometry.card.width) < .1);
+          assert(Math.abs(geometry.image.width / geometry.card.width - 45 / 55) < .001);
           assert(geometry.image.right < geometry.card.x);
           assert(Math.abs(geometry.section.width - 960) < .1);
         } else {
@@ -77,6 +91,7 @@ try {
         assert(geometry.footer.y >= Math.max(geometry.card.bottom, geometry.image.bottom));
         assert.equal(geometry.titleAlign, 'center');
         assert.equal(geometry.order, true);
+        assert(Math.abs(geometry.recovery.right - geometry.submit.right) < .1, 'r3: recovery link aligned right');
         assert.equal(geometry.border, '0px');
         assert(geometry.toggle.width >= 44 && geometry.toggle.height >= 44);
         assert.deepEqual(geometry.autocomplete, ['username', 'current-password']);

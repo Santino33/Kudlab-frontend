@@ -26,6 +26,7 @@ Los scripts declaran sus fixtures y URL al inicio: revisar cada uno antes de eje
 
 `access-layout.check.mjs` usa `KUDLAB_TEST_ORIGIN`: verifica la composición 960/512px,
 el umbral 1024px y marca compacta de 160px, variantes públicas, PNG íntegro,
+reparto 45/55 y enlace a derecha (r3), encabezado retirado solo en acceso/recuperación,
 teclado/AX del ojo, estabilidad de inputs al redimensionar, retirada de secretos y
 estados de sesión sin confirmar. Añade texto200, altura corta y emulación de colores
 forzados/movimiento reducido. Guarda capturas solo antes de introducir contraseñas;
