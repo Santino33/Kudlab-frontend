@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
-import { ArrowRight, ChartNoAxesCombined, Database, Home, LogOut, Users, UserPlus, BookOpen, UserRound } from 'lucide-react';
+import { ArrowRight, ChartNoAxesCombined, Database, Home, Users, UserPlus, BookOpen, UserRound } from 'lucide-react';
 import { navigate } from '../../../lib/navigation.ts';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Sidebar, SidebarProvider, SidebarTrigger, SidebarInset, SidebarHeader, SidebarFooter, SidebarContent, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
+import { Sidebar, SidebarProvider, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import type { Identity } from '../../../auth/state.ts';
 import { dashboardFeatures } from './dashboard.ts';
 import { ActionLink, roleLabel } from '../shared';
@@ -34,10 +33,6 @@ export function Workspace({ user, navigation, signOut, children }: {
             {user.role === 'TEACHER' && <SidebarMenuItem><SidebarMenuButton isActive={section === 'indicators'} render={<a href="/indicadores" onClick={navigate} aria-current={section === 'indicators' ? 'page' : undefined} />}><ChartNoAxesCombined aria-hidden="true" />Indicadores</SidebarMenuButton></SidebarMenuItem>}
           </SidebarMenu></nav>
         </SidebarGroup></SidebarContent>
-          <SidebarFooter>
-            <div className="workspace-person"><p className="font-semibold [overflow-wrap:anywhere]">{user.name}</p><p className="text-sm">{roleLabel[user.role]}</p></div>
-            <Button variant="outline" onClick={signOut}><LogOut aria-hidden="true" />Cerrar sesión</Button>
-          </SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <header className="workspace-toolbar workspace-toolbar-account"><SidebarTrigger id="workspace-menu-toggle" />
