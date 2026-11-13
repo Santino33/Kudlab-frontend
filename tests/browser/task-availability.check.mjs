@@ -130,7 +130,7 @@ try {
             panel: panel && { bg: getComputedStyle(panel).backgroundColor, radius: getComputedStyle(panel).borderRadius,
               shadow: getComputedStyle(panel).boxShadow, padding: getComputedStyle(body).paddingLeft,
               width: panel.getBoundingClientRect().width, readingWidth: reading?.getBoundingClientRect().width,
-              headingCount: panel.querySelectorAll('h1').length, backOutside: !panel.contains(document.querySelector('a[href="/tareas"]')) } };
+              headingCount: panel.querySelectorAll('h1').length, backOutside: Boolean(document.querySelector('.staff-back-link[href="/tareas"]')) && !panel.contains(document.querySelector('.staff-back-link[href="/tareas"]')) } };
         });
         assert.ok(view.states.includes('Estado: Habilitada'), `${width}/${path}/${role}: textual state`);
         assert.ok(view.states.includes('No lista para asignar'), 'enabled is not assignable');
@@ -150,7 +150,7 @@ try {
           assert.equal(view.panel.headingCount, 1); assert.equal(view.panel.backOutside, true);
           assert.ok(view.panel.readingWidth > 0 && view.panel.readingWidth <= view.panel.width);
           if (width === 1440) assert.ok(view.panel.width > view.panel.readingWidth, 'reading measure does not narrow outer panel');
-          const back = await page.eval(() => getComputedStyle(document.querySelector('a[href="/tareas"]')).textDecorationLine);
+          const back = await page.eval(() => getComputedStyle(document.querySelector('.staff-back-link[href="/tareas"]')).textDecorationLine);
           assert.match(back, /underline/);
         }
         if (role === 'ADMIN' && [390, 768, 1440].includes(width)) await page.screenshot({ path: `${output}/${path === '/tareas' ? 'catalog' : 'detail'}-${width}.png`, format: 'png', fullPage: true });

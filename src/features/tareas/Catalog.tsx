@@ -53,8 +53,9 @@ export function TaskDetail({ api, taskId, admin = false }: { api: TasksApi; task
   const availability = useAvailability(api, query.reload);
   const task = query.result?.kind === 'success' ? query.result.data : undefined;
   useEffect(() => { document.getElementById('auth-title')?.focus(); }, [task?.id]);
-  return <div className="staff-stack task-detail">
-    <a href="/tareas" onClick={navigate} className="staff-link w-fit"><ArrowLeft className="mr-2 size-5" aria-hidden="true" />Volver a tareas</a>
+  return <div className="staff-stack">
+    <a href="/tareas" onClick={navigate} className="staff-back-link"><ArrowLeft className="size-5 shrink-0" aria-hidden="true" />Volver a tareas</a>
+    <div className="staff-panel"><div className="p-4 sm:p-6"><div className="staff-stack staff-detail-content">
     <header className="workspace-page-heading"><h1 id="auth-title" className="auth-heading" tabIndex={-1}>{task ? `${task.title} · ${task.id}` : 'Ficha de tarea'}</h1>
       {task && <p>{task.description}</p>}</header>
     {!query.result && <Loading text="Consultando ficha" />}
@@ -70,5 +71,6 @@ export function TaskDetail({ api, taskId, admin = false }: { api: TasksApi; task
         <p>{task.publishedVersion ? `Versión ${task.publishedVersion.version}` : 'Sin versión publicada'}</p></section>
       <Notice title="Apoyo pedagógico, no diagnóstico"><p>{task.pedagogicalNotice}</p></Notice>
     </>}
+    </div></div></div>
   </div>;
 }
