@@ -38,6 +38,7 @@
   --action-primary-background: #14264d;
   --action-primary-foreground: #fff;
   --action-primary-hover: #1f3b73;
+  --switch-active: #1f3b73;
   --navigation-background: #14264d;
   --navigation-foreground: #fff;
   --navigation-hover: #1f3b73;
@@ -61,6 +62,7 @@
   --color-action-primary: var(--action-primary-background);
   --color-action-primary-foreground: var(--action-primary-foreground);
   --color-action-primary-hover: var(--action-primary-hover);
+  --color-switch-active: var(--switch-active);
   --color-muted: var(--muted-foreground);
   --radius-lg: .5rem;
   --radius-xl: .75rem;

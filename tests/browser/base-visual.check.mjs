@@ -18,7 +18,11 @@ try {
     await page.goto(`${origin}/tests/browser/base-visual-harness.html`, { settleMs: 200 });
     assert.equal((await read('#primary')).bg, 'rgb(20, 38, 77)', 'approved action background');
     assert.equal((await read('#primary')).color, 'rgb(255, 255, 255)');
-    assert.equal((await read('[data-slot="switch"]')).bg, 'rgb(83, 192, 243)', 'Switch not recoloured by action tokens');
+    const toggle = await read('[data-slot="switch"]');
+    assert.equal(toggle.bg, 'rgb(31, 59, 115)', 'explicitly approved Switch active token');
+    assert.equal(toggle.width, 56, 'colour change does not shrink the target');
+    assert.equal(toggle.height, 44);
+    assert.equal(await page.eval(() => getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()), '#53c0f3', 'legacy brand token is unchanged');
     const field = await read('#sample-field');
     assert.equal(field.bg, 'rgb(246, 248, 251)', 'approved subtle control surface');
     assert.equal((await read('#sample-select')).bg, field.bg);
@@ -57,6 +61,13 @@ try {
     if ([390, 1440].includes(width)) await page.screenshot({ path: `${output}/base-${width}.png`, fullPage: true });
     results.push({ width, padding, controls: 'pass' });
   }
+  await page.eval(() => document.querySelector('[data-slot="switch"]').focus());
+  await page.send('Input.dispatchKeyEvent', { type: 'keyDown', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 });
+  await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: ' ', code: 'Space', windowsVirtualKeyCode: 32 });
+  await page.eval(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  assert.equal(await page.eval(() => document.querySelector('[data-slot="switch"]').getAttribute('aria-checked')), 'false');
+  assert.equal((await read('[data-slot="switch"]')).bg, 'rgb(82, 98, 122)', 'off style unchanged');
+  assert.equal((await read('[data-slot="switch"]')).outline, '2px');
   const force = async (selector, pseudoClasses) => {
     const { root } = await page.send('DOM.getDocument');
     const { nodeId } = await page.send('DOM.querySelector', { nodeId: root.nodeId, selector });

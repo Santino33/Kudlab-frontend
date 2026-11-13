@@ -48,4 +48,6 @@ Contrato para consumidores (sin lógica de negocio nueva):
 - `staff-back-link` se aplica solo a navegación de regreso real, preservando href
   y el controlador de navegación. No cambiar Cancel/acciones o ActivityLink globalmente.
 - Tokens `action-primary-*` y `navigation-*` no sustituyen `primary`/`brand-hover`
-  de marca o Switch. Los estilos oscuros están acotados al sidebar y su Sheet.
+  de marca. Switch tiene `switch-active: #1F3B73`, aprobado específicamente, sin
+  cambiar sus dimensiones ni el estado apagado. Los estilos oscuros están
+  acotados al sidebar y su Sheet.
