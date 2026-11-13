@@ -53,6 +53,11 @@ restyling), sin acreditar geometría ni presentación nueva.
 El informe siempre separa las dimensiones globales observadas de la cobertura local:
 `--require-dimensions` exige además pista40×24/thumb20 y falla mientras el productor2
 no entregue ese cambio. No llamar CA-01 completo al éxito del bloque local.
+`?view=detail&role=admin` abre directamente la ficha sintética para inspección visual.
+El check verifica contenido local al200% y declara aparte el desbordamiento del
+encabezado global de cuenta a320px; `--require-page-reflow` exige también esa
+condición global. Comparar scrollWidth con el ancho solicitado, no solo innerWidth:
+un viewport móvil puede ensanchar su área de layout y ocultar el fallo a esa comparación.
 No acredita API/BD/Play reales, continuidad por código/acuse, lector ni zoom400 real.
 Los harnesses y fixtures no se publican como sitio: el artefacto público es solo dist.
 

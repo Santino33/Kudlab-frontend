@@ -155,4 +155,5 @@ export async function runMobileTaskChecks() {
   return 'navegación móvil cierra Sheet tras cambio de ruta sin desmontar acceso';
 }
 Object.assign(window, { runTaskChecks, runMobileTaskChecks, mountTaskFixture: fixture });
-fixture();
+const params = new URLSearchParams(location.search);
+fixture({ role: params.get('role') === 'admin' ? 'ADMIN' : 'TEACHER', path: params.get('view') === 'detail' ? '/tareas/TG-01' : '/tareas' });

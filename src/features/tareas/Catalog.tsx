@@ -40,7 +40,7 @@ export function Catalog({ api, admin = false }: { api: TasksApi; admin?: boolean
           <TableCell><Preparation task={task} /></TableCell>
           <TableCell><a className="staff-link whitespace-nowrap" onClick={navigate} href={`/tareas/${encodeURIComponent(task.id)}`} aria-label={`Ver ficha de ${task.title} (${task.id})`}>Ver ficha<ArrowRight className="ml-2 size-5 shrink-0" aria-hidden="true" /></a></TableCell>
         </TableRow>)}</TableBody></Table>
-      </div><ul className="accounts-list-view" aria-label="Catálogo de juegos">{page.items.map((task) => <li key={task.id}>
+      </div><ul className="accounts-list-view" aria-label="Catálogo de juegos">{page.items.map((task) => <li key={task.id} className="grid-cols-[minmax(0,1fr)] [overflow-wrap:anywhere]">
         <h2 className="font-semibold">{task.title}</h2><p className="text-sm">{task.id}</p>
         <TaskAvailability task={task} admin={admin} control={availability} fetching={query.fetching} />
         <Preparation task={task} /><a className="staff-link w-fit" onClick={navigate} href={`/tareas/${encodeURIComponent(task.id)}`} aria-label={`Ver ficha de ${task.title} (${task.id})`}>Ver ficha<ArrowRight className="ml-2 size-5" aria-hidden="true" /></a>

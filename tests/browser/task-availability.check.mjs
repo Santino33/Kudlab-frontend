@@ -8,6 +8,7 @@ mkdirSync(output, { recursive: true });
 const browser = await Browser.launch();
 const results = [];
 let dimensions;
+const reflow = [];
 try {
   const page = await browser.newPage({ reducedMotion: true });
   const until = (expression) => page.eval(async expression => {
@@ -121,7 +122,7 @@ try {
           const panel = document.querySelector('.staff-panel');
           const body = panel?.firstElementChild;
           const reading = panel?.querySelector('.staff-detail-content');
-          return { states, switchCount: switches.length, overflow: document.documentElement.scrollWidth > innerWidth,
+          return { states, switchCount: switches.length, scrollWidth: document.documentElement.scrollWidth,
             switch: el && { width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height,
               thumb: el.querySelector('[data-slot="switch-thumb"]').getBoundingClientRect().width, bg: getComputedStyle(el).backgroundColor,
               track: track ? [track.getBoundingClientRect().width, track.getBoundingClientRect().height] : pseudo?.content !== 'none' && pseudo?.content !== 'normal' ? [parseFloat(pseudo.width), parseFloat(pseudo.height)] : [el.getBoundingClientRect().width, el.getBoundingClientRect().height],
@@ -134,7 +135,7 @@ try {
         });
         assert.ok(view.states.includes('Estado: Habilitada'), `${width}/${path}/${role}: textual state`);
         assert.ok(view.states.includes('No lista para asignar'), 'enabled is not assignable');
-        assert.equal(view.overflow, false, `page overflow ${width}/${path}/${role}`);
+        assert.ok(view.scrollWidth <= width, `page overflow ${width}/${path}/${role}: ${view.scrollWidth}`);
         assert.equal(view.switchCount, role === 'ADMIN' ? 1 : 0);
         if (view.switch) {
           assert.ok(view.switch.width >= 44 && view.switch.height >= 44, 'real operable root target');
@@ -175,9 +176,40 @@ try {
       assert.match(sw?.name?.value ?? '', /Habilitar Lluvia de estrellas para nuevas asignaciones/);
       assert.equal((await writes()).length, 1);
     });
+    await run('local content reflows at text 200%; global shell reservation is separate', async () => {
+      for (const width of [320, 390, 768]) for (const path of ['/tareas', '/tareas/TG-01']) {
+        await page.setViewport({ width, height: 900 });
+        await mount({ role: 'ADMIN', path, longText: true });
+        const measurement = await page.eval(async () => {
+          document.documentElement.style.fontSize = '200%';
+          await new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done)));
+          const scope = document.querySelector('#auth-title').closest('.staff-panel') ?? document.querySelector('.accounts-list-view');
+          const outside = [...scope.querySelectorAll('*')].filter(el => el.getClientRects().length && el.getBoundingClientRect().right > document.documentElement.clientWidth + 1);
+          return { pageWidth: document.documentElement.scrollWidth, contentOverflow: outside.map(el => el.tagName), viewport: document.documentElement.clientWidth };
+        });
+        assert.deepEqual(measurement.contentOverflow, [], `local content ${width}/${path}`);
+        reflow.push({ width, path, ...measurement, pageStatus: measurement.pageWidth <= width ? 'pass' : 'blocked-shell' });
+        if (width === 320) await page.screenshot({ path: `${output}/${path === '/tareas' ? 'catalog' : 'detail'}-320-text200.png`, format: 'png', fullPage: true });
+      }
+    });
+    await run('touch target margin, forced colors and reduced motion', async () => {
+      await page.setViewport({ width: 390, height: 844, mobile: true });
+      await mount({ role: 'ADMIN', path: '/tareas/TG-01' });
+      await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'forced-colors', value: 'active' }, { name: 'prefers-reduced-motion', value: 'reduce' }] });
+      const point = await page.eval(() => {
+        const el = document.querySelector('[data-slot="switch"]'); el.scrollIntoView({ block: 'center' });
+        const rect = el.getBoundingClientRect(); return { x: rect.x + 3, y: rect.y + rect.height / 2 };
+      });
+      await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+      await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await until('document.querySelector("[data-slot=switch]").getAttribute("aria-checked") === "true"');
+      assert.equal((await writes()).length, 1);
+      assert.equal(await page.eval(() => matchMedia('(forced-colors: active)').matches && matchMedia('(prefers-reduced-motion: reduce)').matches), true);
+    });
   }
-  const report = { results, dimensions: dimensions ?? { status: 'not-evaluated' }, limitations: ['Synthetic fetch only; no API/DB/Play continuity evidence', 'Global track dimension delivery remains with producer 2', 'Real 400% zoom, screen reader and other browsers not covered'] };
+  const report = { results, dimensions: dimensions ?? { status: 'not-evaluated' }, reflow, limitations: ['Synthetic fetch only; no API/DB/Play continuity evidence', 'Global track dimension delivery remains with producer 2', 'Global account header can overflow at text 200%/320px; not changed by feature 07', 'Real 400% zoom, screen reader and other browsers not covered'] };
   writeFileSync(`${output}/results.json`, JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
   if (process.argv.includes('--require-dimensions')) assert.equal(dimensions?.status, 'pass', 'T-02: approved global dimensions must be delivered; see results.json');
+  if (process.argv.includes('--require-page-reflow')) assert.ok(reflow.length > 0 && reflow.every(view => view.pageStatus === 'pass'), 'Global shell reflow remains pending; see results.json');
 } finally { await browser.close(); }
