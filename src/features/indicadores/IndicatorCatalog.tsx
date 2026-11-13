@@ -11,6 +11,7 @@ import type { IndicatorDefinition } from './types.ts';
 
 export const Heading = ({ children }: { children: string }) => <h1 id="auth-title" className="auth-heading" tabIndex={-1}>{children}</h1>;
 export const methodStatus = (d: IndicatorDefinition) => d.rule ? `${APPROVAL_LABELS[d.rule.approval.current]} · versión ${d.rule.version}` : 'Regla aún no publicada';
+export const unitLabel = (unit: IndicatorDefinition['unit']) => ({ '%': 'Porcentaje (%)', ms: 'Milisegundos (ms)', points: 'Puntos porcentuales', count: 'Recuento' })[unit];
 
 export function IndicatorCatalog({ api }: { api: IndicatorsApi }) {
   const query = useQuery(signal => api.definitions(signal), 'catalog');
@@ -22,9 +23,9 @@ export function IndicatorCatalog({ api }: { api: IndicatorsApi }) {
       : <div className="staff-table-region" role="region" aria-label="Catálogo de indicadores" tabIndex={0}>
         <Table><TableCaption>Indicadores implementados. Solo consulta; no se pueden editar aquí.</TableCaption>
           <TableHeader><TableRow><TableHead>Indicador</TableHead><TableHead>Tarea</TableHead><TableHead>Unidad</TableHead><TableHead>Estado metodológico</TableHead></TableRow></TableHeader>
-          <TableBody>{query.result.data.map(d => <TableRow key={d.metricCode}>
-            <TableCell><a className="font-semibold underline underline-offset-4" href={indicatorDetailPath(d.metricCode)} onClick={navigate}>{d.label}</a></TableCell>
-            <TableCell>{d.taskId}</TableCell><TableCell>{d.unit === '%' ? 'Porcentaje (%)' : 'Milisegundos (ms)'}</TableCell><TableCell>{methodStatus(d)}</TableCell>
+          <TableBody>{query.result.data.map(d => <TableRow key={`${d.taskId}:${d.metricCode}`}>
+            <TableCell><a className="font-semibold underline underline-offset-4" href={indicatorDetailPath(d.metricCode, d.taskId)} onClick={navigate}>{d.label}</a></TableCell>
+            <TableCell>{d.taskId}</TableCell><TableCell>{unitLabel(d.unit)}</TableCell><TableCell>{methodStatus(d)}</TableCell>
           </TableRow>)}</TableBody></Table></div>}
   </div>;
 }

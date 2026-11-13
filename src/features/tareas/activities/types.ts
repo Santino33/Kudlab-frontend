@@ -1,3 +1,4 @@
+import { parseMentalistaDetail, type MentalistaDetail, type MentalistaTrial } from './mentalista-types.ts';
 export const executionLabels = { READY: 'Preparada, sin iniciar', RUNNING: 'En ejecución', COMPLETED: 'Completada', INTERRUPTED: 'Interrumpida · datos parciales', EXPIRED: 'Preparación vencida', UNCONFIRMED: 'Sin cierre confirmado' };
 export const processingLabels = { NOT_RECEIVED: 'Sin evidencia recibida', PENDING: 'Resultados guardados. Procesamiento pendiente', PROCESSING: 'Procesando evidencia guardada', COMPLETED: 'Procesamiento completado', FAILED: 'Cálculo fallido. La evidencia se conserva' };
 export const unavailableLabels: Record<string, string> = {
@@ -17,7 +18,7 @@ export type Grant = { sessionId: string; grantId: string; launchGrant: string; e
 export type SessionSummary = { id: string; studentId: string; taskId: string; assignmentId: string; attemptNumber: number | null; launchMode: 'SUPERVISED' | 'CODE'; configVersion: number; gameBuildId: string;
   executionStatus: keyof typeof executionLabels; processingStatus: keyof typeof processingLabels; preparedAt: string; startedAtServer: string | null; receivedAt: string | null; incidentCount: number; recordedTrialCount: number };
 export type Indicator = { metricCode: string; scope: string; status: 'CALCULATED' | 'NOT_AVAILABLE'; value: number | null; unit: '%' | 'ms'; numerator: number | null; denominator: number | null; sampleSize: number; unavailabilityReason: string | null };
-export type SessionDetail = SessionSummary & { declaredState: 'completed' | 'interrupted' | null; terminationReason: string | null; measuredDurationMs: number | null;
+export type LegacySessionDetail = SessionSummary & { taskId: 'TG-01'; declaredState: 'completed' | 'interrupted' | null; terminationReason: string | null; measuredDurationMs: number | null;
   publishedVersionId: string; configurationHash: string; configuration: Record<string, unknown>; device: Record<string, unknown> | null;
   receipt: { submissionId: string; receivedAt: string; evidenceHash: string } | null;
   calculation: { runId: string; ruleCode: string; ruleVersion: number; status: string; calculatedAt: string | null; summary: { observed: number; included: number; excluded: number } | Record<string, never>; indicators: Indicator[] } | null };
@@ -30,7 +31,8 @@ export const categoryLabels = { EXECUTION_INTERRUPTED: 'Ejecución interrumpida'
 export const closureLabels = { response: 'Respuesta', window_elapsed: 'Ventana natural finalizada', session_cutoff: 'Fin de sesión', interruption: 'Interrupción', never_presented: 'No presentado' };
 export const responseDeviceLabels = { mouse: 'Ratón', touch: 'Pantalla táctil', pen: 'Lápiz' };
 export type IncidentEvidence = { sequence: number; type: keyof typeof incidentLabels; category: keyof typeof categoryLabels; clockId: string | null; atMs: number | null; endedAtMs: number | null; recordedAtClient: string | null };
-export type Evidence = TrialEvidence | IncidentEvidence;
+export type SessionDetail = LegacySessionDetail | MentalistaDetail;
+export type Evidence = TrialEvidence | MentalistaTrial | IncidentEvidence;
 export const object = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
 const text = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
 export const isId = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
@@ -84,7 +86,7 @@ function validDevice(v: unknown, adaptive: boolean) {
   return Object.keys(v).length === 6 && positive(v.stageWidthCss) && positive(v.stageHeightCss) && v.stageWidthCss >= 288 && v.stageHeightCss >= 240 && v.stageWidthCss <= v.viewportWidth && v.stageHeightCss <= v.viewportHeight && Math.abs(v.stageScale - Math.min(1, v.stageWidthCss / 480)) < 1e-9;
 }
 export function parseAssignmentSummary(v: unknown): AssignmentSummary | undefined {
-  if (!object(v) || !isId(v.id) || v.taskId !== 'TG-01' || !text(v.title) || !isId(v.publishedVersionId) || !count(v.configVersion) || !v.configVersion || !isId(v.groupId) ||
+  if (!object(v) || !isId(v.id) || !['TG-01', 'TG-03'].includes(String(v.taskId)) || !text(v.title) || !isId(v.publishedVersionId) || !count(v.configVersion) || !v.configVersion || !isId(v.groupId) ||
     !date(v.startsAt) || !date(v.endsAt) || !date(v.createdAt) || !count(v.maxAttempts) || v.maxAttempts < 1 || v.maxAttempts > 10 || !['OPEN', 'CANCELLED'].includes(String(v.status)) || !['FUTURE', 'CURRENT', 'EXPIRED', 'CANCELLED'].includes(String(v.availability)) || !count(v.recipientCount)) return;
   return v as AssignmentSummary;
 }
@@ -98,13 +100,19 @@ export function parseAssignment(v: unknown): Assignment | undefined {
   return v as Assignment;
 }
 export function parseSessionSummary(v: unknown): SessionSummary | undefined {
-  if (!object(v) || !isId(v.id) || !isId(v.studentId) || !isId(v.assignmentId) || v.taskId !== 'TG-01' || !['SUPERVISED', 'CODE'].includes(String(v.launchMode)) ||
+  if (!object(v) || !isId(v.id) || !isId(v.studentId) || !isId(v.assignmentId) || !['TG-01', 'TG-03'].includes(String(v.taskId)) || !['SUPERVISED', 'CODE'].includes(String(v.launchMode)) ||
     !Object.hasOwn(executionLabels, String(v.executionStatus)) || !Object.hasOwn(processingLabels, String(v.processingStatus)) ||
     !count(v.configVersion) || !v.configVersion || !text(v.gameBuildId) || !date(v.preparedAt) || v.startedAtServer !== null && !date(v.startedAtServer) ||
     v.receivedAt !== null && !date(v.receivedAt) || v.attemptNumber !== null && (!count(v.attemptNumber) || v.attemptNumber < 1 || v.attemptNumber > 10) || !count(v.incidentCount) || !count(v.recordedTrialCount)) return;
   return v as SessionSummary;
 }
 export function parseSession(v: unknown): SessionDetail | undefined {
+  if (object(v) && v.taskId === 'TG-03') {
+    if (!parseSessionSummary(v) || !isId(v.publishedVersionId) ||
+      v.receipt !== null && (!object(v.receipt) || !isId(v.receipt.submissionId) || !date(v.receipt.receivedAt) || typeof v.receipt.evidenceHash !== 'string' || !/^[a-f0-9]{64}$/.test(v.receipt.evidenceHash)) ||
+      v.calculation !== null && (!object(v.calculation) || !isId(v.calculation.runId) || v.calculation.calculatedAt !== null && !date(v.calculation.calculatedAt))) return;
+    return parseMentalistaDetail(v);
+  }
   if (!parseSessionSummary(v) || !object(v) || !isId(v.publishedVersionId) || typeof v.configurationHash !== 'string' || !/^[a-f0-9]{64}$/.test(v.configurationHash) || !validConfiguration(v.configuration) || !numeric(v.measuredDurationMs) ||
     ![null, 'completed', 'interrupted'].includes(v.declaredState as string | null) || v.terminationReason !== null && !['time_limit', 'user_exit', 'visibility_lost', 'script_error', 'storage_failure', 'frame_gap', 'layout_changed', 'recovered_after_reload', 'evidence_limit', 'resource_error'].includes(String(v.terminationReason))) return;
   const adaptive = v.configuration.layoutRule === 'VIEWPORT_FIT_V2';
