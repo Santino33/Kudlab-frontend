@@ -24,6 +24,14 @@ Los scripts declaran sus fixtures y URL al inicio: revisar cada uno antes de eje
 
 `recovery.check.mjs` usa `RECOVERY_PREVIEW_ORIGIN`, no `KUDLAB_TEST_ORIGIN`. `courses.check.mjs` es la excepción de integración real: exige `KUDLAB_COURSES_ORIGIN` y `KUDLAB_COURSES_API` en localhost, más sus cuentas/cursos sintéticos preconfigurados en una base desechable. No ejecutarlo contra una base compartida ni interpretar su guardia de configuración como un fallo del driver.
 
+`access-layout.check.mjs` usa `KUDLAB_TEST_ORIGIN`: verifica la composición 960/512px,
+el umbral 1024px y marca compacta de 160px, variantes públicas, PNG íntegro,
+teclado/AX del ojo, estabilidad de inputs al redimensionar, retirada de secretos y
+estados de sesión sin confirmar. Añade texto200, altura corta y emulación de colores
+forzados/movimiento reducido. Guarda capturas solo antes de introducir contraseñas;
+no acredita gestor real, zoom400 real, BFCache real ni API/SMTP/PostgreSQL.
+`invitation-accept.check.mjs` usa `INVITATION_PREVIEW_ORIGIN`.
+
 `tests/browser/*.tsx` son harnesses de desarrollo: se comprueban tipos, pero no se publican en `dist/`. La validación de producción sigue siendo `npm run build` y la verificación de sus cabeceras en el hosting real.
 
 ## Base visual compartida
