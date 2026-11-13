@@ -1,0 +1,15 @@
+/* Public composition only: default session states and the workspace keep their shell. */
+.auth-page--access { justify-content: center; }
+.auth-page--access .auth-main,
+.auth-page--recovery .auth-main { flex: none; padding-bottom: 1.5rem; }
+.auth-page--recovery .auth-main { margin-top: auto; }
+.auth-page--recovery .auth-footer { margin-bottom: auto; }
+.auth-page--access .auth-footer,
+.auth-page--recovery .auth-footer { text-align: center; padding-bottom: 3rem; }
+.auth-page--access .auth-footer { max-width: 60rem; }
+.auth-page--recovery .auth-content { max-width: 32rem; }
+
+@media (max-width: 639px) {
+  .auth-page--access .auth-footer,
+  .auth-page--recovery .auth-footer { padding-bottom: 2rem; }
+}

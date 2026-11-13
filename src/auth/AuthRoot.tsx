@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { StaffLayout } from '@/components/StaffLayout';
 import type { AuthController } from './controller.ts';
 import type { Identity } from './state.ts';
+import './access.css';
 
 const subscribeOnline = (notify: () => void) => { window.addEventListener('online', notify); window.addEventListener('offline', notify); return () => { window.removeEventListener('online', notify); window.removeEventListener('offline', notify); }; };
 
@@ -19,10 +20,11 @@ const errorMessages = {
   loginUnconfirmed: 'No pudimos confirmar el inicio de sesión',
 };
 
-export function AuthRoot({ controller, renderAuthenticated, publicContent, onSuspend, notice }: {
+export function AuthRoot({ controller, renderAuthenticated, publicContent, publicView, onSuspend, notice }: {
   controller: AuthController;
   renderAuthenticated?: (user: Identity, controller: AuthController, generation: number) => ReactNode;
   publicContent?: () => ReactNode;
+  publicView?: 'recovery';
   onSuspend?: () => void;
   notice?: ReactNode;
 }) {
@@ -107,8 +109,9 @@ export function AuthRoot({ controller, renderAuthenticated, publicContent, onSus
 
   const authenticatedContent = !publicOnly && state.kind === 'authenticated' ?
     renderAuthenticated?.(state.user, controller, state.generation) : undefined;
+  const accessForm = !publicOnly && (state.kind === 'signedOut' || signingIn);
 
-  return <StaffLayout wide={authenticatedContent !== undefined}>
+  return <StaffLayout wide={authenticatedContent !== undefined} publicView={accessForm ? 'access' : publicOnly ? publicView : undefined}>
       <section ref={content} className={authenticatedContent !== undefined ? 'staff-content' : 'auth-content'} aria-labelledby="auth-title">
         {notice && <div className="mb-6">{notice}</div>}
         {publicOnly ? <div key={publicPage.epoch}>{publicPage.hidden ? <Card><CardHeader><h1 id="auth-title" className="auth-heading" tabIndex={-1}>Acceso en pausa</h1><p>El enlace y las contraseñas fueron retirados.</p></CardHeader></Card> : publicContent?.()}</div> : authenticatedContent ?? <Card>
