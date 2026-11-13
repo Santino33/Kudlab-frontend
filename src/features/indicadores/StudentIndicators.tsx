@@ -20,7 +20,7 @@ import { metricCodes, scopes, type MetricCode, type Scope } from './types.ts';
 
 type Filters = { metric: MetricCode | 'all'; scope: Scope; from: string; to: string };
 const defaults: Filters = { metric: 'all', scope: 'SESSION', from: '', to: '' };
-const select = 'min-h-11 w-full min-w-0 rounded-lg border border-input bg-background px-3 py-2 text-base font-medium text-foreground focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+const select = 'staff-select font-medium';
 const toFilter = (f: Filters): HistoryFilter => ({ ...(f.metric !== 'all' ? { metricCode: f.metric } : {}), scope: f.scope, ...(f.from ? { from: f.from } : {}), ...(f.to ? { to: f.to } : {}) });
 const describe = (f: HistoryFilter) => [f.metricCode ? metricLabel(f.metricCode) : 'todos los indicadores', f.scope ? SCOPE_LABELS[f.scope] : '', f.from ? `desde ${f.from}` : '', f.to ? `hasta ${f.to}` : ''].filter(Boolean).join(', ');
 const rangeText = (f: Filters) => f.from || f.to ? `${f.from || 'inicio'} a ${f.to || 'hoy'}` : 'todas las fechas';

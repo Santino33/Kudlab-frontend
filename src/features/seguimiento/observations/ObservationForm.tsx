@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { areas, behaviors, descriptions, frequencies, today } from './types.ts';
 import type { Field, FormValues } from './types.ts';
 
-export const selectClass = 'min-h-11 w-full min-w-0 rounded-lg border border-input bg-background px-3 py-2 text-base text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:bg-disabled';
+export const selectClass = 'staff-select';
 export function ObservationFields({ value, change, disabled = false, errors = {}, prefix, contextOnly = false }: {
   value: FormValues; change(value: FormValues): void; disabled?: boolean; errors?: Partial<Record<Field, string>>; prefix: string; contextOnly?: boolean;
 }) {
